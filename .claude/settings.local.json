@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo view:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(uv:*)",
+      "Bash(powershell -ExecutionPolicy ByPass -c \"irm https://astral.sh/uv/install.ps1 | iex\")",
+      "Bash(C:\\\\Users\\\\nelso\\\\.local\\\\bin\\\\uv tool install:*)",
+      "Bash(export PATH=\"$PATH:/c/Users/nelso/.local/bin\")",
+      "Bash(specify:*)",
+      "Bash(PYTHONIOENCODING=utf-8 specify:*)"
+    ]
+  }
+}
