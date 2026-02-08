@@ -8,7 +8,8 @@
       "Bash(C:\\\\Users\\\\nelso\\\\.local\\\\bin\\\\uv tool install:*)",
       "Bash(export PATH=\"$PATH:/c/Users/nelso/.local/bin\")",
       "Bash(specify:*)",
-      "Bash(PYTHONIOENCODING=utf-8 specify:*)"
+      "Bash(PYTHONIOENCODING=utf-8 specify:*)",
+      "Bash(dir:*)"
     ]
   }
 }
