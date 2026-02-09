@@ -9,7 +9,14 @@
       "Bash(export PATH=\"$PATH:/c/Users/nelso/.local/bin\")",
       "Bash(specify:*)",
       "Bash(PYTHONIOENCODING=utf-8 specify:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npm install:*)",
+      "Bash(cmd /c \"npm install\")",
+      "Bash(cmd /c \"mvn compile -q 2>&1\")",
+      "Bash(cmd /c:*)",
+      "Bash(cmd.exe /c \"cd /d c:\\\\Users\\\\nelso\\\\IdeaProjects\\\\HeroManager\\\\frontend & npx tsc --noEmit 2>&1 & echo EXIT_CODE=%ERRORLEVEL%\")",
+      "Bash(powershell.exe -NoProfile -Command:*)",
+      "Bash(powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"c:\\\\Users\\\\nelso\\\\IdeaProjects\\\\HeroManager\\\\find-node.ps1\")"
     ]
   }
 }
