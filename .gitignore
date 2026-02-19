@@ -1,0 +1,50 @@
+# Java / Maven
+backend/target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*
+
+# Spring Boot
+backend/data/
+
+# H2 Database files
+*.db
+*.mv.db
+*.trace.db
+
+# Node.js / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+*.tsbuildinfo
+
+# Environment / Secrets
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+*.suo
+*.user
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+nul
+
+# Misc
+*.tmp
+*.bak
+*.orig

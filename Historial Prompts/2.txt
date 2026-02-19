@@ -1,0 +1,13 @@
+Go back to /speckit.specify
+
+Alright, I was able to run the application and overall I liked everything and the UI for now. 
+However there are some things that don't work. 
+-Under team lineup, it is showing "Failed to load team data." in red.
+-After sucessfully buying heroes they're not showing at "Bench Heroes"
+-Also after buying heroes, in the section Shop/Abilities, in the select hero dropwdown, it doesn't show the heroes that I have bought to select.
+-I don't see konohamaru as a starter hero anywhere, it was an initial requirement
+-When I registered I've sucessfuly got the confirmation email and the link button worked. However it redirected me to the page that says: "This confirmation link has already been used." so it was confusing. Tell him that the email was sucessfully confirmed.
+
+Things to change:
+-Lets do a small modification, when a player logs in for the first time in 3 hours, lets give to that player 20 minutes of online, so that players up in the arena as online.
+-Check this @hexagonal diagram.png , I want to show the grow stats witha hexagonal diagram, with eatch attribute at each point of the hexagonal. 

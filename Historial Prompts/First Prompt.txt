@@ -1,0 +1,107 @@
+This will be a big project that will be supported for many years, and this will be the start of it.
+You are a master of software development and an experienced architect and you will be helping me planning, brainstorming and implementing it.
+
+No need to create a git repository in this stage.
+No need to deploy it into AWS or something similar, everything will be in my local PC for now.
+
+I want to build a web application application with Java, Spring Boot as front end React/Typescript. As a database it can be whatever you think its more adequate. This application will represent a game with text with images, gifs and some animations.
+There's no need for unit testing, lets focus on functionalities and implementation.
+Tests will be done manually by users.
+
+It will have authentication(registration and login). The confirmation emails or oficial announcement should be sent from "piratemanagerofficial@gmail.com",
+it will be the main/oficial email from this game. An user by registering into the game, a confirmation email should be sent and the user can only login
+when the email is confirmed.
+An user will only be able to play if he's logged in.
+
+This game will be similar to "www.ninjamanager.com", that already exists
+The player will have to setup a team of 6 heroes and 1 summon. Each hero will have its stats growth(Physical Attack, Magic Power, Dexterity, Element, Mana, Stamina). Each summon will have it's grow stats as well which will affect the entire team. Example +1 magic power for each hero from the team.
+This growth will be applied by their level, both applied to heroes and summon.
+Those heroes and summon get experience points so they level up and get more stats, depending on their growth. Those experience points are obtained through battles in the arena against other teams(users/players).
+
+An energy system will be the main resource of the players.
+You have arena energy and world energy. Each player gainst +1 energy each 10 minutes.
+When a player challegnes another in the arena he will waste 5 energy.
+Lets leave the world energy for now. Just put it as yellow and charging +1 each 10 minutes for now.
+Arena energy will be represente by green.
+Both energy have the maximum capacity of 120. If a player reaches 120, he will not be able to get more energy until he wastes energy and goes below 120 to earn more.
+
+Each player will have Gold(common currency to buy abilities, heroes in the shop etc) and Diamond(premium currency)
+
+At the beginning of the game, each player will start with 1 heroe, 0 summon, and 500 gold.
+In the folder "Heroes" you have some images and gifs to be used and the main image/portrait of each ninja. the base dimensions are 180x200, but you can redimensionate accordingly with the website estética.
+Each player will start with "konohamaru-genin" at level 1. He will have as base stats, whats between "()" are the growth for each lvl:
+Physical Attack:5 (+0.8)
+Magic Power: 8 (+1)
+Dexterity: 3 (+0.2)
+Element: 2 (+0.7)
+Mana: 20 (+1)
+Stamina:10 (+1)
+
+Each hero and summon will occupy capacity. In the beginning each team will have available 100 capacity to put their heroes
+
+konohamaru-genin will have (capacity: 5)
+
+In the shop will be presented te following heroes and 1 summon to be bought.
+summon:susanoo-spirit-summon [this summon will have as base stats 10 Mana(+5) and 5 Magic Power (+4)]  [cost: 300g] (capacity: 15)
+heroes(for this heroes is up to you to decide their base stats and growth):
+-deidara [cost: 400g] (capacity: 20)
+-sakura [cost: 200g] (capacity: 8)
+-hidan [cost: 400g] (capacity: 10)
+-kabuto [cost: 400g] (capacity: 15)
+-kakashi [cost: 400g] (capacity: 15)
+-konan [cost: 400g] (capacity: 10)
+-minato [cost: 2000g] (capacity: 30)
+-hashirama [cost: 2000g] (capacity: 30)
+
+
+The base EXP a hero gains for defeating another hero is 4(+2 for each lvl the enemy hero was)
+A team gains gold by defeating other team. +2 for win and +1 for defeat
+A summon gains +1xp if the team wins the battle. +0 if the team lost the battle
+
+
+Equipment
+
+Items
+
+Each Hero has 3 slots with which to equip items. A single hero cannot equip two of the same item, and no more than 3 of the same item may be equipped to your team in total — so there’s no point in having more than 3 of any item.
+You can sell items for 75% of their base cost.
+
+Abilities
+Abilities, unlike items, are tied to specific hero, so most are unique. All hero have at least 4 abilities available to them, which cost 50, 200, 400 and 800 gold respectively. Like items, a single hero cannot equip two copies of the same ability, but you may have more than 3 of the same ability equipped to your team in total.
+You can make the abilities and its stats, I will rename and rebalance them manually.
+
+
+The Arena
+
+Challenging another team in the Arena costs 5 AE(Arena Energy) if they are online, 7 AE if they are offline, and 4 AE if you are returning a challenge they sent you. For this reason, the amount of time you spend online has a big effect on how many challenges you’ll receive.
+Every time you spend energy, your team will be set as ‘online’ for 40 minutes.
+Essentially, what this boils down to is: the most efficient way to play is generally spending energy once every 20 minutes, which will mean you’re online for the maximum possible amount of time.
+
+
+
+Big Functionalities to have in this phase.
+On top of what was said before, you will need to implement:
+-the equip and unequip heroes/summon for the team.
+-shop system with abilities and heroes (use the heroes images from the folder "Heroes") [the the player buys a ninja, discount the gold from his account ec]
+-The energy system, a count to increase energy
+-The online/offline system, if the team sent challenge to other teams to be online for 40 minutes.
+-The battle system, will I will get in detail below.
+
+Battle system:
+
+For the time being it will be only text based like a logger.
+a hero will generate an attack number depending on his stats:
+(physical attack * 0.5) + (magic power * [random generated number between 0.1 and 1] + (dexterity * 0.33)) * (stamina * [1 if first attack from the hero, 0.9 if its second attack fom the hero, and goes down 10% each attack])
+
+The hero that generate the bigger attack number will win the confront and the defeated hero dies.
+The team with the hero that lost, will advance to his next hero, if available.
+The hero that won, will be kept in active battle and his stamina will kick in and go from 1 to 0.9
+The team with no heroes left, loses.
+
+The mana and element system you can ignore it for now.
+
+
+
+You have the folder "Ninjamanager Screenshots" that I suggest you analyse and understand it. Those are screenshots from an existing game named ninjamanager. This heromanager will be use this ninjamanager as his main inspiration. Study those screenshots so you have an idea of how this will look like and have.
+This is the very beginning of a big, complex project with a lot of details. But to start we already have a lot of stuff and lets start with this.
+Lets plan this first.
