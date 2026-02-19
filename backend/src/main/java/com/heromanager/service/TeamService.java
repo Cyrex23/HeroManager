@@ -2,9 +2,7 @@ package com.heromanager.service;
 
 import com.heromanager.dto.TeamResponse;
 import com.heromanager.entity.*;
-import com.heromanager.repository.HeroRepository;
-import com.heromanager.repository.SummonRepository;
-import com.heromanager.repository.TeamSlotRepository;
+import com.heromanager.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,13 +14,19 @@ public class TeamService {
     private final TeamSlotRepository teamSlotRepository;
     private final HeroRepository heroRepository;
     private final SummonRepository summonRepository;
+    private final EquippedItemRepository equippedItemRepository;
+    private final EquippedAbilityRepository equippedAbilityRepository;
 
     public TeamService(TeamSlotRepository teamSlotRepository,
                        HeroRepository heroRepository,
-                       SummonRepository summonRepository) {
+                       SummonRepository summonRepository,
+                       EquippedItemRepository equippedItemRepository,
+                       EquippedAbilityRepository equippedAbilityRepository) {
         this.teamSlotRepository = teamSlotRepository;
         this.heroRepository = heroRepository;
         this.summonRepository = summonRepository;
+        this.equippedItemRepository = equippedItemRepository;
+        this.equippedAbilityRepository = equippedAbilityRepository;
     }
 
     @Transactional(readOnly = true)
@@ -70,6 +74,35 @@ public class TeamService {
                     teamPower += statSum;
                     capacityUsed += t.getCapacity();
 
+                    // Build combined 3 equipment slots for display
+                    List<Map<String, Object>> eqSlots = new ArrayList<>();
+                    for (int s = 1; s <= 3; s++) {
+                        final Integer sn = s;
+                        Optional<EquippedItem> eItem = equippedItemRepository.findByHeroIdAndSlotNumber(hero.getId(), sn);
+                        if (eItem.isPresent()) {
+                            Map<String, Object> slotEntry = new LinkedHashMap<>();
+                            slotEntry.put("slotNumber", s);
+                            slotEntry.put("type", "item");
+                            slotEntry.put("name", eItem.get().getItemTemplate().getName());
+                            eqSlots.add(slotEntry);
+                            continue;
+                        }
+                        Optional<EquippedAbility> eAbility = equippedAbilityRepository.findByHeroIdAndSlotNumber(hero.getId(), sn);
+                        if (eAbility.isPresent()) {
+                            Map<String, Object> slotEntry = new LinkedHashMap<>();
+                            slotEntry.put("slotNumber", s);
+                            slotEntry.put("type", "ability");
+                            slotEntry.put("name", eAbility.get().getAbilityTemplate().getName());
+                            eqSlots.add(slotEntry);
+                            continue;
+                        }
+                        Map<String, Object> emptySlot = new LinkedHashMap<>();
+                        emptySlot.put("slotNumber", s);
+                        emptySlot.put("type", null);
+                        emptySlot.put("name", null);
+                        eqSlots.add(emptySlot);
+                    }
+
                     heroInfo = TeamResponse.HeroSlotInfo.builder()
                             .id(hero.getId())
                             .name(t.getDisplayName())
@@ -81,6 +114,7 @@ public class TeamService {
                             .xpToNextLevel(hero.getLevel() * hero.getLevel() * 10)
                             .tier(t.getTier() != null ? t.getTier().name() : null)
                             .element(t.getElement() != null ? t.getElement().name() : null)
+                            .equippedSlots(eqSlots)
                             .build();
                 }
             }

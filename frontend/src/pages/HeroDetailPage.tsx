@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getHeroes } from '../api/playerApi';
-import { getHeroEquipment, unequipItem, sellItem, unequipAbility } from '../api/equipmentApi';
+import { getHeroEquipment, unequipItemFromSlot, sellInventoryItem, unequipAbilityFromSlot, equipItemToSlot, equipAbilityToSlot } from '../api/equipmentApi';
 import { listAbilities, buyAbility } from '../api/shopApi';
 import { usePlayer } from '../context/PlayerContext';
 import type {
@@ -9,6 +9,8 @@ import type {
   HeroStats as StatsType,
   HeroEquipmentResponse,
   ShopAbilityResponse,
+  InventoryItem,
+  HeroAbilityEntry,
 } from '../types';
 import HeroPortrait from '../components/Hero/HeroPortrait';
 import HexStatDiagram from '../components/Hero/HexStatDiagram';
@@ -44,6 +46,7 @@ export default function HeroDetailPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [activePicker, setActivePicker] = useState<number | null>(null);
 
   const heroId = Number(id);
 
@@ -82,7 +85,7 @@ export default function HeroDetailPage() {
   async function handleUnequipItem(slotNumber: number) {
     setError(''); setMessage('');
     try {
-      const res = await unequipItem({ heroId, slotNumber });
+      const res = await unequipItemFromSlot(heroId, slotNumber);
       setMessage(res.message);
       await refresh();
     } catch {
@@ -90,10 +93,10 @@ export default function HeroDetailPage() {
     }
   }
 
-  async function handleSellItem(slotNumber: number) {
+  async function handleSellItem(equippedItemId: number) {
     setError(''); setMessage('');
     try {
-      const res = await sellItem({ heroId, slotNumber });
+      const res = await sellInventoryItem(equippedItemId);
       setMessage(res.message);
       await Promise.all([refresh(), fetchPlayer()]);
     } catch {
@@ -101,14 +104,28 @@ export default function HeroDetailPage() {
     }
   }
 
-  async function handleUnequipAbility(abilityTemplateId: number) {
+  async function handleUnequipAbility(slotNumber: number) {
     setError(''); setMessage('');
     try {
-      const res = await unequipAbility({ heroId, abilityTemplateId });
+      const res = await unequipAbilityFromSlot(heroId, slotNumber);
       setMessage(res.message);
       await refresh();
     } catch {
       setError('Failed to unequip ability.');
+    }
+  }
+
+  async function handleEquipToSlot(slotNumber: number, opt: { type: 'item' | 'ability'; id: number }) {
+    setError(''); setMessage('');
+    try {
+      const res = opt.type === 'item'
+        ? await equipItemToSlot(opt.id, heroId, slotNumber)
+        : await equipAbilityToSlot(opt.id, slotNumber);
+      setMessage(res.message);
+      setActivePicker(null);
+      await refresh();
+    } catch {
+      setError('Failed to equip.');
     }
   }
 
@@ -132,7 +149,7 @@ export default function HeroDetailPage() {
   const unboughtAbilities = availableAbilities.filter((a) => !a.owned);
 
   return (
-    <div>
+    <div onClick={() => setActivePicker(null)}>
       <Link to="/team" style={styles.backLink}>Back to Team</Link>
 
       {message && <div style={styles.success}>{message}</div>}
@@ -224,22 +241,66 @@ export default function HeroDetailPage() {
 
       {equipment && (
         <>
-          <h3 style={styles.subtitle}>Items (3 slots)</h3>
+          <h3 style={styles.subtitle}>Equipment Slots (3)</h3>
           <div style={styles.equipList}>
-            {equipment.items.map((slot) => (
-              <ItemSlot
-                key={slot.slotNumber}
-                slot={slot}
-                onUnequip={handleUnequipItem}
-                onSell={handleSellItem}
-              />
-            ))}
+            {equipment.slots.map((slot) => {
+              if (slot.type) {
+                return (
+                  <ItemSlot
+                    key={slot.slotNumber}
+                    slot={slot}
+                    onUnequip={slot.type === 'ability' ? handleUnequipAbility : handleUnequipItem}
+                    onSell={handleSellItem}
+                  />
+                );
+              }
+              // Empty slot — show equip picker
+              const pickerItems = (equipment.inventoryItems as InventoryItem[]).map((item) => ({
+                type: 'item' as const, id: item.equippedItemId, label: item.name,
+              }));
+              const pickerAbilities = (equipment.heroAbilities as HeroAbilityEntry[])
+                .filter((ab) => ab.slotNumber === null)
+                .map((ab) => ({ type: 'ability' as const, id: ab.equippedAbilityId, label: ab.name }));
+              const options = [...pickerItems, ...pickerAbilities];
+              const isOpen = activePicker === slot.slotNumber;
+              return (
+                <div key={slot.slotNumber} style={styles.emptySlotWrap} onClick={(e) => e.stopPropagation()}>
+                  <span style={styles.emptySlotLabel}>Slot {slot.slotNumber} — Empty</span>
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      style={options.length === 0 ? styles.emptySlotBtnDisabled : styles.emptySlotBtn}
+                      disabled={options.length === 0}
+                      onClick={(e) => { e.stopPropagation(); setActivePicker(isOpen ? null : slot.slotNumber); }}
+                      title={options.length === 0 ? 'No items or abilities in inventory' : 'Equip to this slot'}
+                    >
+                      {options.length === 0 ? 'Empty' : '+ Equip'}
+                    </button>
+                    {isOpen && (
+                      <div style={styles.pickerDropdown} onClick={(e) => e.stopPropagation()}>
+                        {options.map((opt) => (
+                          <button
+                            key={`${opt.type}-${opt.id}`}
+                            style={styles.pickerOption}
+                            onClick={() => handleEquipToSlot(slot.slotNumber, opt)}
+                          >
+                            <span style={{ color: opt.type === 'ability' ? '#a78bfa' : '#60a5fa', marginRight: 5, fontWeight: 700 }}>
+                              {opt.type === 'ability' ? 'A' : 'I'}
+                            </span>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <h3 style={styles.subtitle}>Abilities</h3>
-          {equipment.abilities.length > 0 ? (
+          {equipment.heroAbilities.length > 0 ? (
             <div style={styles.equipList}>
-              {equipment.abilities.map((ab) => (
+              {equipment.heroAbilities.map((ab) => (
                 <AbilitySlot
                   key={ab.equippedAbilityId}
                   ability={ab}
@@ -248,7 +309,7 @@ export default function HeroDetailPage() {
               ))}
             </div>
           ) : (
-            <p style={styles.muted}>No abilities equipped.</p>
+            <p style={styles.muted}>No abilities owned.</p>
           )}
 
           {unboughtAbilities.length > 0 && (
@@ -463,6 +524,65 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     fontWeight: 600,
     cursor: 'pointer',
+  },
+  emptySlotWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '8px 12px',
+    backgroundColor: '#1a1a2e',
+    border: '1px dashed #2a2a4e',
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  emptySlotLabel: {
+    color: '#4a4a6e',
+    fontSize: 13,
+    flex: 1,
+  },
+  emptySlotBtn: {
+    padding: '4px 12px',
+    backgroundColor: '#16213e',
+    color: '#60a5fa',
+    border: '1px solid #60a5fa',
+    borderRadius: 4,
+    fontSize: 12,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+  },
+  emptySlotBtnDisabled: {
+    padding: '4px 12px',
+    backgroundColor: '#16213e',
+    color: '#4a4a6e',
+    border: '1px solid #2a2a4e',
+    borderRadius: 4,
+    fontSize: 12,
+    cursor: 'default',
+    whiteSpace: 'nowrap' as const,
+  },
+  pickerDropdown: {
+    position: 'absolute' as const,
+    top: '110%',
+    right: 0,
+    backgroundColor: '#1a1a2e',
+    border: '1px solid #2a2a4e',
+    borderRadius: 6,
+    zIndex: 100,
+    minWidth: 180,
+    boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+    display: 'flex',
+    flexDirection: 'column' as const,
+  },
+  pickerOption: {
+    padding: '7px 12px',
+    background: 'none',
+    border: 'none',
+    color: '#d0d0e0',
+    fontSize: 12,
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+    display: 'flex',
+    alignItems: 'center',
   },
   battleStatsGrid: {
     display: 'grid',

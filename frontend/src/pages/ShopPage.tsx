@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   listHeroes, buyHero, buySummon,
   listItems, buyItem,
@@ -39,6 +39,7 @@ export default function ShopPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [visibleTiers, setVisibleTiers] = useState<Set<TierFilter>>(new Set(ALL_FILTERS));
   const { player, fetchPlayer } = usePlayer();
+  const abilityReqId = useRef(0);
 
   function toggleTier(tier: TierFilter) {
     setVisibleTiers((prev) => {
@@ -54,15 +55,10 @@ export default function ShopPage() {
     setShopSummons(data.summons);
   }, []);
 
-  const refreshItems = useCallback(async () => {
-    const data = await listItems();
-    setItems(data.items);
-    const owned = await getHeroes();
-    setOwnedHeroes(owned);
-  }, []);
-
   const refreshAbilities = useCallback(async (heroId: number) => {
+    const reqId = ++abilityReqId.current;
     const data = await listAbilities(heroId);
+    if (reqId !== abilityReqId.current) return; // stale — newer request in flight, discard
     setHeroAbilities(data.abilities);
     setHeroAbilityName(data.heroName);
   }, []);
@@ -81,10 +77,13 @@ export default function ShopPage() {
   }, [refreshHeroes]);
 
   useEffect(() => {
-    if (tab === 'items' || tab === 'abilities') {
-      refreshItems().catch(() => setError('Failed to load data.'));
+    if (tab === 'items') {
+      listItems().then((d) => setItems(d.items)).catch(() => setError('Failed to load items.'));
     }
-  }, [tab, refreshItems]);
+    if (tab === 'abilities' || tab === 'items') {
+      getHeroes().then(setOwnedHeroes).catch(() => {});
+    }
+  }, [tab]);
 
   useEffect(() => {
     if (tab === 'abilities' && selectedHeroId) {
@@ -117,19 +116,10 @@ export default function ShopPage() {
   }
 
   async function handleBuyItem(templateId: number) {
-    if (!buyItemHeroId || !buyItemSlot) {
-      setError('Select a hero and slot first.');
-      return;
-    }
     setError(''); setSuccessMsg('');
     try {
-      const result = await buyItem({
-        itemTemplateId: templateId,
-        heroId: buyItemHeroId,
-        slotNumber: buyItemSlot,
-      });
+      const result = await buyItem({ itemTemplateId: templateId });
       setSuccessMsg(result.message);
-      await refreshItems();
       await fetchPlayer();
     } catch (err) {
       setError((err as AxiosError<ErrorResponse>).response?.data?.message || 'Purchase failed.');
@@ -148,10 +138,6 @@ export default function ShopPage() {
       setError((err as AxiosError<ErrorResponse>).response?.data?.message || 'Purchase failed.');
     }
   }
-
-  // Item buy flow state
-  const [buyItemHeroId, setBuyItemHeroId] = useState<number | null>(null);
-  const [buyItemSlot, setBuyItemSlot] = useState<number | null>(null);
 
   if (loading) return <div style={{ color: '#a0a0b0' }}>Loading shop...</div>;
 
@@ -268,31 +254,9 @@ export default function ShopPage() {
 
       {tab === 'items' && (
         <>
-          <h3 style={styles.subtitle}>Equip To</h3>
-          <div style={styles.equipTarget}>
-            <select
-              value={buyItemHeroId ?? ''}
-              onChange={(e) => setBuyItemHeroId(e.target.value ? Number(e.target.value) : null)}
-              style={styles.select}
-            >
-              <option value="">Select hero...</option>
-              {ownedHeroes.map((h) => (
-                <option key={h.id} value={h.id}>{h.name} (Lv.{h.level})</option>
-              ))}
-            </select>
-            <select
-              value={buyItemSlot ?? ''}
-              onChange={(e) => setBuyItemSlot(e.target.value ? Number(e.target.value) : null)}
-              style={styles.select}
-            >
-              <option value="">Slot...</option>
-              <option value="1">Slot 1</option>
-              <option value="2">Slot 2</option>
-              <option value="3">Slot 3</option>
-            </select>
-          </div>
-
-          <h3 style={styles.subtitle}>Items</h3>
+          <p style={styles.inventoryHint}>
+            Items go to your team inventory — equip them to heroes from the <strong>Team</strong> page.
+          </p>
           <div style={styles.itemGrid}>
             {items.map((item) => (
               <ShopItemCard
@@ -300,7 +264,6 @@ export default function ShopPage() {
                 item={item}
                 playerGold={player?.gold ?? 0}
                 onBuy={() => handleBuyItem(item.templateId)}
-                disabled={!buyItemHeroId || !buyItemSlot}
               />
             ))}
           </div>
@@ -312,13 +275,14 @@ export default function ShopPage() {
           <h3 style={styles.subtitle}>Select Hero</h3>
           <select
             value={selectedHeroId ?? ''}
-            onChange={(e) => setSelectedHeroId(e.target.value ? Number(e.target.value) : null)}
+            onChange={(e) => {
+              setSelectedHeroId(e.target.value ? Number(e.target.value) : null);
+              setHeroAbilities([]);
+              setHeroAbilityName('');
+            }}
             style={styles.select}
           >
             <option value="">Select hero...</option>
-            {ownedHeroes.length === 0 && heroes.length > 0 && (
-              <option disabled>Loading heroes...</option>
-            )}
             {ownedHeroes.map((h) => (
               <option key={h.id} value={h.id}>{h.name} (Lv.{h.level})</option>
             ))}
@@ -327,6 +291,9 @@ export default function ShopPage() {
           {selectedHeroId && heroAbilities.length > 0 && (
             <>
               <h3 style={styles.subtitle}>{heroAbilityName} — Abilities</h3>
+              <p style={styles.inventoryHint}>
+                Abilities go to this hero's inventory — slot them from the <strong>Team</strong> page.
+              </p>
               <div style={styles.abilityList}>
                 {heroAbilities.map((ab) => {
                   const bonusEntries = Object.entries(ab.bonuses).filter(([, v]) => v !== 0);
@@ -464,6 +431,12 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     marginBottom: 12,
   },
+  inventoryHint: {
+    color: '#a0a0b0',
+    fontSize: 12,
+    marginBottom: 16,
+    fontStyle: 'italic',
+  },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
@@ -536,11 +509,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#4ade80',
     fontSize: 11,
     fontWeight: 600,
-  },
-  equipTarget: {
-    display: 'flex',
-    gap: 12,
-    marginBottom: 8,
   },
   select: {
     padding: '6px 12px',

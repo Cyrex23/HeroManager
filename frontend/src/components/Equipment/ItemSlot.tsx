@@ -1,13 +1,13 @@
-import type { EquipmentItemSlot } from '../../types';
+import type { CombinedSlot } from '../../types';
 
 interface Props {
-  slot: EquipmentItemSlot;
+  slot: CombinedSlot;
   onUnequip: (slotNumber: number) => void;
-  onSell: (slotNumber: number) => void;
+  onSell: (equippedItemId: number) => void;
 }
 
 export default function ItemSlot({ slot, onUnequip, onSell }: Props) {
-  if (!slot.name) {
+  if (!slot.type) {
     return (
       <div style={styles.empty}>
         <span style={styles.emptyLabel}>Slot {slot.slotNumber}</span>
@@ -20,10 +20,14 @@ export default function ItemSlot({ slot, onUnequip, onSell }: Props) {
     ? Object.entries(slot.bonuses).filter(([, v]) => v !== 0)
     : [];
 
+  const typeColor = slot.type === 'ability' ? '#a78bfa' : '#60a5fa';
+  const typeLabel = slot.type === 'ability' ? 'Ability' : 'Item';
+
   return (
-    <div style={styles.filled}>
+    <div style={{ ...styles.filled, borderColor: `${typeColor}40` }}>
       <div style={styles.header}>
         <span style={styles.slotLabel}>Slot {slot.slotNumber}</span>
+        <span style={{ ...styles.typeTag, color: typeColor }}>{typeLabel}</span>
         <span style={styles.itemName}>{slot.name}</span>
       </div>
       {bonusEntries.length > 0 && (
@@ -35,9 +39,11 @@ export default function ItemSlot({ slot, onUnequip, onSell }: Props) {
       )}
       <div style={styles.actions}>
         <button onClick={() => onUnequip(slot.slotNumber)} style={styles.unequipBtn}>Unequip</button>
-        <button onClick={() => onSell(slot.slotNumber)} style={styles.sellBtn}>
-          Sell ({slot.sellPrice}g)
-        </button>
+        {slot.type === 'item' && slot.id !== null && slot.sellPrice !== null && (
+          <button onClick={() => onSell(slot.id!)} style={styles.sellBtn}>
+            Sell ({slot.sellPrice}g)
+          </button>
+        )}
       </div>
     </div>
   );
@@ -74,7 +80,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '12px 14px',
     backgroundColor: '#1a1a2e',
     borderRadius: 6,
-    border: '1px solid #16213e',
+    border: '1px solid',
     display: 'flex',
     flexDirection: 'column',
     gap: 6,
@@ -88,6 +94,12 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#a0a0b0',
     fontSize: 11,
   },
+  typeTag: {
+    fontSize: 9,
+    fontWeight: 800,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
   itemName: {
     color: '#e0e0e0',
     fontWeight: 600,
@@ -96,7 +108,7 @@ const styles: Record<string, React.CSSProperties> = {
   bonuses: {
     display: 'flex',
     gap: 8,
-    flexWrap: 'wrap',
+    flexWrap: 'wrap' as const,
   },
   bonus: {
     color: '#4ade80',

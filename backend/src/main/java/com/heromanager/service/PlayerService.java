@@ -20,17 +20,23 @@ public class PlayerService {
     private final SummonRepository summonRepository;
     private final TeamSlotRepository teamSlotRepository;
     private final EnergyService energyService;
+    private final EquippedItemRepository equippedItemRepository;
+    private final EquippedAbilityRepository equippedAbilityRepository;
 
     public PlayerService(PlayerRepository playerRepository,
                          HeroRepository heroRepository,
                          SummonRepository summonRepository,
                          TeamSlotRepository teamSlotRepository,
-                         EnergyService energyService) {
+                         EnergyService energyService,
+                         EquippedItemRepository equippedItemRepository,
+                         EquippedAbilityRepository equippedAbilityRepository) {
         this.playerRepository = playerRepository;
         this.heroRepository = heroRepository;
         this.summonRepository = summonRepository;
         this.teamSlotRepository = teamSlotRepository;
         this.energyService = energyService;
+        this.equippedItemRepository = equippedItemRepository;
+        this.equippedAbilityRepository = equippedAbilityRepository;
     }
 
     public PlayerResponse getPlayerInfo(Long playerId) {
@@ -92,10 +98,9 @@ public class PlayerService {
                     "dexterity", t.getGrowthDex(), "element", t.getGrowthElem(),
                     "mana", t.getGrowthMana(), "stamina", t.getGrowthStam()
             );
-            Map<String, Double> bonusStats = Map.of(
-                    "physicalAttack", 0.0, "magicPower", 0.0, "dexterity", 0.0,
-                    "element", 0.0, "mana", 0.0, "stamina", 0.0
-            );
+            Map<String, Double> bonusStats = buildEquipmentBonuses(hero.getId());
+            Map<String, Double> totalStats = new HashMap<>(stats);
+            bonusStats.forEach((k, v) -> totalStats.merge(k, v, Double::sum));
 
             Integer slotNum = heroSlotMap.get(hero.getId());
 
@@ -110,7 +115,7 @@ public class PlayerService {
                     .capacity(t.getCapacity())
                     .isEquipped(slotNum != null)
                     .teamSlot(slotNum)
-                    .stats(stats)
+                    .stats(totalStats)
                     .baseStats(baseStats)
                     .growthStats(growthStats)
                     .bonusStats(bonusStats)
@@ -162,6 +167,31 @@ public class PlayerService {
                     .build());
         }
         return result;
+    }
+
+    private Map<String, Double> buildEquipmentBonuses(Long heroId) {
+        Map<String, Double> bonuses = new HashMap<>();
+        for (EquippedItem ei : equippedItemRepository.findByHeroIdAndSlotNumberIsNotNull(heroId)) {
+            ItemTemplate t = ei.getItemTemplate();
+            if (t == null) continue;
+            bonuses.merge("physicalAttack", t.getBonusPa(), Double::sum);
+            bonuses.merge("magicPower", t.getBonusMp(), Double::sum);
+            bonuses.merge("dexterity", t.getBonusDex(), Double::sum);
+            bonuses.merge("element", t.getBonusElem(), Double::sum);
+            bonuses.merge("mana", t.getBonusMana(), Double::sum);
+            bonuses.merge("stamina", t.getBonusStam(), Double::sum);
+        }
+        for (EquippedAbility ea : equippedAbilityRepository.findByHeroIdAndSlotNumberIsNotNull(heroId)) {
+            AbilityTemplate at = ea.getAbilityTemplate();
+            if (at == null) continue;
+            bonuses.merge("physicalAttack", at.getBonusPa(), Double::sum);
+            bonuses.merge("magicPower", at.getBonusMp(), Double::sum);
+            bonuses.merge("dexterity", at.getBonusDex(), Double::sum);
+            bonuses.merge("element", at.getBonusElem(), Double::sum);
+            bonuses.merge("mana", at.getBonusMana(), Double::sum);
+            bonuses.merge("stamina", at.getBonusStam(), Double::sum);
+        }
+        return bonuses;
     }
 
     public static Map<String, Double> buildHeroStats(HeroTemplate t, int level) {

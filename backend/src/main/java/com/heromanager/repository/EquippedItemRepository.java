@@ -11,7 +11,11 @@ public interface EquippedItemRepository extends JpaRepository<EquippedItem, Long
 
     List<EquippedItem> findByHeroId(Long heroId);
 
-    Optional<EquippedItem> findByHeroIdAndSlotNumber(Long heroId, int slotNumber);
+    List<EquippedItem> findByHeroIdAndSlotNumberIsNotNull(Long heroId);
+
+    List<EquippedItem> findByPlayerIdAndHeroIdIsNull(Long playerId);
+
+    Optional<EquippedItem> findByHeroIdAndSlotNumber(Long heroId, Integer slotNumber);
 
     Optional<EquippedItem> findByHeroIdAndItemTemplateId(Long heroId, Long itemTemplateId);
 

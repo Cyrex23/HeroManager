@@ -58,11 +58,9 @@ public class ShopController {
     public ResponseEntity<?> buyItem(Authentication auth, @RequestBody Map<String, Object> body) {
         Long playerId = (Long) auth.getPrincipal();
         Long itemTemplateId = ((Number) body.get("itemTemplateId")).longValue();
-        Long heroId = ((Number) body.get("heroId")).longValue();
-        int slotNumber = ((Number) body.get("slotNumber")).intValue();
 
         try {
-            return ResponseEntity.ok(shopService.buyItem(playerId, itemTemplateId, heroId, slotNumber));
+            return ResponseEntity.ok(shopService.buyItem(playerId, itemTemplateId));
         } catch (ShopService.ShopException e) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", e.getErrorCode(), "message", e.getMessage()));

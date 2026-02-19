@@ -43,6 +43,7 @@ public class TeamResponse {
         private int xpToNextLevel;
         private String tier;
         private String element;
+        private List<Map<String, Object>> equippedSlots;
     }
 
     @Getter

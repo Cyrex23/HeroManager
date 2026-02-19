@@ -1,8 +1,8 @@
-import type { EquipmentAbility } from '../../types';
+import type { HeroAbilityEntry } from '../../types';
 
 interface Props {
-  ability: EquipmentAbility;
-  onUnequip: (abilityTemplateId: number) => void;
+  ability: HeroAbilityEntry;
+  onUnequip: (slotNumber: number) => void;
 }
 
 export default function AbilitySlot({ ability, onUnequip }: Props) {
@@ -13,6 +13,9 @@ export default function AbilitySlot({ ability, onUnequip }: Props) {
       <div style={styles.header}>
         <span style={styles.name}>{ability.name}</span>
         <span style={styles.tier}>Tier {ability.tier}</span>
+        {ability.slotNumber !== null && (
+          <span style={styles.slotTag}>Slot {ability.slotNumber}</span>
+        )}
       </div>
       {bonusEntries.length > 0 && (
         <div style={styles.bonuses}>
@@ -21,9 +24,11 @@ export default function AbilitySlot({ ability, onUnequip }: Props) {
           ))}
         </div>
       )}
-      <button onClick={() => onUnequip(ability.abilityTemplateId)} style={styles.unequipBtn}>
-        Unequip
-      </button>
+      {ability.slotNumber !== null && (
+        <button onClick={() => onUnequip(ability.slotNumber!)} style={styles.unequipBtn}>
+          Unslot
+        </button>
+      )}
     </div>
   );
 }
@@ -50,11 +55,13 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
   },
   name: {
     color: '#e0e0e0',
     fontWeight: 600,
     fontSize: 13,
+    flex: 1,
   },
   tier: {
     color: '#60a5fa',
@@ -63,10 +70,17 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(96, 165, 250, 0.1)',
     borderRadius: 8,
   },
+  slotTag: {
+    color: '#a78bfa',
+    fontSize: 10,
+    padding: '1px 5px',
+    backgroundColor: 'rgba(167,139,250,0.1)',
+    borderRadius: 8,
+  },
   bonuses: {
     display: 'flex',
     gap: 8,
-    flexWrap: 'wrap',
+    flexWrap: 'wrap' as const,
   },
   bonus: {
     color: '#4ade80',

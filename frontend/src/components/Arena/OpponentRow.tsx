@@ -119,15 +119,36 @@ export default function OpponentRow({ opponent, onChallenge, disabled, isSelf }:
                       return (
                         <div key={slot.slotNumber} style={styles.heroSlot}>
                           <div style={styles.slotLabel}>{SLOT_LABEL[slot.slotNumber]}</div>
-                          <div style={styles.portraitWrap}>
-                            <HeroPortrait imagePath={h.imagePath} name={h.name} size={PORTRAIT} tier={h.tier} />
-                            <div style={styles.lvlBadge}>{h.level}</div>
-                            {elemSymbol && (
-                              <div style={{ ...styles.elemBadge, color: elemColor ?? '#fff' }}>{elemSymbol}</div>
-                            )}
-                            {h.xpToNextLevel > 0 && (
-                              <div style={styles.xpBarOnPortrait}>
-                                <div style={{ ...styles.xpBarFill, width: `${Math.min((h.currentXp / h.xpToNextLevel) * 100, 100)}%` }} />
+                          <div style={styles.heroContent}>
+                            <div style={styles.portraitWrap}>
+                              <HeroPortrait imagePath={h.imagePath} name={h.name} size={PORTRAIT} tier={h.tier} />
+                              <div style={styles.lvlBadge}>{h.level}</div>
+                              {elemSymbol && (
+                                <div style={{ ...styles.elemBadge, color: elemColor ?? '#fff' }}>{elemSymbol}</div>
+                              )}
+                              {h.xpToNextLevel > 0 && (
+                                <div style={styles.xpBarOnPortrait}>
+                                  <div style={{ ...styles.xpBarFill, width: `${Math.min((h.currentXp / h.xpToNextLevel) * 100, 100)}%` }} />
+                                </div>
+                              )}
+                            </div>
+                            {/* Equipped gear column — beside portrait */}
+                            {h.equippedSlots && h.equippedSlots.filter((gs) => gs.type).length > 0 && (
+                              <div style={styles.gearColumn}>
+                                {h.equippedSlots.filter((gs) => gs.type).map((gs) => (
+                                  <div
+                                    key={gs.slotNumber}
+                                    style={styles.gearBadge}
+                                    title={gs.name ?? ''}
+                                  >
+                                    <span style={{ color: gs.type === 'ability' ? '#a78bfa' : '#60a5fa', fontWeight: 700, marginRight: 2 }}>
+                                      {gs.type === 'ability' ? 'A' : 'I'}
+                                    </span>
+                                    <span style={{ color: '#d0d0e0' }}>
+                                      {gs.name && gs.name.length > 8 ? gs.name.slice(0, 8) + '…' : (gs.name ?? '—')}
+                                    </span>
+                                  </div>
+                                ))}
                               </div>
                             )}
                           </div>
@@ -343,6 +364,27 @@ const styles: Record<string, React.CSSProperties> = {
     left: 0,
     fontSize: 10,
     lineHeight: 1,
+  },
+  heroContent: {
+    display: 'flex',
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start',
+    gap: 4,
+  },
+  gearColumn: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 3,
+    alignSelf: 'center' as const,
+    maxWidth: 68,
+  },
+  gearBadge: {
+    fontSize: 9,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+    display: 'flex',
+    alignItems: 'center',
   },
   emptyPortrait: {
     width: PORTRAIT,

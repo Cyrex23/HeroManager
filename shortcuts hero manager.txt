@@ -1,0 +1,47 @@
+piratemanagerofficial@gmail.com
+
+Backend 
+ 
+
+cd backend 
+
+mvn compile 
+
+Remove-Item .\data\heromanager* -Force [needed for now to reset database] 
+
+mvn spring-boot:run "-Dspring-boot.run.profiles=dev" 
+ 
+
+http://localhost:8080/ 
+
+ 
+
+Frontend 
+
+ 
+
+cd frontend 
+npm install 
+
+npm run build 
+
+npm run dev 
+
+http://localhost:3000/ 
+
+ 
+ 
+
+H2 Database 
+
+ 
+
+JDBC URL: jdbc:h2:file:./data/heromanager 
+
+Username: sa 
+
+Password: (empty) 
+
+ 
+
+http://localhost:8080/h2-console 

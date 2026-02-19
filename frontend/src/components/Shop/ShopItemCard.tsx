@@ -31,7 +31,7 @@ export default function ShopItemCard({ item, onBuy, playerGold, disabled }: Prop
           cursor: disabled || !canAfford ? 'not-allowed' : 'pointer',
         }}
       >
-        {!canAfford ? 'Not enough gold' : 'Buy & Equip'}
+        {!canAfford ? 'Not enough gold' : 'Buy'}
       </button>
     </div>
   );

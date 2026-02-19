@@ -3,12 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { getTeam, equipHero, unequipHero, equipSummon, unequipSummon } from '../api/teamApi';
 import { getHeroes, getSummons } from '../api/playerApi';
 import { usePlayer } from '../context/PlayerContext';
-import type { TeamResponse, HeroResponse, SummonResponse, ErrorResponse } from '../types';
+import {
+  getHeroEquipment,
+  equipItemToSlot,
+  unequipItemFromSlot,
+  equipAbilityToSlot,
+  unequipAbilityFromSlot,
+  sellInventoryItem,
+} from '../api/equipmentApi';
+import type {
+  TeamResponse, HeroResponse, SummonResponse, ErrorResponse,
+  HeroEquipmentResponse, CombinedSlot, InventoryItem, HeroAbilityEntry,
+} from '../types';
 import TeamSlotComponent from '../components/Team/TeamSlot';
 import CapacityBar from '../components/Team/CapacityBar';
 import HeroCard from '../components/Hero/HeroCard';
 import HeroPortrait from '../components/Hero/HeroPortrait';
 import { AxiosError } from 'axios';
+
+interface PickerOption {
+  id: number;
+  label: string;
+  type: 'item' | 'ability';
+  sellPrice?: number;
+}
 
 export default function TeamPage() {
   const [team, setTeam] = useState<TeamResponse | null>(null);
@@ -16,6 +34,8 @@ export default function TeamPage() {
   const [summons, setSummons] = useState<SummonResponse[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [heroEquipment, setHeroEquipment] = useState<Record<number, HeroEquipmentResponse>>({});
+  const [activePicker, setActivePicker] = useState<{ heroId: number; slotNumber: number } | null>(null);
   const { fetchPlayer } = usePlayer();
   const navigate = useNavigate();
 
@@ -30,6 +50,12 @@ export default function TeamPage() {
       setHeroes(heroData);
       setSummons(summonData);
       setError('');
+
+      // Load equipment for ALL heroes (team + bench)
+      const eqEntries = await Promise.all(
+        heroData.map((h) => getHeroEquipment(h.id).then((eq) => [h.id, eq] as const))
+      );
+      setHeroEquipment(Object.fromEntries(eqEntries));
     } catch (err) {
       console.error('Failed to load team data:', err);
       setError('Failed to load team data.');
@@ -41,6 +67,13 @@ export default function TeamPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  async function refreshEquipment(heroId: number) {
+    try {
+      const eq = await getHeroEquipment(heroId);
+      setHeroEquipment((prev) => ({ ...prev, [heroId]: eq }));
+    } catch { /* non-fatal */ }
+  }
 
   async function handleEquipHero(heroId: number, slotNumber: number) {
     try {
@@ -86,19 +119,75 @@ export default function TeamPage() {
     }
   }
 
+  async function handleEquipToSlot(heroId: number, slotNumber: number, option: PickerOption) {
+    setActivePicker(null);
+    setError('');
+    try {
+      if (option.type === 'item') {
+        await equipItemToSlot(option.id, heroId, slotNumber);
+      } else {
+        await equipAbilityToSlot(option.id, slotNumber);
+      }
+      await refreshEquipment(heroId);
+      await fetchPlayer();
+    } catch (err) {
+      const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
+      setError(msg || 'Failed to equip.');
+    }
+  }
+
+  async function handleUnequipSlot(heroId: number, slot: CombinedSlot) {
+    setError('');
+    try {
+      if (slot.type === 'item') {
+        await unequipItemFromSlot(heroId, slot.slotNumber);
+      } else if (slot.type === 'ability') {
+        await unequipAbilityFromSlot(heroId, slot.slotNumber);
+      }
+      await refreshEquipment(heroId);
+      await fetchPlayer();
+    } catch (err) {
+      const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
+      setError(msg || 'Failed to unequip.');
+    }
+  }
+
+  async function handleSellItem(heroId: number, equippedItemId: number) {
+    setError('');
+    try {
+      await sellInventoryItem(equippedItemId);
+      await refreshEquipment(heroId);
+      await fetchPlayer();
+    } catch (err) {
+      const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
+      setError(msg || 'Failed to sell item.');
+    }
+  }
+
+  function buildPickerOptions(eq: HeroEquipmentResponse): PickerOption[] {
+    const options: PickerOption[] = [];
+    for (const item of eq.inventoryItems) {
+      options.push({ id: item.equippedItemId, label: item.name, type: 'item', sellPrice: item.sellPrice });
+    }
+    for (const ab of eq.heroAbilities) {
+      if (ab.slotNumber === null) {
+        options.push({ id: ab.equippedAbilityId, label: `${ab.name} (T${ab.tier})`, type: 'ability' });
+      }
+    }
+    return options;
+  }
+
   if (loading) return <div style={{ color: '#a0a0b0' }}>Loading team...</div>;
 
-  // Bench heroes (not equipped)
   const benchHeroes = heroes.filter((h) => !h.isEquipped);
   const benchSummons = summons.filter((s) => !s.isEquipped);
-
-  // Find first empty slot
   const firstEmptySlot = team?.slots
     .filter((s) => s.type === 'hero' && s.hero === null)
     .map((s) => s.slotNumber)[0];
 
+
   return (
-    <div>
+    <div onClick={() => setActivePicker(null)}>
       <h2 style={styles.title}>Team Lineup</h2>
 
       {error && <div style={styles.error}>{error}</div>}
@@ -126,6 +215,140 @@ export default function TeamPage() {
               />
             ))}
           </div>
+
+          {/* Equipment management section */}
+          {heroes.length > 0 && (
+            <>
+              <h3 style={styles.subtitle}>Equipment</h3>
+              <p style={styles.equipHint}>Each hero has 3 slots for items and abilities.</p>
+              <div style={styles.equipSection}>
+                {heroes.map((hero) => {
+                  const eq = heroEquipment[hero.id];
+                  if (!eq) return null;
+                  const pickerOptions = buildPickerOptions(eq);
+
+                  return (
+                    <div key={hero.id} style={styles.heroEquipRow} onClick={(e) => e.stopPropagation()}>
+                      {/* Hero identity */}
+                      <div style={styles.heroEquipHeader}>
+                        <HeroPortrait imagePath={hero.imagePath} name={hero.name} size={44} />
+                        <div>
+                          <div style={styles.heroEquipName}>
+                            {hero.name}
+                            {!hero.isEquipped && <span style={{ color: '#a0a0b0', fontSize: 11, marginLeft: 6 }}>(Bench)</span>}
+                          </div>
+                          <div style={styles.heroEquipLv}>Lv.{hero.level}</div>
+                        </div>
+                      </div>
+
+                      {/* 3 combined slots */}
+                      <div style={styles.slotsRow}>
+                        {eq.slots.map((slot) => {
+                          const isPickerOpen = activePicker?.heroId === hero.id && activePicker?.slotNumber === slot.slotNumber;
+
+                          return (
+                            <div key={slot.slotNumber} style={styles.slotWrap}>
+                              {slot.type ? (
+                                /* Occupied slot */
+                                <div style={{
+                                  ...styles.slotFilled,
+                                  borderColor: slot.type === 'ability' ? '#a78bfa' : '#60a5fa',
+                                }}>
+                                  <span style={{
+                                    ...styles.slotTypeTag,
+                                    color: slot.type === 'ability' ? '#a78bfa' : '#60a5fa',
+                                  }}>
+                                    {slot.type === 'ability' ? 'A' : 'I'}
+                                  </span>
+                                  <span style={styles.slotItemName} title={slot.name ?? ''}>
+                                    {slot.name}
+                                  </span>
+                                  <button
+                                    onClick={() => handleUnequipSlot(hero.id, slot)}
+                                    style={styles.unequipBtn}
+                                    title="Unequip (back to inventory)"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                /* Empty slot */
+                                <div style={{ position: 'relative' }}>
+                                  <button
+                                    style={styles.emptySlot}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActivePicker(isPickerOpen ? null : { heroId: hero.id, slotNumber: slot.slotNumber });
+                                    }}
+                                    disabled={pickerOptions.length === 0}
+                                    title={pickerOptions.length === 0 ? 'No items or abilities in inventory' : 'Equip item or ability'}
+                                  >
+                                    {pickerOptions.length === 0 ? '—' : '+'}
+                                  </button>
+
+                                  {isPickerOpen && (
+                                    <div style={styles.pickerDropdown} onClick={(e) => e.stopPropagation()}>
+                                      {pickerOptions.map((opt) => (
+                                        <button
+                                          key={`${opt.type}-${opt.id}`}
+                                          style={styles.pickerOption}
+                                          onClick={() => handleEquipToSlot(hero.id, slot.slotNumber, opt)}
+                                        >
+                                          <span style={{
+                                            ...styles.pickerTypeTag,
+                                            color: opt.type === 'ability' ? '#a78bfa' : '#60a5fa',
+                                          }}>
+                                            {opt.type === 'ability' ? 'A' : 'I'}
+                                          </span>
+                                          {opt.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              <div style={styles.slotLabel}>Slot {slot.slotNumber}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Inventory items (with sell button) */}
+                      {eq.inventoryItems.length > 0 && (
+                        <div style={styles.inventoryRow}>
+                          <span style={styles.inventoryLabel}>Inventory:</span>
+                          {eq.inventoryItems.map((item: InventoryItem) => (
+                            <div key={item.equippedItemId} style={styles.inventoryItem}>
+                              <span style={styles.inventoryItemName}>{item.name}</span>
+                              <button
+                                onClick={() => handleSellItem(hero.id, item.equippedItemId)}
+                                style={styles.sellBtn}
+                                title={`Sell for ${item.sellPrice}g`}
+                              >
+                                Sell {item.sellPrice}g
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Unslotted abilities */}
+                      {eq.heroAbilities.some((a: HeroAbilityEntry) => a.slotNumber === null) && (
+                        <div style={styles.inventoryRow}>
+                          <span style={styles.inventoryLabel}>Abilities (unslotted):</span>
+                          {eq.heroAbilities.filter((a: HeroAbilityEntry) => a.slotNumber === null).map((ab: HeroAbilityEntry) => (
+                            <span key={ab.equippedAbilityId} style={styles.unslottedAbility}>
+                              {ab.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </>
       )}
 
@@ -229,6 +452,177 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
     gap: 12,
+  },
+  equipHint: {
+    color: '#a0a0b0',
+    fontSize: 12,
+    marginBottom: 12,
+    marginTop: -4,
+    fontStyle: 'italic',
+  },
+  equipSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  heroEquipRow: {
+    backgroundColor: '#1a1a2e',
+    border: '1px solid #16213e',
+    borderRadius: 8,
+    padding: '12px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+  },
+  heroEquipHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  heroEquipName: {
+    color: '#e0e0e0',
+    fontWeight: 700,
+    fontSize: 14,
+  },
+  heroEquipLv: {
+    color: '#a0a0b0',
+    fontSize: 12,
+  },
+  slotsRow: {
+    display: 'flex',
+    gap: 10,
+    flexWrap: 'wrap' as const,
+  },
+  slotWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 3,
+  },
+  slotLabel: {
+    color: '#555',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+  },
+  slotFilled: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    padding: '4px 8px',
+    backgroundColor: '#12122a',
+    border: '1px solid',
+    borderRadius: 4,
+    minWidth: 120,
+    maxWidth: 160,
+  },
+  slotTypeTag: {
+    fontSize: 9,
+    fontWeight: 800,
+    flexShrink: 0,
+  },
+  slotItemName: {
+    color: '#e0e0e0',
+    fontSize: 11,
+    fontWeight: 500,
+    flex: 1,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+  },
+  unequipBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#666',
+    fontSize: 10,
+    cursor: 'pointer',
+    padding: '0 2px',
+    flexShrink: 0,
+    lineHeight: 1,
+  },
+  emptySlot: {
+    width: 120,
+    height: 28,
+    backgroundColor: '#12122a',
+    border: '1px dashed #333',
+    borderRadius: 4,
+    color: '#444',
+    fontSize: 16,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerDropdown: {
+    position: 'absolute' as const,
+    top: 32,
+    left: 0,
+    zIndex: 100,
+    backgroundColor: '#12122a',
+    border: '1px solid #2a2a4a',
+    borderRadius: 6,
+    padding: '4px 0',
+    minWidth: 180,
+    boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+  },
+  pickerOption: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    width: '100%',
+    padding: '6px 12px',
+    background: 'none',
+    border: 'none',
+    color: '#e0e0e0',
+    fontSize: 12,
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+  },
+  pickerTypeTag: {
+    fontSize: 9,
+    fontWeight: 800,
+    flexShrink: 0,
+  },
+  inventoryRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap' as const,
+    paddingTop: 6,
+    borderTop: '1px solid #16213e',
+  },
+  inventoryLabel: {
+    color: '#555',
+    fontSize: 11,
+    flexShrink: 0,
+  },
+  inventoryItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#0d0d20',
+    borderRadius: 3,
+    padding: '2px 6px',
+  },
+  inventoryItemName: {
+    color: '#a0a0b0',
+    fontSize: 11,
+  },
+  sellBtn: {
+    background: 'none',
+    border: '1px solid #333',
+    color: '#fbbf24',
+    fontSize: 10,
+    borderRadius: 3,
+    padding: '1px 5px',
+    cursor: 'pointer',
+  },
+  unslottedAbility: {
+    color: '#a78bfa',
+    fontSize: 11,
+    backgroundColor: 'rgba(167,139,250,0.08)',
+    borderRadius: 3,
+    padding: '2px 6px',
   },
   benchGrid: {
     display: 'grid',

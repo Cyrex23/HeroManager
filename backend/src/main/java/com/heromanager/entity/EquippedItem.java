@@ -6,10 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "equipped_item", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"heroId", "slotNumber"}),
-    @UniqueConstraint(columnNames = {"heroId", "itemTemplateId"})
-})
+@Table(name = "equipped_item")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,14 +16,17 @@ public class EquippedItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column
+    private Long playerId;
+
+    @Column
     private Long heroId;
 
     @Column(nullable = false)
     private Long itemTemplateId;
 
-    @Column(nullable = false)
-    private int slotNumber;
+    @Column
+    private Integer slotNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "itemTemplateId", insertable = false, updatable = false)

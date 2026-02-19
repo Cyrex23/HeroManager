@@ -25,6 +25,7 @@ export default function BattlePage() {
   );
   const [result] = useState<string | null>(passedResult?.result ?? null);
   const [goldEarned] = useState<number | null>(passedResult?.goldEarned ?? null);
+  const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(!passedResult);
   const [fetchError, setFetchError] = useState(false);
 
@@ -49,6 +50,18 @@ export default function BattlePage() {
 
       {/* ── Battle Animator ── */}
       <BattleAnimator battleLog={battleLog} result={result} goldEarned={goldEarned} />
+
+      {/* ── Toggle for detailed stats ── */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+        <button
+          onClick={() => setShowDetails(v => !v)}
+          style={styles.detailsToggle}
+        >
+          {showDetails ? '▲ Hide Battle Details' : '▼ Show Battle Details'}
+        </button>
+      </div>
+
+      {showDetails && <>
 
       {result && (
         <div style={{
@@ -308,6 +321,8 @@ export default function BattlePage() {
           );
         })}
       </div>
+
+      </>}
     </div>
   );
 }
@@ -489,5 +504,17 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#a0a0b0',
     fontSize: 12,
     fontVariantNumeric: 'tabular-nums' as const,
+  },
+  detailsToggle: {
+    background: '#1a1a2e',
+    border: '1px solid #2a2a4a',
+    color: '#a0a0b0',
+    borderRadius: 8,
+    padding: '8px 24px',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    letterSpacing: 0.5,
+    transition: 'background 0.15s, color 0.15s',
   },
 };

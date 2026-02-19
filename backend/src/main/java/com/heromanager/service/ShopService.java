@@ -189,53 +189,32 @@ public class ShopService {
     }
 
     @Transactional
-    public Map<String, Object> buyItem(Long playerId, Long itemTemplateId, Long heroId, int slotNumber) {
+    public Map<String, Object> buyItem(Long playerId, Long itemTemplateId) {
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new ShopException("PLAYER_NOT_FOUND", "Player not found."));
         ItemTemplate template = itemTemplateRepository.findById(itemTemplateId)
                 .orElseThrow(() -> new ShopException("ITEM_NOT_FOUND", "Item not found."));
-        Hero hero = heroRepository.findById(heroId)
-                .orElseThrow(() -> new ShopException("HERO_NOT_FOUND", "Hero not found."));
-        if (!hero.getPlayerId().equals(playerId)) {
-            throw new ShopException("HERO_NOT_FOUND", "Hero not found.");
-        }
 
         if (player.getGold() < template.getCost()) {
             throw new ShopException("INSUFFICIENT_GOLD",
                     "You need " + template.getCost() + " gold but only have " + player.getGold() + ".");
-        }
-        if (slotNumber < 1 || slotNumber > 3) {
-            throw new ShopException("INVALID_SLOT", "Item slot must be 1-3.");
-        }
-        if (equippedItemRepository.findByHeroIdAndSlotNumber(heroId, slotNumber).isPresent()) {
-            throw new ShopException("SLOT_OCCUPIED",
-                    "Slot " + slotNumber + " already has an item. Unequip it first.");
-        }
-        if (equippedItemRepository.findByHeroIdAndItemTemplateId(heroId, itemTemplateId).isPresent()) {
-            throw new ShopException("DUPLICATE_ITEM",
-                    hero.getTemplate().getDisplayName() + " already has " + template.getName() + " equipped.");
-        }
-        long teamCount = equippedItemRepository.countByPlayerAndItemTemplate(playerId, itemTemplateId);
-        if (teamCount >= 3) {
-            throw new ShopException("TEAM_ITEM_LIMIT",
-                    "Your team already has 3 " + template.getName() + " equipped (maximum).");
         }
 
         player.setGold(player.getGold() - template.getCost());
         playerRepository.save(player);
 
         EquippedItem ei = new EquippedItem();
-        ei.setHeroId(heroId);
+        ei.setPlayerId(playerId);
         ei.setItemTemplateId(itemTemplateId);
-        ei.setSlotNumber(slotNumber);
         equippedItemRepository.save(ei);
 
         return Map.of(
-                "message", template.getName() + " equipped to " + hero.getTemplate().getDisplayName() + ".",
+                "message", template.getName() + " added to team inventory!",
                 "goldRemaining", player.getGold()
         );
     }
 
+    @Transactional(readOnly = true)
     public Map<String, Object> listAbilities(Long playerId, Long heroId) {
         Hero hero = heroRepository.findById(heroId)
                 .orElseThrow(() -> new ShopException("HERO_NOT_FOUND", "Hero not found."));
@@ -306,12 +285,13 @@ public class ShopService {
         playerRepository.save(player);
 
         EquippedAbility ea = new EquippedAbility();
+        ea.setPlayerId(playerId);
         ea.setHeroId(heroId);
         ea.setAbilityTemplateId(abilityTemplateId);
         equippedAbilityRepository.save(ea);
 
         return Map.of(
-                "message", template.getName() + " learned by " + hero.getTemplate().getDisplayName() + ".",
+                "message", template.getName() + " added to " + hero.getTemplate().getDisplayName() + "'s abilities!",
                 "goldRemaining", player.getGold()
         );
     }

@@ -161,6 +161,7 @@ export interface TeamSlotHero {
   xpToNextLevel: number;
   tier: 'COMMONER' | 'ELITE' | 'LEGENDARY' | null;
   element: string | null;
+  equippedSlots?: Array<{ slotNumber: number; type: 'item' | 'ability' | null; name: string | null }>;
 }
 
 export interface TeamSlotSummon {
@@ -277,8 +278,6 @@ export interface ShopItemListResponse {
 
 export interface BuyItemRequest {
   itemTemplateId: number;
-  heroId: number;
-  slotNumber: number;
 }
 
 export interface BuyItemResponse {
@@ -424,55 +423,49 @@ export interface BattleLogListResponse {
 // Equipment Types
 // ============================================================
 
-export interface EquipmentItemSlot {
-  slotNumber: number;
-  equippedItemId: number | null;
-  itemTemplateId: number | null;
-  name: string | null;
-  bonuses: Partial<HeroStats> | null;
-  sellPrice: number | null;
+export interface InventoryItem {
+  equippedItemId: number;
+  itemTemplateId: number;
+  name: string;
+  bonuses: Partial<HeroStats>;
+  sellPrice: number;
 }
 
-export interface EquipmentAbility {
+export interface HeroAbilityEntry {
   equippedAbilityId: number;
   abilityTemplateId: number;
   name: string;
   tier: number;
   bonuses: Partial<HeroStats>;
+  slotNumber: number | null;
+}
+
+export interface CombinedSlot {
+  slotNumber: number;
+  type: 'item' | 'ability' | null;
+  id: number | null;
+  templateId: number | null;
+  name: string | null;
+  bonuses: Partial<HeroStats> | null;
+  sellPrice: number | null;
 }
 
 export interface HeroEquipmentResponse {
   heroId: number;
   heroName: string;
-  items: EquipmentItemSlot[];
-  abilities: EquipmentAbility[];
+  slots: CombinedSlot[];
+  inventoryItems: InventoryItem[];
+  heroAbilities: HeroAbilityEntry[];
 }
 
-export interface EquipItemRequest {
-  heroId: number;
-  itemTemplateId: number;
-  slotNumber: number;
-}
-
-export interface UnequipItemRequest {
-  heroId: number;
-  slotNumber: number;
-}
-
-export interface SellItemRequest {
-  heroId: number;
-  slotNumber: number;
+export interface PlayerInventoryResponse {
+  items: InventoryItem[];
 }
 
 export interface SellItemResponse {
   message: string;
   goldEarned: number;
   goldTotal: number;
-}
-
-export interface UnequipAbilityRequest {
-  heroId: number;
-  abilityTemplateId: number;
 }
 
 // ============================================================

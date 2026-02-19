@@ -37,7 +37,12 @@
       "Bash(cmd /c:*)",
       "Bash(powershell -File:*)",
       "Bash(powershell -NoProfile -Command \"cd ''d:\\\\HeroManager\\\\backend''; $proc = Start-Process -FilePath ''C:\\\\ProgramData\\\\chocolatey\\\\lib\\\\maven\\\\apache-maven-3.9.11\\\\bin\\\\mvn.cmd'' -ArgumentList ''spring-boot:run'',''-Dspring-boot.run.profiles=dev'' -WorkingDirectory ''d:\\\\HeroManager\\\\backend'' -RedirectStandardOutput ''C:\\\\Temp\\\\boot_out.txt'' -RedirectStandardError ''C:\\\\Temp\\\\boot_err.txt'' -NoNewWindow -PassThru; Start-Sleep 40; Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue; Get-Content ''C:\\\\Temp\\\\boot_out.txt'' | Select-Object -First 200; ''===STDERR===''; Get-Content ''C:\\\\Temp\\\\boot_err.txt'' | Select-Object -First 50\")",
-      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Temp\\\\run_boot.ps1\")"
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Temp\\\\run_boot.ps1\")",
+      "Bash(convert:*)",
+      "Bash(magick:*)",
+      "Bash(magick.exe:*)",
+      "Bash(python3:*)",
+      "Bash(python -c:*)"
     ]
   }
 }

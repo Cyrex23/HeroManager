@@ -1,11 +1,10 @@
 package com.heromanager.service;
 
 import com.heromanager.entity.*;
-import com.heromanager.repository.HeroRepository;
-import com.heromanager.repository.SummonRepository;
-import com.heromanager.repository.TeamSlotRepository;
+import com.heromanager.repository.*;
 import com.heromanager.util.BattleCalculator;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -15,13 +14,19 @@ public class BattleService {
     private final TeamSlotRepository teamSlotRepository;
     private final HeroRepository heroRepository;
     private final SummonRepository summonRepository;
+    private final EquippedItemRepository equippedItemRepository;
+    private final EquippedAbilityRepository equippedAbilityRepository;
 
     public BattleService(TeamSlotRepository teamSlotRepository,
                          HeroRepository heroRepository,
-                         SummonRepository summonRepository) {
+                         SummonRepository summonRepository,
+                         EquippedItemRepository equippedItemRepository,
+                         EquippedAbilityRepository equippedAbilityRepository) {
         this.teamSlotRepository = teamSlotRepository;
         this.heroRepository = heroRepository;
         this.summonRepository = summonRepository;
+        this.equippedItemRepository = equippedItemRepository;
+        this.equippedAbilityRepository = equippedAbilityRepository;
     }
 
     public record HeroSlot(Hero hero, int slotNumber) {}
@@ -52,6 +57,7 @@ public class BattleService {
         return new TeamData(heroSlots, summon, summonMpBonus, username);
     }
 
+    @Transactional(readOnly = true)
     public Map<String, Object> simulateBattle(TeamData challengerTeam, TeamData defenderTeam) {
         List<Map<String, Object>> rounds = new ArrayList<>();
         Map<String, Integer> challengerXp = new HashMap<>();
@@ -211,6 +217,27 @@ public class BattleService {
 
     private Map<String, Double> buildBattleStats(Hero hero, int slotNumber, double summonMpBonus) {
         Map<String, Double> stats = new HashMap<>(PlayerService.buildHeroStats(hero.getTemplate(), hero.getLevel()));
+        // Equipment bonuses
+        for (EquippedItem ei : equippedItemRepository.findByHeroIdAndSlotNumberIsNotNull(hero.getId())) {
+            ItemTemplate t = ei.getItemTemplate();
+            if (t == null) continue;
+            stats.merge("physicalAttack", t.getBonusPa(), Double::sum);
+            stats.merge("magicPower", t.getBonusMp(), Double::sum);
+            stats.merge("dexterity", t.getBonusDex(), Double::sum);
+            stats.merge("element", t.getBonusElem(), Double::sum);
+            stats.merge("mana", t.getBonusMana(), Double::sum);
+            stats.merge("stamina", t.getBonusStam(), Double::sum);
+        }
+        for (EquippedAbility ea : equippedAbilityRepository.findByHeroIdAndSlotNumberIsNotNull(hero.getId())) {
+            AbilityTemplate at = ea.getAbilityTemplate();
+            if (at == null) continue;
+            stats.merge("physicalAttack", at.getBonusPa(), Double::sum);
+            stats.merge("magicPower", at.getBonusMp(), Double::sum);
+            stats.merge("dexterity", at.getBonusDex(), Double::sum);
+            stats.merge("element", at.getBonusElem(), Double::sum);
+            stats.merge("mana", at.getBonusMana(), Double::sum);
+            stats.merge("stamina", at.getBonusStam(), Double::sum);
+        }
         if (summonMpBonus > 0) {
             stats.put("magicPower", stats.get("magicPower") + summonMpBonus);
         }

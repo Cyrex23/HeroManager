@@ -13,24 +13,19 @@ public class EquipmentService {
     private final EquippedItemRepository equippedItemRepository;
     private final EquippedAbilityRepository equippedAbilityRepository;
     private final HeroRepository heroRepository;
-    private final ItemTemplateRepository itemTemplateRepository;
-    private final AbilityTemplateRepository abilityTemplateRepository;
     private final PlayerRepository playerRepository;
 
     public EquipmentService(EquippedItemRepository equippedItemRepository,
                             EquippedAbilityRepository equippedAbilityRepository,
                             HeroRepository heroRepository,
-                            ItemTemplateRepository itemTemplateRepository,
-                            AbilityTemplateRepository abilityTemplateRepository,
                             PlayerRepository playerRepository) {
         this.equippedItemRepository = equippedItemRepository;
         this.equippedAbilityRepository = equippedAbilityRepository;
         this.heroRepository = heroRepository;
-        this.itemTemplateRepository = itemTemplateRepository;
-        this.abilityTemplateRepository = abilityTemplateRepository;
         this.playerRepository = playerRepository;
     }
 
+    @Transactional(readOnly = true)
     public Map<String, Object> getHeroEquipment(Long playerId, Long heroId) {
         Hero hero = heroRepository.findById(heroId)
                 .orElseThrow(() -> new EquipmentException("HERO_NOT_FOUND", "Hero not found."));
@@ -38,101 +33,150 @@ public class EquipmentService {
             throw new EquipmentException("HERO_NOT_FOUND", "Hero not found.");
         }
 
-        List<EquippedItem> items = equippedItemRepository.findByHeroId(heroId);
-        List<EquippedAbility> abilities = equippedAbilityRepository.findByHeroId(heroId);
-
-        List<Map<String, Object>> itemSlots = new ArrayList<>();
+        // Build combined 3 slots (items + abilities share slots 1-3)
+        List<Map<String, Object>> slots = new ArrayList<>();
         for (int slot = 1; slot <= 3; slot++) {
-            final int s = slot;
-            Optional<EquippedItem> equipped = items.stream()
-                    .filter(i -> i.getSlotNumber() == s).findFirst();
-            if (equipped.isPresent()) {
-                EquippedItem ei = equipped.get();
+            final Integer s = slot;
+            Optional<EquippedItem> item = equippedItemRepository.findByHeroIdAndSlotNumber(heroId, s);
+            if (item.isPresent()) {
+                EquippedItem ei = item.get();
                 ItemTemplate t = ei.getItemTemplate();
-                itemSlots.add(Map.of(
-                        "slotNumber", slot,
-                        "equippedItemId", ei.getId(),
-                        "itemTemplateId", t.getId(),
-                        "name", t.getName(),
-                        "bonuses", buildItemBonuses(t),
-                        "sellPrice", (int) Math.floor(t.getCost() * 0.75)
-                ));
-            } else {
-                Map<String, Object> empty = new LinkedHashMap<>();
-                empty.put("slotNumber", slot);
-                empty.put("equippedItemId", null);
-                empty.put("itemTemplateId", null);
-                empty.put("name", null);
-                empty.put("bonuses", null);
-                empty.put("sellPrice", null);
-                itemSlots.add(empty);
+                Map<String, Object> slotMap = new LinkedHashMap<>();
+                slotMap.put("slotNumber", slot);
+                slotMap.put("type", "item");
+                slotMap.put("id", ei.getId());
+                slotMap.put("templateId", t.getId());
+                slotMap.put("name", t.getName());
+                slotMap.put("bonuses", buildItemBonuses(t));
+                slotMap.put("sellPrice", (int) Math.floor(t.getCost() * 0.75));
+                slots.add(slotMap);
+                continue;
             }
+            Optional<EquippedAbility> ability = equippedAbilityRepository.findByHeroIdAndSlotNumber(heroId, s);
+            if (ability.isPresent()) {
+                EquippedAbility ea = ability.get();
+                AbilityTemplate at = ea.getAbilityTemplate();
+                Map<String, Object> slotMap = new LinkedHashMap<>();
+                slotMap.put("slotNumber", slot);
+                slotMap.put("type", "ability");
+                slotMap.put("id", ea.getId());
+                slotMap.put("templateId", at.getId());
+                slotMap.put("name", at.getName());
+                slotMap.put("bonuses", buildAbilityBonuses(at));
+                slotMap.put("sellPrice", null);
+                slots.add(slotMap);
+                continue;
+            }
+            Map<String, Object> empty = new LinkedHashMap<>();
+            empty.put("slotNumber", slot);
+            empty.put("type", null);
+            empty.put("id", null);
+            empty.put("templateId", null);
+            empty.put("name", null);
+            empty.put("bonuses", null);
+            empty.put("sellPrice", null);
+            slots.add(empty);
         }
 
-        List<Map<String, Object>> abilityList = new ArrayList<>();
-        for (EquippedAbility ea : abilities) {
-            AbilityTemplate at = ea.getAbilityTemplate();
-            abilityList.add(Map.of(
-                    "equippedAbilityId", ea.getId(),
-                    "abilityTemplateId", at.getId(),
-                    "name", at.getName(),
-                    "tier", at.getTier(),
-                    "bonuses", buildAbilityBonuses(at)
+        // Inventory items (unequipped — no hero assigned)
+        List<EquippedItem> inventoryItems = equippedItemRepository.findByPlayerIdAndHeroIdIsNull(playerId);
+        List<Map<String, Object>> inventoryList = new ArrayList<>();
+        for (EquippedItem ei : inventoryItems) {
+            ItemTemplate t = ei.getItemTemplate();
+            inventoryList.add(Map.of(
+                    "equippedItemId", ei.getId(),
+                    "itemTemplateId", t.getId(),
+                    "name", t.getName(),
+                    "bonuses", buildItemBonuses(t),
+                    "sellPrice", (int) Math.floor(t.getCost() * 0.75)
             ));
+        }
+
+        // Hero abilities (all owned for this hero, includes slotNumber if set)
+        List<EquippedAbility> heroAbilities = equippedAbilityRepository.findByHeroId(heroId);
+        List<Map<String, Object>> abilityList = new ArrayList<>();
+        for (EquippedAbility ea : heroAbilities) {
+            AbilityTemplate at = ea.getAbilityTemplate();
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("equippedAbilityId", ea.getId());
+            entry.put("abilityTemplateId", at.getId());
+            entry.put("name", at.getName());
+            entry.put("tier", at.getTier());
+            entry.put("bonuses", buildAbilityBonuses(at));
+            entry.put("slotNumber", ea.getSlotNumber());
+            abilityList.add(entry);
         }
 
         return Map.of(
                 "heroId", heroId,
                 "heroName", hero.getTemplate().getDisplayName(),
-                "items", itemSlots,
-                "abilities", abilityList
+                "slots", slots,
+                "inventoryItems", inventoryList,
+                "heroAbilities", abilityList
         );
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, Object> getPlayerInventory(Long playerId) {
+        List<EquippedItem> items = equippedItemRepository.findByPlayerIdAndHeroIdIsNull(playerId);
+        List<Map<String, Object>> itemList = new ArrayList<>();
+        for (EquippedItem ei : items) {
+            ItemTemplate t = ei.getItemTemplate();
+            itemList.add(Map.of(
+                    "equippedItemId", ei.getId(),
+                    "itemTemplateId", t.getId(),
+                    "name", t.getName(),
+                    "bonuses", buildItemBonuses(t),
+                    "sellPrice", (int) Math.floor(t.getCost() * 0.75)
+            ));
+        }
+        return Map.of("items", itemList);
+    }
+
     @Transactional
-    public Map<String, Object> equipItem(Long playerId, Long heroId, Long itemTemplateId, int slotNumber) {
+    public Map<String, Object> equipItemToSlot(Long playerId, Long equippedItemId, Long heroId, int slotNumber) {
+        EquippedItem ei = equippedItemRepository.findById(equippedItemId)
+                .orElseThrow(() -> new EquipmentException("ITEM_NOT_FOUND", "Item not found in inventory."));
+        if (!playerId.equals(ei.getPlayerId())) {
+            throw new EquipmentException("ITEM_NOT_FOUND", "Item not found in inventory.");
+        }
+        if (ei.getHeroId() != null) {
+            throw new EquipmentException("ALREADY_EQUIPPED", "Item is already equipped to a hero. Unequip it first.");
+        }
+
         Hero hero = heroRepository.findById(heroId)
                 .orElseThrow(() -> new EquipmentException("HERO_NOT_FOUND", "Hero not found."));
         if (!hero.getPlayerId().equals(playerId)) {
             throw new EquipmentException("HERO_NOT_FOUND", "Hero not found.");
         }
-        ItemTemplate template = itemTemplateRepository.findById(itemTemplateId)
-                .orElseThrow(() -> new EquipmentException("ITEM_NOT_FOUND", "Item not found."));
-
         if (slotNumber < 1 || slotNumber > 3) {
-            throw new EquipmentException("INVALID_SLOT", "Item slot must be 1-3.");
+            throw new EquipmentException("INVALID_SLOT", "Slot must be 1-3.");
         }
 
-        // Check slot not occupied
-        if (equippedItemRepository.findByHeroIdAndSlotNumber(heroId, slotNumber).isPresent()) {
-            throw new EquipmentException("SLOT_OCCUPIED",
-                    "Slot " + slotNumber + " already has an item. Unequip it first.");
-        }
-
-        // Check no duplicate item on this hero
-        if (equippedItemRepository.findByHeroIdAndItemTemplateId(heroId, itemTemplateId).isPresent()) {
+        // Check hero doesn't already have this item
+        if (equippedItemRepository.findByHeroIdAndItemTemplateId(heroId, ei.getItemTemplateId()).isPresent()) {
             throw new EquipmentException("DUPLICATE_ITEM_ON_HERO",
-                    hero.getTemplate().getDisplayName() + " already has " + template.getName() + " equipped.");
+                    hero.getTemplate().getDisplayName() + " already has " + ei.getItemTemplate().getName() + " equipped.");
         }
 
-        // Check team-wide limit (max 3 of same item)
-        long teamCount = equippedItemRepository.countByPlayerAndItemTemplate(playerId, itemTemplateId);
-        if (teamCount >= 3) {
-            throw new EquipmentException("TEAM_ITEM_LIMIT",
-                    "Your team already has 3 " + template.getName() + " equipped (maximum).");
+        // Check slot not taken by item
+        if (equippedItemRepository.findByHeroIdAndSlotNumber(heroId, slotNumber).isPresent()) {
+            throw new EquipmentException("SLOT_OCCUPIED", "Slot " + slotNumber + " is already occupied.");
+        }
+        // Check slot not taken by ability
+        if (equippedAbilityRepository.findByHeroIdAndSlotNumber(heroId, slotNumber).isPresent()) {
+            throw new EquipmentException("SLOT_OCCUPIED", "Slot " + slotNumber + " is already occupied.");
         }
 
-        EquippedItem ei = new EquippedItem();
         ei.setHeroId(heroId);
-        ei.setItemTemplateId(itemTemplateId);
         ei.setSlotNumber(slotNumber);
         equippedItemRepository.save(ei);
 
-        return Map.of("message", template.getName() + " equipped to slot " + slotNumber + ".");
+        return Map.of("message", ei.getItemTemplate().getName() + " equipped to slot " + slotNumber + ".");
     }
 
     @Transactional
-    public Map<String, Object> unequipItem(Long playerId, Long heroId, int slotNumber) {
+    public Map<String, Object> unequipItemFromSlot(Long playerId, Long heroId, int slotNumber) {
         Hero hero = heroRepository.findById(heroId)
                 .orElseThrow(() -> new EquipmentException("HERO_NOT_FOUND", "Hero not found."));
         if (!hero.getPlayerId().equals(playerId)) {
@@ -143,21 +187,69 @@ public class EquipmentService {
                 .orElseThrow(() -> new EquipmentException("NO_ITEM", "No item in slot " + slotNumber + "."));
 
         String itemName = ei.getItemTemplate().getName();
-        equippedItemRepository.delete(ei);
+        ei.setHeroId(null);
+        ei.setSlotNumber(null);
+        equippedItemRepository.save(ei);
 
-        return Map.of("message", itemName + " unequipped from " + hero.getTemplate().getDisplayName() + ".");
+        return Map.of("message", itemName + " returned to inventory.");
     }
 
     @Transactional
-    public Map<String, Object> sellItem(Long playerId, Long heroId, int slotNumber) {
+    public Map<String, Object> equipAbilityToSlot(Long playerId, Long equippedAbilityId, int slotNumber) {
+        EquippedAbility ea = equippedAbilityRepository.findById(equippedAbilityId)
+                .orElseThrow(() -> new EquipmentException("ABILITY_NOT_FOUND", "Ability not found."));
+        if (!playerId.equals(ea.getPlayerId())) {
+            throw new EquipmentException("ABILITY_NOT_FOUND", "Ability not found.");
+        }
+        if (ea.getSlotNumber() != null) {
+            throw new EquipmentException("ALREADY_SLOTTED", "Ability is already in a slot. Unslot it first.");
+        }
+
+        Long heroId = ea.getHeroId();
+        if (slotNumber < 1 || slotNumber > 3) {
+            throw new EquipmentException("INVALID_SLOT", "Slot must be 1-3.");
+        }
+
+        // Check slot not taken by item
+        if (equippedItemRepository.findByHeroIdAndSlotNumber(heroId, slotNumber).isPresent()) {
+            throw new EquipmentException("SLOT_OCCUPIED", "Slot " + slotNumber + " is already occupied.");
+        }
+        // Check slot not taken by another ability
+        if (equippedAbilityRepository.findByHeroIdAndSlotNumber(heroId, slotNumber).isPresent()) {
+            throw new EquipmentException("SLOT_OCCUPIED", "Slot " + slotNumber + " is already occupied.");
+        }
+
+        ea.setSlotNumber(slotNumber);
+        equippedAbilityRepository.save(ea);
+
+        return Map.of("message", ea.getAbilityTemplate().getName() + " slotted at position " + slotNumber + ".");
+    }
+
+    @Transactional
+    public Map<String, Object> unequipAbilityFromSlot(Long playerId, Long heroId, int slotNumber) {
         Hero hero = heroRepository.findById(heroId)
                 .orElseThrow(() -> new EquipmentException("HERO_NOT_FOUND", "Hero not found."));
         if (!hero.getPlayerId().equals(playerId)) {
             throw new EquipmentException("HERO_NOT_FOUND", "Hero not found.");
         }
 
-        EquippedItem ei = equippedItemRepository.findByHeroIdAndSlotNumber(heroId, slotNumber)
-                .orElseThrow(() -> new EquipmentException("NO_ITEM", "No item in slot " + slotNumber + " to sell."));
+        EquippedAbility ea = equippedAbilityRepository.findByHeroIdAndSlotNumber(heroId, slotNumber)
+                .orElseThrow(() -> new EquipmentException("NO_ABILITY", "No ability in slot " + slotNumber + "."));
+
+        String abilityName = ea.getAbilityTemplate().getName();
+        ea.setSlotNumber(null);
+        equippedAbilityRepository.save(ea);
+
+        return Map.of("message", abilityName + " unslotted from " + hero.getTemplate().getDisplayName() + ".");
+    }
+
+    @Transactional
+    public Map<String, Object> sellItem(Long playerId, Long equippedItemId) {
+        EquippedItem ei = equippedItemRepository.findById(equippedItemId)
+                .orElseThrow(() -> new EquipmentException("ITEM_NOT_FOUND", "Item not found."));
+        if (!playerId.equals(ei.getPlayerId())) {
+            throw new EquipmentException("ITEM_NOT_FOUND", "Item not found.");
+        }
 
         ItemTemplate template = ei.getItemTemplate();
         int sellPrice = (int) Math.floor(template.getCost() * 0.75);
@@ -174,54 +266,6 @@ public class EquipmentService {
                 "goldEarned", sellPrice,
                 "goldTotal", player.getGold()
         );
-    }
-
-    @Transactional
-    public Map<String, Object> equipAbility(Long playerId, Long heroId, Long abilityTemplateId) {
-        Hero hero = heroRepository.findById(heroId)
-                .orElseThrow(() -> new EquipmentException("HERO_NOT_FOUND", "Hero not found."));
-        if (!hero.getPlayerId().equals(playerId)) {
-            throw new EquipmentException("HERO_NOT_FOUND", "Hero not found.");
-        }
-
-        AbilityTemplate template = abilityTemplateRepository.findById(abilityTemplateId)
-                .orElseThrow(() -> new EquipmentException("ABILITY_NOT_FOUND", "Ability not found."));
-
-        // Check hero template match
-        if (!template.getHeroTemplateId().equals(hero.getTemplateId())) {
-            throw new EquipmentException("WRONG_HERO",
-                    template.getName() + " is not available for " + hero.getTemplate().getDisplayName() + ".");
-        }
-
-        // Check no duplicate
-        if (equippedAbilityRepository.findByHeroIdAndAbilityTemplateId(heroId, abilityTemplateId).isPresent()) {
-            throw new EquipmentException("DUPLICATE_ABILITY",
-                    hero.getTemplate().getDisplayName() + " already knows " + template.getName() + ".");
-        }
-
-        EquippedAbility ea = new EquippedAbility();
-        ea.setHeroId(heroId);
-        ea.setAbilityTemplateId(abilityTemplateId);
-        equippedAbilityRepository.save(ea);
-
-        return Map.of("message", template.getName() + " learned by " + hero.getTemplate().getDisplayName() + ".");
-    }
-
-    @Transactional
-    public Map<String, Object> unequipAbility(Long playerId, Long heroId, Long abilityTemplateId) {
-        Hero hero = heroRepository.findById(heroId)
-                .orElseThrow(() -> new EquipmentException("HERO_NOT_FOUND", "Hero not found."));
-        if (!hero.getPlayerId().equals(playerId)) {
-            throw new EquipmentException("HERO_NOT_FOUND", "Hero not found.");
-        }
-
-        EquippedAbility ea = equippedAbilityRepository.findByHeroIdAndAbilityTemplateId(heroId, abilityTemplateId)
-                .orElseThrow(() -> new EquipmentException("ABILITY_NOT_FOUND", "Ability not equipped."));
-
-        String abilityName = ea.getAbilityTemplate().getName();
-        equippedAbilityRepository.delete(ea);
-
-        return Map.of("message", abilityName + " unequipped from " + hero.getTemplate().getDisplayName() + ".");
     }
 
     private Map<String, Object> buildItemBonuses(ItemTemplate t) {
