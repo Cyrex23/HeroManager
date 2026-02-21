@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getHeroes } from '../api/playerApi';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { getHeroes, sellHero } from '../api/playerApi';
 import { getHeroEquipment, unequipItemFromSlot, sellInventoryItem, unequipAbilityFromSlot, equipItemToSlot, equipAbilityToSlot } from '../api/equipmentApi';
 import { listAbilities, buyAbility } from '../api/shopApi';
 import { usePlayer } from '../context/PlayerContext';
@@ -16,6 +16,23 @@ import HeroPortrait from '../components/Hero/HeroPortrait';
 import HexStatDiagram from '../components/Hero/HexStatDiagram';
 import ItemSlot from '../components/Equipment/ItemSlot';
 import AbilitySlot from '../components/Equipment/AbilitySlot';
+import EquipmentTooltip from '../components/Equipment/EquipmentTooltip';
+
+// Inject XP shimmer keyframe once
+if (typeof document !== 'undefined') {
+  const id = 'inspect-popup-css';
+  if (!document.getElementById(id)) {
+    const el = document.createElement('style');
+    el.id = id;
+    el.textContent = `
+      @keyframes xpShimmer {
+        0%   { background-position: 200% center; }
+        100% { background-position: -200% center; }
+      }
+    `;
+    document.head.appendChild(el);
+  }
+}
 
 const ELEMENT_SYMBOL: Record<string, string> = {
   FIRE: '🔥', WATER: '💧', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
@@ -39,6 +56,7 @@ const STAT_LABELS: Record<string, string> = {
 
 export default function HeroDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { fetchPlayer } = usePlayer();
   const [hero, setHero] = useState<HeroResponse | null>(null);
   const [equipment, setEquipment] = useState<HeroEquipmentResponse | null>(null);
@@ -47,6 +65,7 @@ export default function HeroDetailPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [activePicker, setActivePicker] = useState<number | null>(null);
+  const [confirmHeroSell, setConfirmHeroSell] = useState(false);
 
   const heroId = Number(id);
 
@@ -140,6 +159,20 @@ export default function HeroDetailPage() {
     }
   }
 
+  async function handleSellHero() {
+    setError(''); setMessage('');
+    try {
+      const res = await sellHero(heroId);
+      setMessage(res.message);
+      await fetchPlayer();
+      navigate('/team');
+    } catch {
+      setError('Failed to sell hero.');
+    } finally {
+      setConfirmHeroSell(false);
+    }
+  }
+
   if (loading) return <div style={{ color: '#a0a0b0' }}>Loading hero...</div>;
   if (!hero) return <div style={{ color: '#e94560' }}>Hero not found.</div>;
 
@@ -150,6 +183,20 @@ export default function HeroDetailPage() {
 
   return (
     <div onClick={() => setActivePicker(null)}>
+      {confirmHeroSell && (
+        <div style={styles.confirmOverlay}>
+          <div style={styles.confirmCard}>
+            <div style={styles.confirmTitle}>Sell Hero?</div>
+            <div style={styles.confirmHeroName}>{hero.name}</div>
+            <div style={styles.confirmSub}>This hero and all their abilities will be removed. Equipped items will return to your inventory.</div>
+            <div style={styles.confirmBtns}>
+              <button style={styles.confirmYes} onClick={handleSellHero}>Sell</button>
+              <button style={styles.confirmNo} onClick={() => setConfirmHeroSell(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Link to="/team" style={styles.backLink}>Back to Team</Link>
 
       {message && <div style={styles.success}>{message}</div>}
@@ -185,6 +232,13 @@ export default function HeroDetailPage() {
               <div style={{ ...styles.xpBarFill, width: `${xpPct}%` }} />
             </div>
           </div>
+
+          <button
+            style={styles.sellHeroBtn}
+            onClick={() => setConfirmHeroSell(true)}
+          >
+            Sell Hero
+          </button>
         </div>
       </div>
 
@@ -206,12 +260,21 @@ export default function HeroDetailPage() {
           <div style={{ ...styles.battleStatValue, color: '#a78bfa' }}>{hero.maxDamageReceived.toFixed(1)}</div>
           <div style={styles.battleStatLabel}>Max Damage Received</div>
         </div>
+        <div style={styles.battleStat}>
+          <div style={{ ...styles.battleStatValue, color: '#4ade80' }}>{hero.currentWinStreak}</div>
+          <div style={styles.battleStatLabel}>Win Streak</div>
+        </div>
+        <div style={styles.battleStat}>
+          <div style={{ ...styles.battleStatValue, color: '#e94560' }}>{hero.currentLossStreak}</div>
+          <div style={styles.battleStatLabel}>Loss Streak</div>
+        </div>
       </div>
 
       <HexStatDiagram
-        stats={hero.baseStats}
+        stats={hero.stats}
         growthStats={hero.growthStats}
         size={240}
+        maxValue={100}
       />
 
       <h3 style={styles.subtitle}>Stats Breakdown</h3>
@@ -319,21 +382,30 @@ export default function HeroDetailPage() {
                 {unboughtAbilities.map((ab) => {
                   const bonusEntries = Object.entries(ab.bonuses).filter(([, v]) => v !== 0);
                   return (
-                    <div key={ab.templateId} style={styles.abilityShopRow}>
-                      <div>
-                        <span style={styles.abilityName}>{ab.name}</span>
-                        <span style={styles.abilityTier}> T{ab.tier}</span>
-                        <span style={styles.abilityCost}> — {ab.cost}g</span>
+                    <EquipmentTooltip
+                      key={ab.templateId}
+                      name={ab.name}
+                      type="ability"
+                      bonuses={ab.bonuses}
+                      tier={ab.tier}
+                      spell={ab.spell ?? null}
+                    >
+                      <div style={styles.abilityShopRow}>
+                        <div>
+                          <span style={styles.abilityName}>{ab.name}</span>
+                          <span style={styles.abilityTier}> T{ab.tier}</span>
+                          <span style={styles.abilityCost}> — {ab.cost}g</span>
+                        </div>
+                        <div style={styles.abilityBonuses}>
+                          {bonusEntries.map(([stat, val]) => (
+                            <span key={stat} style={styles.abilityBonus}>+{val} {formatStat(stat)}</span>
+                          ))}
+                        </div>
+                        <button onClick={() => handleBuyAbility(ab.templateId)} style={styles.buyBtn}>
+                          Buy
+                        </button>
                       </div>
-                      <div style={styles.abilityBonuses}>
-                        {bonusEntries.map(([stat, val]) => (
-                          <span key={stat} style={styles.abilityBonus}>+{val} {formatStat(stat)}</span>
-                        ))}
-                      </div>
-                      <button onClick={() => handleBuyAbility(ab.templateId)} style={styles.buyBtn}>
-                        Buy
-                      </button>
-                    </div>
+                    </EquipmentTooltip>
                   );
                 })}
               </div>
@@ -420,17 +492,20 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 4,
   },
   xpBarBg: {
-    height: 8,
-    backgroundColor: '#0f0f23',
-    borderRadius: 4,
+    height: 9,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 5,
     overflow: 'hidden',
     maxWidth: 280,
+    border: '1px solid rgba(251,191,36,0.22)',
   },
   xpBarFill: {
     height: '100%',
-    backgroundColor: '#60a5fa',
+    background: 'linear-gradient(90deg, #92400e 0%, #d97706 30%, #fbbf24 55%, #fde68a 75%, #fbbf24 100%)',
+    backgroundSize: '200% 100%',
+    animation: 'xpShimmer 2.5s ease-in-out infinite',
     borderRadius: 4,
-    transition: 'width 0.3s ease',
+    boxShadow: '0 0 8px rgba(251,191,36,0.5)',
   },
   subtitle: {
     color: '#e0e0e0',
@@ -610,5 +685,62 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  sellHeroBtn: {
+    alignSelf: 'flex-start' as const,
+    marginTop: 10,
+    padding: '7px 18px',
+    backgroundColor: '#7f1d1d',
+    color: '#fca5a5',
+    border: '1px solid #991b1b',
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: 'pointer',
+    letterSpacing: 0.5,
+  },
+  confirmOverlay: {
+    position: 'fixed' as const,
+    inset: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+  },
+  confirmCard: {
+    backgroundColor: '#0d0d1f',
+    border: '1px solid #991b1b',
+    borderRadius: 12,
+    padding: '28px 32px',
+    maxWidth: 340,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: 12,
+    textAlign: 'center' as const,
+  },
+  confirmTitle: { color: '#fca5a5', fontSize: 17, fontWeight: 700, letterSpacing: 0.5 },
+  confirmHeroName: { color: '#e0e0e0', fontSize: 15, fontWeight: 600 },
+  confirmSub: { color: '#6b7280', fontSize: 12, lineHeight: 1.5 },
+  confirmBtns: { display: 'flex', gap: 10, marginTop: 4 },
+  confirmYes: {
+    padding: '8px 24px',
+    backgroundColor: '#991b1b',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  confirmNo: {
+    padding: '8px 24px',
+    backgroundColor: '#1f2937',
+    color: '#9ca3af',
+    border: '1px solid #374151',
+    borderRadius: 6,
+    fontSize: 13,
+    cursor: 'pointer',
   },
 };

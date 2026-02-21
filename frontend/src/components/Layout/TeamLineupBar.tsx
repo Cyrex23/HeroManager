@@ -4,6 +4,22 @@ import { getTeam } from '../../api/teamApi';
 import type { TeamResponse } from '../../types';
 import HeroPortrait from '../Hero/HeroPortrait';
 
+// Inject XP shimmer keyframe once
+if (typeof document !== 'undefined') {
+  const id = 'inspect-popup-css';
+  if (!document.getElementById(id)) {
+    const el = document.createElement('style');
+    el.id = id;
+    el.textContent = `
+      @keyframes xpShimmer {
+        0%   { background-position: 200% center; }
+        100% { background-position: -200% center; }
+      }
+    `;
+    document.head.appendChild(el);
+  }
+}
+
 const ELEMENT_COLOR: Record<string, string> = {
   FIRE:      '#f97316',
   WATER:     '#38bdf8',
@@ -16,9 +32,6 @@ const ELEMENT_SYMBOL: Record<string, string> = {
   FIRE: '🔥', WATER: '💧', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
 };
 
-const SLOT_LABEL: Record<number, string> = {
-  1: 'C1', 2: 'C2', 3: 'C3', 4: 'E1', 5: 'E2', 6: 'L', 7: 'S',
-};
 
 export default function TeamLineupBar() {
   const [team, setTeam] = useState<TeamResponse | null>(null);
@@ -39,7 +52,6 @@ export default function TeamLineupBar() {
         if (isEmpty) {
           return (
             <div key={slot.slotNumber} style={styles.slot}>
-              <div style={styles.slotTag}>{SLOT_LABEL[slot.slotNumber]}</div>
               <div style={styles.emptyBox} />
             </div>
           );
@@ -51,13 +63,12 @@ export default function TeamLineupBar() {
             ? Math.min((s.currentXp / s.xpToNextLevel) * 100, 100) : 0;
           return (
             <div key={slot.slotNumber} style={styles.slot}>
-              <div style={styles.slotTag}>{SLOT_LABEL[slot.slotNumber]}</div>
               <div style={styles.portraitWrap}>
-                <HeroPortrait imagePath={s.imagePath} name={s.name} size={36} />
-                <div style={styles.lvlBadge}>Lv{s.level}</div>
+                <HeroPortrait imagePath={s.imagePath} name={s.name} size={38} />
+                <div style={styles.lvlBadge}>{s.level}</div>
               </div>
               <div style={styles.xpBarBg}>
-                <div style={{ ...styles.xpBarFill, width: `${xpPct}%`, backgroundColor: '#a78bfa' }} />
+                <div style={{ ...styles.xpBarFill, width: `${xpPct}%` }} />
               </div>
             </div>
           );
@@ -77,10 +88,9 @@ export default function TeamLineupBar() {
               onClick={() => navigate(`/hero/${h.id}`)}
               title={`${h.name} — Lv.${h.level}`}
             >
-              <div style={styles.slotTag}>{SLOT_LABEL[slot.slotNumber]}</div>
               <div style={styles.portraitWrap}>
-                <HeroPortrait imagePath={h.imagePath} name={h.name} size={36} tier={h.tier} />
-                <div style={styles.lvlBadge}>Lv{h.level}</div>
+                <HeroPortrait imagePath={h.imagePath} name={h.name} size={38} tier={h.tier} />
+                <div style={styles.lvlBadge}>{h.level}</div>
                 {elemSymbol && (
                   <div style={{ ...styles.elemBadge, color: elemColor ?? '#fff' }}>
                     {elemSymbol}
@@ -130,39 +140,53 @@ const styles: Record<string, React.CSSProperties> = {
   },
   lvlBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    color: '#e0e0e0',
-    fontSize: 8,
-    padding: '1px 2px',
-    borderRadius: 2,
-    lineHeight: 1,
+    bottom: 3,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    backgroundColor: 'rgba(5,5,18,0.88)',
+    border: '1px solid rgba(251,191,36,0.6)',
+    color: '#fde68a',
+    fontSize: 11,
+    fontWeight: 900,
+    padding: '1px 7px',
+    borderRadius: 8,
+    lineHeight: 1.25,
+    whiteSpace: 'nowrap' as const,
+    boxShadow: '0 0 10px rgba(251,191,36,0.28)',
+    textShadow: '0 0 8px rgba(251,191,36,0.9)',
+    letterSpacing: 0.5,
+    zIndex: 2,
+    pointerEvents: 'none' as const,
   },
   elemBadge: {
     position: 'absolute',
-    top: 0,
-    left: 0,
+    top: 1,
+    left: 1,
     fontSize: 10,
     lineHeight: 1,
+    textShadow: '0 1px 4px rgba(0,0,0,0.9)',
   },
   emptyBox: {
-    width: 36,
-    height: 40,
+    width: 38,
+    height: 42,
     backgroundColor: '#1a1a2e',
-    border: '1px dashed #333',
+    border: '1px dashed #2a2a4a',
     borderRadius: 4,
   },
   xpBarBg: {
-    width: 36,
-    height: 3,
-    backgroundColor: '#1a1a2e',
-    borderRadius: 2,
+    width: 38,
+    height: 5,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 3,
     overflow: 'hidden',
+    border: '1px solid rgba(251,191,36,0.22)',
   },
   xpBarFill: {
     height: '100%',
-    backgroundColor: '#60a5fa',
+    background: 'linear-gradient(90deg, #92400e 0%, #d97706 30%, #fbbf24 55%, #fde68a 75%, #fbbf24 100%)',
+    backgroundSize: '200% 100%',
+    animation: 'xpShimmer 2.5s ease-in-out infinite',
     borderRadius: 2,
+    boxShadow: '0 0 5px rgba(251,191,36,0.4)',
   },
 };

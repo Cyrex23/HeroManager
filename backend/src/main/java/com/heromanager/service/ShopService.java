@@ -239,14 +239,33 @@ public class ShopService {
             if (t.getBonusMana() != 0) bonuses.put("mana", t.getBonusMana());
             if (t.getBonusStam() != 0) bonuses.put("stamina", t.getBonusStam());
 
-            abilities.add(Map.of(
-                    "templateId", t.getId(),
-                    "name", t.getName(),
-                    "cost", t.getCost(),
-                    "tier", t.getTier(),
-                    "bonuses", bonuses,
-                    "owned", ownedIds.contains(t.getId())
-            ));
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("templateId", t.getId());
+            entry.put("name", t.getName());
+            entry.put("cost", t.getCost());
+            entry.put("tier", t.getTier());
+            entry.put("bonuses", bonuses);
+            entry.put("owned", ownedIds.contains(t.getId()));
+
+            if (t.getSpellName() != null && !t.getSpellName().isBlank()) {
+                Map<String, Object> spellBonuses = new LinkedHashMap<>();
+                if (t.getSpellBonusPa() != 0) spellBonuses.put("physicalAttack", t.getSpellBonusPa());
+                if (t.getSpellBonusMp() != 0) spellBonuses.put("magicPower", t.getSpellBonusMp());
+                if (t.getSpellBonusDex() != 0) spellBonuses.put("dexterity", t.getSpellBonusDex());
+                if (t.getSpellBonusElem() != 0) spellBonuses.put("element", t.getSpellBonusElem());
+                if (t.getSpellBonusMana() != 0) spellBonuses.put("mana", t.getSpellBonusMana());
+                if (t.getSpellBonusStam() != 0) spellBonuses.put("stamina", t.getSpellBonusStam());
+
+                Map<String, Object> spell = new LinkedHashMap<>();
+                spell.put("name", t.getSpellName());
+                spell.put("manaCost", t.getSpellManaCost());
+                spell.put("trigger", t.getSpellTrigger());
+                spell.put("chance", t.getSpellChance());
+                spell.put("bonuses", spellBonuses);
+                entry.put("spell", spell);
+            }
+
+            abilities.add(entry);
         }
 
         return Map.of(

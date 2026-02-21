@@ -1,4 +1,5 @@
 -- Schema migrations (idempotent, continue-on-error=true handles reruns)
+ALTER TABLE player ADD COLUMN IF NOT EXISTS banned BOOLEAN DEFAULT FALSE;
 ALTER TABLE equipped_item ALTER COLUMN hero_id SET NULL;
 ALTER TABLE equipped_item ALTER COLUMN slot_number SET NULL;
 ALTER TABLE equipped_item ADD COLUMN IF NOT EXISTS player_id BIGINT;
@@ -183,3 +184,85 @@ AND NOT EXISTS (SELECT 1 FROM ability_template a WHERE a.hero_template_id = (SEL
 INSERT INTO ability_template (name, hero_template_id, cost, tier, bonus_pa, bonus_mp, bonus_dex, bonus_elem, bonus_mana, bonus_stam)
 SELECT 'Demon of the Hidden Mist', id, 800, 4, 0, 0, 14, 6, 0, 4 FROM hero_template WHERE name = 'zabuza'
 AND NOT EXISTS (SELECT 1 FROM ability_template a WHERE a.hero_template_id = (SELECT id FROM hero_template WHERE name = 'zabuza') AND a.name = 'Demon of the Hidden Mist');
+
+-- ── Spell data for T3/T4 abilities (idempotent UPDATEs) ───────────────────────
+
+-- Konohamaru: Iron Fist (T3) → ATTACK spell
+UPDATE ability_template SET spell_name = 'Iron Fist Barrage', spell_mana_cost = 25, spell_trigger = 'ATTACK', spell_chance = 0.35, spell_bonus_pa = 18, spell_bonus_stam = 12
+WHERE name = 'Iron Fist' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'konohamaru-genin');
+
+-- Konohamaru: Sage Mode (T4) → ENTRANCE spell
+UPDATE ability_template SET spell_name = 'Sage Awakening', spell_mana_cost = 45, spell_trigger = 'ENTRANCE', spell_chance = 0.70, spell_bonus_mp = 22, spell_bonus_pa = 15
+WHERE name = 'Sage Mode' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'konohamaru-genin');
+
+-- Sakura: Diamond Seal (T3) → ENTRANCE spell
+UPDATE ability_template SET spell_name = 'Byakugo Seal', spell_mana_cost = 30, spell_trigger = 'ENTRANCE', spell_chance = 0.60, spell_bonus_stam = 20, spell_bonus_mp = 12
+WHERE name = 'Diamond Seal' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'sakura');
+
+-- Sakura: Hundred Healings (T4) → ATTACK spell
+UPDATE ability_template SET spell_name = 'Endless Regeneration', spell_mana_cost = 55, spell_trigger = 'ATTACK', spell_chance = 0.40, spell_bonus_stam = 30
+WHERE name = 'Hundred Healings' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'sakura');
+
+-- Hidan: Reaper Assault (T3) → ATTACK spell
+UPDATE ability_template SET spell_name = 'Jashin''s Blessing', spell_mana_cost = 30, spell_trigger = 'ATTACK', spell_chance = 0.40, spell_bonus_pa = 22
+WHERE name = 'Reaper Assault' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'hidan');
+
+-- Hidan: Immortal Fury (T4) → ATTACK spell
+UPDATE ability_template SET spell_name = 'Curse Mark Frenzy', spell_mana_cost = 55, spell_trigger = 'ATTACK', spell_chance = 0.50, spell_bonus_pa = 30, spell_bonus_stam = 12
+WHERE name = 'Immortal Fury' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'hidan');
+
+-- Konan: Paper Storm (T3) → ATTACK spell
+UPDATE ability_template SET spell_name = 'Shuriken Volley', spell_mana_cost = 28, spell_trigger = 'ATTACK', spell_chance = 0.45, spell_bonus_dex = 18, spell_bonus_mp = 12
+WHERE name = 'Paper Storm' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'konan');
+
+-- Konan: Angel Descent (T4) → ENTRANCE spell
+UPDATE ability_template SET spell_name = 'Six Paths Formation', spell_mana_cost = 60, spell_trigger = 'ENTRANCE', spell_chance = 0.75, spell_bonus_mp = 25, spell_bonus_elem = 18
+WHERE name = 'Angel Descent' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'konan');
+
+-- Kabuto: Sage Transformation (T3) → ENTRANCE spell
+UPDATE ability_template SET spell_name = 'Snake Sage Mode', spell_mana_cost = 40, spell_trigger = 'ENTRANCE', spell_chance = 0.55, spell_bonus_mp = 20, spell_bonus_pa = 12
+WHERE name = 'Sage Transformation' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'kabuto');
+
+-- Kabuto: Edo Tensei (T4) → ATTACK spell
+UPDATE ability_template SET spell_name = 'Revenant Surge', spell_mana_cost = 70, spell_trigger = 'ATTACK', spell_chance = 0.30, spell_bonus_mp = 35, spell_bonus_elem = 10
+WHERE name = 'Edo Tensei' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'kabuto');
+
+-- Kakashi: Sharingan Copy (T3) → ATTACK spell
+UPDATE ability_template SET spell_name = 'Mirror Technique', spell_mana_cost = 35, spell_trigger = 'ATTACK', spell_chance = 0.40, spell_bonus_mp = 18, spell_bonus_dex = 12
+WHERE name = 'Sharingan Copy' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'kakashi');
+
+-- Kakashi: Kamui (T4) → ATTACK spell
+UPDATE ability_template SET spell_name = 'Dimensional Rift', spell_mana_cost = 65, spell_trigger = 'ATTACK', spell_chance = 0.25, spell_bonus_dex = 45
+WHERE name = 'Kamui' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'kakashi');
+
+-- Deidara: C3 Megaton (T3) → ATTACK spell
+UPDATE ability_template SET spell_name = 'Megaton Blast', spell_mana_cost = 40, spell_trigger = 'ATTACK', spell_chance = 0.35, spell_bonus_elem = 28
+WHERE name = 'C3 Megaton' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'deidara');
+
+-- Deidara: C4 Karura (T4) → ENTRANCE spell
+UPDATE ability_template SET spell_name = 'Cellular Explosion', spell_mana_cost = 70, spell_trigger = 'ENTRANCE', spell_chance = 0.60, spell_bonus_elem = 35, spell_bonus_mp = 15
+WHERE name = 'C4 Karura' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'deidara');
+
+-- Minato: Flying Thunder God (T3) → ATTACK spell
+UPDATE ability_template SET spell_name = 'Space-Time Strike', spell_mana_cost = 30, spell_trigger = 'ATTACK', spell_chance = 0.50, spell_bonus_dex = 25, spell_bonus_pa = 12
+WHERE name = 'Flying Thunder God' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'minato');
+
+-- Minato: Reaper Death Seal (T4) → ENTRANCE spell
+UPDATE ability_template SET spell_name = 'Death God''s Pact', spell_mana_cost = 80, spell_trigger = 'ENTRANCE', spell_chance = 0.45, spell_bonus_pa = 35, spell_bonus_mp = 18
+WHERE name = 'Reaper Death Seal' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'minato');
+
+-- Hashirama: Deep Forest Bloom (T3) → ENTRANCE spell
+UPDATE ability_template SET spell_name = 'Mokuton Bloom', spell_mana_cost = 35, spell_trigger = 'ENTRANCE', spell_chance = 0.65, spell_bonus_stam = 20, spell_bonus_elem = 15
+WHERE name = 'Deep Forest Bloom' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'hashirama');
+
+-- Hashirama: Sage Art: True Golem (T4) → ENTRANCE spell
+UPDATE ability_template SET spell_name = 'Wood Dragon', spell_mana_cost = 75, spell_trigger = 'ENTRANCE', spell_chance = 0.50, spell_bonus_pa = 30, spell_bonus_stam = 25
+WHERE name = 'Sage Art: True Golem' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'hashirama');
+
+-- Zabuza: Water Prison (T3) → ATTACK spell
+UPDATE ability_template SET spell_name = 'Prison Trap', spell_mana_cost = 32, spell_trigger = 'ATTACK', spell_chance = 0.40, spell_bonus_pa = 20, spell_bonus_stam = 15
+WHERE name = 'Water Prison' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'zabuza');
+
+-- Zabuza: Demon of the Hidden Mist (T4) → ENTRANCE spell
+UPDATE ability_template SET spell_name = 'Demon''s Mist', spell_mana_cost = 60, spell_trigger = 'ENTRANCE', spell_chance = 0.55, spell_bonus_dex = 28, spell_bonus_pa = 18
+WHERE name = 'Demon of the Hidden Mist' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'zabuza');

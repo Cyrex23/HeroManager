@@ -80,19 +80,27 @@ public class TeamService {
                         final Integer sn = s;
                         Optional<EquippedItem> eItem = equippedItemRepository.findByHeroIdAndSlotNumber(hero.getId(), sn);
                         if (eItem.isPresent()) {
+                            ItemTemplate it = eItem.get().getItemTemplate();
                             Map<String, Object> slotEntry = new LinkedHashMap<>();
                             slotEntry.put("slotNumber", s);
                             slotEntry.put("type", "item");
-                            slotEntry.put("name", eItem.get().getItemTemplate().getName());
+                            slotEntry.put("name", it.getName());
+                            slotEntry.put("bonuses", buildBonuses(it.getBonusPa(), it.getBonusMp(), it.getBonusDex(), it.getBonusElem(), it.getBonusMana(), it.getBonusStam()));
+                            slotEntry.put("tier", null);
+                            slotEntry.put("copies", equippedItemRepository.countByPlayerAndItemTemplate(playerId, it.getId()));
                             eqSlots.add(slotEntry);
                             continue;
                         }
                         Optional<EquippedAbility> eAbility = equippedAbilityRepository.findByHeroIdAndSlotNumber(hero.getId(), sn);
                         if (eAbility.isPresent()) {
+                            AbilityTemplate at = eAbility.get().getAbilityTemplate();
                             Map<String, Object> slotEntry = new LinkedHashMap<>();
                             slotEntry.put("slotNumber", s);
                             slotEntry.put("type", "ability");
-                            slotEntry.put("name", eAbility.get().getAbilityTemplate().getName());
+                            slotEntry.put("name", at.getName());
+                            slotEntry.put("bonuses", buildBonuses(at.getBonusPa(), at.getBonusMp(), at.getBonusDex(), at.getBonusElem(), at.getBonusMana(), at.getBonusStam()));
+                            slotEntry.put("tier", at.getTier());
+                            slotEntry.put("copies", equippedAbilityRepository.countByPlayerAndAbilityTemplate(playerId, at.getId()));
                             eqSlots.add(slotEntry);
                             continue;
                         }
@@ -322,6 +330,17 @@ public class TeamService {
             }
         }
         return total;
+    }
+
+    private Map<String, Object> buildBonuses(double pa, double mp, double dex, double elem, double mana, double stam) {
+        Map<String, Object> bonuses = new LinkedHashMap<>();
+        if (pa   != 0) bonuses.put("physicalAttack", pa);
+        if (mp   != 0) bonuses.put("magicPower",     mp);
+        if (dex  != 0) bonuses.put("dexterity",      dex);
+        if (elem != 0) bonuses.put("element",         elem);
+        if (mana != 0) bonuses.put("mana",            mana);
+        if (stam != 0) bonuses.put("stamina",         stam);
+        return bonuses;
     }
 
     public static String getSlotTier(int slotNumber) {

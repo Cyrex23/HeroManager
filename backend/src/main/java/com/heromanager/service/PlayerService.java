@@ -125,6 +125,8 @@ public class PlayerService {
                     .element(t.getElement() != null ? t.getElement().name() : null)
                     .clashesWon(hero.getClashesWon())
                     .clashesLost(hero.getClashesLost())
+                    .currentWinStreak(hero.getCurrentWinStreak())
+                    .currentLossStreak(hero.getCurrentLossStreak())
                     .maxDamageDealt(hero.getMaxDamageDealt())
                     .maxDamageReceived(hero.getMaxDamageReceived())
                     .build());
@@ -194,6 +196,58 @@ public class PlayerService {
         return bonuses;
     }
 
+    @Transactional
+    public Map<String, Object> sellHero(Long playerId, Long heroId) {
+        Hero hero = heroRepository.findById(heroId)
+                .orElseThrow(() -> new HeroSellException("HERO_NOT_FOUND", "Hero not found."));
+        if (!hero.getPlayerId().equals(playerId)) {
+            throw new HeroSellException("HERO_NOT_FOUND", "Hero not found.");
+        }
+        HeroTemplate template = hero.getTemplate();
+        if (template == null) {
+            throw new HeroSellException("HERO_NOT_FOUND", "Hero not found.");
+        }
+        if (template.isStarter()) {
+            throw new HeroSellException("CANNOT_SELL_STARTER", "The starter hero cannot be sold.");
+        }
+
+        int sellPrice = (int) Math.floor(template.getCost() * 0.5);
+        String heroName = template.getDisplayName();
+
+        // Unequip from team slot if equipped
+        teamSlotRepository.findByPlayerId(playerId).stream()
+                .filter(s -> heroId.equals(s.getHeroId()))
+                .findFirst()
+                .ifPresent(s -> {
+                    s.setHeroId(null);
+                    teamSlotRepository.save(s);
+                });
+
+        // Return all equipped items to inventory (detach from hero)
+        for (EquippedItem ei : equippedItemRepository.findByHeroId(heroId)) {
+            ei.setHeroId(null);
+            ei.setSlotNumber(null);
+            equippedItemRepository.save(ei);
+        }
+
+        // Delete all abilities (hero-bound, no value to keep)
+        equippedAbilityRepository.deleteAll(equippedAbilityRepository.findByHeroId(heroId));
+
+        // Award gold
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new HeroSellException("PLAYER_NOT_FOUND", "Player not found."));
+        player.setGold(player.getGold() + sellPrice);
+        playerRepository.save(player);
+
+        heroRepository.delete(hero);
+
+        return Map.of(
+                "message", heroName + " sold for " + sellPrice + " gold.",
+                "goldEarned", sellPrice,
+                "goldTotal", player.getGold()
+        );
+    }
+
     public static Map<String, Double> buildHeroStats(HeroTemplate t, int level) {
         return Map.of(
                 "physicalAttack", t.getBasePa() + t.getGrowthPa() * (level - 1),
@@ -203,5 +257,14 @@ public class PlayerService {
                 "mana", t.getBaseMana() + t.getGrowthMana() * (level - 1),
                 "stamina", t.getBaseStam() + t.getGrowthStam() * (level - 1)
         );
+    }
+
+    public static class HeroSellException extends RuntimeException {
+        private final String errorCode;
+        public HeroSellException(String errorCode, String message) {
+            super(message);
+            this.errorCode = errorCode;
+        }
+        public String getErrorCode() { return errorCode; }
     }
 }

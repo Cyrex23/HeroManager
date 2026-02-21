@@ -72,6 +72,25 @@ public class BattleService {
         List<HeroSlot> cSlots = challengerTeam.heroSlots();
         List<HeroSlot> dSlots = defenderTeam.heroSlots();
 
+        // ── Mana pools: sum of each hero's mana stat ──────────────────────────
+        Random random = new Random();
+        double cManaTotal = 0;
+        double dManaTotal = 0;
+        for (HeroSlot hs : cSlots) {
+            Map<String, Double> s = buildBattleStats(hs.hero(), hs.slotNumber(), challengerTeam.summonMpBonus());
+            cManaTotal += s.getOrDefault("mana", 0.0);
+        }
+        for (HeroSlot hs : dSlots) {
+            Map<String, Double> s = buildBattleStats(hs.hero(), hs.slotNumber(), defenderTeam.summonMpBonus());
+            dManaTotal += s.getOrDefault("mana", 0.0);
+        }
+        double cMana = cManaTotal;
+        double dMana = dManaTotal;
+
+        // Track which heroes have already fired their ENTRANCE spell
+        Set<Long> cEntranceFired = new HashSet<>();
+        Set<Long> dEntranceFired = new HashSet<>();
+
         while (cIdx < cSlots.size() && dIdx < dSlots.size()) {
             roundNumber++;
             HeroSlot cSlot = cSlots.get(cIdx);
@@ -81,6 +100,58 @@ public class BattleService {
 
             Map<String, Double> cStats = buildBattleStats(cHero, cSlot.slotNumber(), challengerTeam.summonMpBonus());
             Map<String, Double> dStats = buildBattleStats(dHero, dSlot.slotNumber(), defenderTeam.summonMpBonus());
+
+            // ── Challenger spell resolution ───────────────────────────────────
+            List<Map<String, Object>> cSpells = new ArrayList<>();
+            boolean cIsNew = !cEntranceFired.contains(cHero.getId());
+            for (EquippedAbility ea : equippedAbilityRepository.findByHeroIdAndSlotNumberIsNotNull(cHero.getId())) {
+                AbilityTemplate at = ea.getAbilityTemplate();
+                if (at == null || at.getSpellName() == null || at.getSpellTrigger() == null) continue;
+                boolean fires = ("ENTRANCE".equals(at.getSpellTrigger()) && cIsNew)
+                        || "ATTACK".equals(at.getSpellTrigger());
+                if (!fires || cMana < at.getSpellManaCost()) continue;
+                if (random.nextDouble() >= at.getSpellChance()) continue;
+                cMana -= at.getSpellManaCost();
+                if (at.getSpellBonusPa() != 0) cStats.merge("physicalAttack", at.getSpellBonusPa(), Double::sum);
+                if (at.getSpellBonusMp() != 0) cStats.merge("magicPower", at.getSpellBonusMp(), Double::sum);
+                if (at.getSpellBonusDex() != 0) cStats.merge("dexterity", at.getSpellBonusDex(), Double::sum);
+                if (at.getSpellBonusElem() != 0) cStats.merge("element", at.getSpellBonusElem(), Double::sum);
+                if (at.getSpellBonusMana() != 0) cStats.merge("mana", at.getSpellBonusMana(), Double::sum);
+                if (at.getSpellBonusStam() != 0) cStats.merge("stamina", at.getSpellBonusStam(), Double::sum);
+                Map<String, Object> ev = new LinkedHashMap<>();
+                ev.put("spellName", at.getSpellName());
+                ev.put("manaCost", at.getSpellManaCost());
+                ev.put("heroName", cHero.getTemplate().getDisplayName());
+                ev.put("trigger", at.getSpellTrigger());
+                cSpells.add(ev);
+            }
+            cEntranceFired.add(cHero.getId());
+
+            // ── Defender spell resolution ─────────────────────────────────────
+            List<Map<String, Object>> dSpells = new ArrayList<>();
+            boolean dIsNew = !dEntranceFired.contains(dHero.getId());
+            for (EquippedAbility ea : equippedAbilityRepository.findByHeroIdAndSlotNumberIsNotNull(dHero.getId())) {
+                AbilityTemplate at = ea.getAbilityTemplate();
+                if (at == null || at.getSpellName() == null || at.getSpellTrigger() == null) continue;
+                boolean fires = ("ENTRANCE".equals(at.getSpellTrigger()) && dIsNew)
+                        || "ATTACK".equals(at.getSpellTrigger());
+                if (!fires || dMana < at.getSpellManaCost()) continue;
+                if (random.nextDouble() >= at.getSpellChance()) continue;
+                dMana -= at.getSpellManaCost();
+                if (at.getSpellBonusPa() != 0) dStats.merge("physicalAttack", at.getSpellBonusPa(), Double::sum);
+                if (at.getSpellBonusMp() != 0) dStats.merge("magicPower", at.getSpellBonusMp(), Double::sum);
+                if (at.getSpellBonusDex() != 0) dStats.merge("dexterity", at.getSpellBonusDex(), Double::sum);
+                if (at.getSpellBonusElem() != 0) dStats.merge("element", at.getSpellBonusElem(), Double::sum);
+                if (at.getSpellBonusMana() != 0) dStats.merge("mana", at.getSpellBonusMana(), Double::sum);
+                if (at.getSpellBonusStam() != 0) dStats.merge("stamina", at.getSpellBonusStam(), Double::sum);
+                Map<String, Object> ev = new LinkedHashMap<>();
+                ev.put("spellName", at.getSpellName());
+                ev.put("manaCost", at.getSpellManaCost());
+                ev.put("heroName", dHero.getTemplate().getDisplayName());
+                ev.put("trigger", at.getSpellTrigger());
+                dSpells.add(ev);
+            }
+            dEntranceFired.add(dHero.getId());
 
             BattleCalculator.AttackBreakdown cBreak = BattleCalculator.calculateAttack(cStats, cStamina);
             BattleCalculator.AttackBreakdown dBreak = BattleCalculator.calculateAttack(dStats, dStamina);
@@ -132,13 +203,23 @@ public class BattleService {
             if (cElemBonus > 0) round.put("attackerElementBonus", Math.round(cElemBonus * 100.0) / 100.0);
             if (dElemBonus > 0) round.put("defenderElementBonus", Math.round(dElemBonus * 100.0) / 100.0);
 
+            // ── Spell events & mana tracking ──────────────────────────────────
+            if (!cSpells.isEmpty()) round.put("challengerSpells", cSpells);
+            if (!dSpells.isEmpty()) round.put("defenderSpells", dSpells);
+            round.put("challengerManaAfter", Math.round(cMana * 10.0) / 10.0);
+            round.put("defenderManaAfter", Math.round(dMana * 10.0) / 10.0);
+
             if (cAttack > dAttack) {
                 round.put("winner", "attacker");
                 int xp = 4 + 2 * dHero.getLevel();
                 challengerXp.merge(cHero.getTemplate().getDisplayName(), xp, Integer::sum);
                 cStamina *= 0.9;
                 cHero.setClashesWon(cHero.getClashesWon() + 1);
+                cHero.setCurrentWinStreak(cHero.getCurrentWinStreak() + 1);
+                cHero.setCurrentLossStreak(0);
                 dHero.setClashesLost(dHero.getClashesLost() + 1);
+                dHero.setCurrentLossStreak(dHero.getCurrentLossStreak() + 1);
+                dHero.setCurrentWinStreak(0);
                 if (cAttack > cHero.getMaxDamageDealt()) cHero.setMaxDamageDealt(cAttack);
                 if (dAttack > dHero.getMaxDamageDealt()) dHero.setMaxDamageDealt(dAttack);
                 if (dAttack > cHero.getMaxDamageReceived()) cHero.setMaxDamageReceived(dAttack);
@@ -151,7 +232,11 @@ public class BattleService {
                 defenderXp.merge(dHero.getTemplate().getDisplayName(), xp, Integer::sum);
                 dStamina *= 0.9;
                 dHero.setClashesWon(dHero.getClashesWon() + 1);
+                dHero.setCurrentWinStreak(dHero.getCurrentWinStreak() + 1);
+                dHero.setCurrentLossStreak(0);
                 cHero.setClashesLost(cHero.getClashesLost() + 1);
+                cHero.setCurrentLossStreak(cHero.getCurrentLossStreak() + 1);
+                cHero.setCurrentWinStreak(0);
                 if (dAttack > dHero.getMaxDamageDealt()) dHero.setMaxDamageDealt(dAttack);
                 if (cAttack > cHero.getMaxDamageDealt()) cHero.setMaxDamageDealt(cAttack);
                 if (cAttack > dHero.getMaxDamageReceived()) dHero.setMaxDamageReceived(cAttack);
@@ -211,6 +296,8 @@ public class BattleService {
         result.put("winner", winner);
         result.put("xpGained", Map.of("challenger", challengerXp, "defender", defenderXp));
         result.put("summonXp", Map.of("challenger", challengerSummonXp, "defender", defenderSummonXp));
+        result.put("challengerManaTotal", Math.round(cManaTotal * 10.0) / 10.0);
+        result.put("defenderManaTotal", Math.round(dManaTotal * 10.0) / 10.0);
 
         return result;
     }

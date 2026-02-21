@@ -40,3 +40,8 @@ export async function sellInventoryItem(equippedItemId: number): Promise<SellIte
   const res = await apiClient.post<SellItemResponse>('/equipment/sell-item', { equippedItemId });
   return res.data;
 }
+
+export async function sellAbility(equippedAbilityId: number): Promise<SellItemResponse> {
+  const res = await apiClient.post<SellItemResponse>('/equipment/sell-ability', { equippedAbilityId });
+  return res.data;
+}

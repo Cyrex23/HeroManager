@@ -17,4 +17,6 @@ public class ArenaOpponentResponse {
     private int energyCost;
     private String profileImagePath;
     private String teamName;
+    private long wins;
+    private long losses;
 }

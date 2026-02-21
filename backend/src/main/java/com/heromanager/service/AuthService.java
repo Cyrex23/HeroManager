@@ -162,6 +162,11 @@ public class AuthService {
                     "Please confirm your email before logging in.");
         }
 
+        if (player.isBanned()) {
+            throw new AuthException("BANNED",
+                    "Your account has been banned.");
+        }
+
         // Grant 20 minutes of online status if inactive for 3+ hours
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime onlineUntil = player.getOnlineUntil();

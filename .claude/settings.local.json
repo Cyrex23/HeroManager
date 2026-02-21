@@ -42,7 +42,9 @@
       "Bash(magick:*)",
       "Bash(magick.exe:*)",
       "Bash(python3:*)",
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "Bash(npm run build:*)",
+      "Bash(xargs cat:*)"
     ]
   }
 }

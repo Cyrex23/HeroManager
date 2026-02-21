@@ -1,4 +1,5 @@
 import type { HeroAbilityEntry } from '../../types';
+import EquipmentTooltip from './EquipmentTooltip';
 
 interface Props {
   ability: HeroAbilityEntry;
@@ -9,27 +10,36 @@ export default function AbilitySlot({ ability, onUnequip }: Props) {
   const bonusEntries = Object.entries(ability.bonuses).filter(([, v]) => v !== 0);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <span style={styles.name}>{ability.name}</span>
-        <span style={styles.tier}>Tier {ability.tier}</span>
+    <EquipmentTooltip
+      name={ability.name}
+      type="ability"
+      bonuses={ability.bonuses}
+      tier={ability.tier}
+      copies={ability.copies}
+      spell={ability.spell ?? null}
+    >
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <span style={styles.name}>{ability.name}</span>
+          <span style={styles.tier}>Tier {ability.tier}</span>
+          {ability.slotNumber !== null && (
+            <span style={styles.slotTag}>Slot {ability.slotNumber}</span>
+          )}
+        </div>
+        {bonusEntries.length > 0 && (
+          <div style={styles.bonuses}>
+            {bonusEntries.map(([stat, val]) => (
+              <span key={stat} style={styles.bonus}>+{val} {formatStat(stat)}</span>
+            ))}
+          </div>
+        )}
         {ability.slotNumber !== null && (
-          <span style={styles.slotTag}>Slot {ability.slotNumber}</span>
+          <button onClick={() => onUnequip(ability.slotNumber!)} style={styles.unequipBtn}>
+            Unslot
+          </button>
         )}
       </div>
-      {bonusEntries.length > 0 && (
-        <div style={styles.bonuses}>
-          {bonusEntries.map(([stat, val]) => (
-            <span key={stat} style={styles.bonus}>+{val} {formatStat(stat)}</span>
-          ))}
-        </div>
-      )}
-      {ability.slotNumber !== null && (
-        <button onClick={() => onUnequip(ability.slotNumber!)} style={styles.unequipBtn}>
-          Unslot
-        </button>
-      )}
-    </div>
+    </EquipmentTooltip>
   );
 }
 

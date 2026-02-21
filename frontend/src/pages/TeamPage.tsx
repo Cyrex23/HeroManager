@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTeam, equipHero, unequipHero, equipSummon, unequipSummon } from '../api/teamApi';
 import { getHeroes, getSummons } from '../api/playerApi';
 import { usePlayer } from '../context/PlayerContext';
+import { useTeam } from '../context/TeamContext';
 import {
   getHeroEquipment,
   equipItemToSlot,
@@ -13,12 +14,13 @@ import {
 } from '../api/equipmentApi';
 import type {
   TeamResponse, HeroResponse, SummonResponse, ErrorResponse,
-  HeroEquipmentResponse, CombinedSlot, InventoryItem, HeroAbilityEntry,
+  HeroEquipmentResponse, CombinedSlot, InventoryItem, HeroAbilityEntry, HeroStats,
 } from '../types';
 import TeamSlotComponent from '../components/Team/TeamSlot';
 import CapacityBar from '../components/Team/CapacityBar';
 import HeroCard from '../components/Hero/HeroCard';
 import HeroPortrait from '../components/Hero/HeroPortrait';
+import EquipmentTooltip from '../components/Equipment/EquipmentTooltip';
 import { AxiosError } from 'axios';
 
 interface PickerOption {
@@ -26,6 +28,10 @@ interface PickerOption {
   label: string;
   type: 'item' | 'ability';
   sellPrice?: number;
+  bonuses?: Partial<HeroStats>;
+  tier?: number;
+  copies?: number;
+  spell?: import('../types').SpellInfo | null;
 }
 
 export default function TeamPage() {
@@ -36,7 +42,11 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [heroEquipment, setHeroEquipment] = useState<Record<number, HeroEquipmentResponse>>({});
   const [activePicker, setActivePicker] = useState<{ heroId: number; slotNumber: number } | null>(null);
+  const [selectedBenchHeroId, setSelectedBenchHeroId] = useState<number | null>(null);
+  const [selectedBenchSummonId, setSelectedBenchSummonId] = useState<number | null>(null);
+  const pickerCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { fetchPlayer } = usePlayer();
+  const { refreshTeam } = useTeam();
   const navigate = useNavigate();
 
   const refresh = useCallback(async () => {
@@ -76,10 +86,10 @@ export default function TeamPage() {
   }
 
   async function handleEquipHero(heroId: number, slotNumber: number) {
+    setSelectedBenchHeroId(null);
     try {
       await equipHero({ heroId, slotNumber });
-      await refresh();
-      await fetchPlayer();
+      await Promise.all([refresh(), refreshTeam(), fetchPlayer()]);
     } catch (err) {
       const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
       setError(msg || 'Failed to equip hero.');
@@ -89,8 +99,7 @@ export default function TeamPage() {
   async function handleUnequipHero(slotNumber: number) {
     try {
       await unequipHero({ slotNumber });
-      await refresh();
-      await fetchPlayer();
+      await Promise.all([refresh(), refreshTeam(), fetchPlayer()]);
     } catch (err) {
       const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
       setError(msg || 'Failed to unequip hero.');
@@ -98,10 +107,10 @@ export default function TeamPage() {
   }
 
   async function handleEquipSummon(summonId: number) {
+    setSelectedBenchSummonId(null);
     try {
       await equipSummon({ summonId });
-      await refresh();
-      await fetchPlayer();
+      await Promise.all([refresh(), refreshTeam(), fetchPlayer()]);
     } catch (err) {
       const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
       setError(msg || 'Failed to equip summon.');
@@ -111,8 +120,7 @@ export default function TeamPage() {
   async function handleUnequipSummon() {
     try {
       await unequipSummon();
-      await refresh();
-      await fetchPlayer();
+      await Promise.all([refresh(), refreshTeam(), fetchPlayer()]);
     } catch (err) {
       const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
       setError(msg || 'Failed to unequip summon.');
@@ -167,11 +175,11 @@ export default function TeamPage() {
   function buildPickerOptions(eq: HeroEquipmentResponse): PickerOption[] {
     const options: PickerOption[] = [];
     for (const item of eq.inventoryItems) {
-      options.push({ id: item.equippedItemId, label: item.name, type: 'item', sellPrice: item.sellPrice });
+      options.push({ id: item.equippedItemId, label: item.name, type: 'item', sellPrice: item.sellPrice, bonuses: item.bonuses, copies: item.copies });
     }
     for (const ab of eq.heroAbilities) {
       if (ab.slotNumber === null) {
-        options.push({ id: ab.equippedAbilityId, label: `${ab.name} (T${ab.tier})`, type: 'ability' });
+        options.push({ id: ab.equippedAbilityId, label: `${ab.name} (T${ab.tier})`, type: 'ability', bonuses: ab.bonuses, tier: ab.tier, copies: ab.copies, spell: ab.spell });
       }
     }
     return options;
@@ -181,13 +189,12 @@ export default function TeamPage() {
 
   const benchHeroes = heroes.filter((h) => !h.isEquipped);
   const benchSummons = summons.filter((s) => !s.isEquipped);
-  const firstEmptySlot = team?.slots
-    .filter((s) => s.type === 'hero' && s.hero === null)
-    .map((s) => s.slotNumber)[0];
+
+  const selectedHero = heroes.find((h) => h.id === selectedBenchHeroId) ?? null;
 
 
   return (
-    <div onClick={() => setActivePicker(null)}>
+    <div onClick={() => setActivePicker(null)} onKeyDown={() => setActivePicker(null)}>
       <h2 style={styles.title}>Team Lineup</h2>
 
       {error && <div style={styles.error}>{error}</div>}
@@ -199,22 +206,114 @@ export default function TeamPage() {
             <div style={styles.power}>Team Power: {team.teamPower.toFixed(0)}</div>
           </div>
 
+          {(selectedBenchHeroId !== null || selectedBenchSummonId !== null) && (
+            <div style={styles.selectionHint}>
+              {selectedBenchSummonId === null
+                ? 'Hero selected — click an empty slot to equip.'
+                : 'Summon selected — click the summon slot to equip.'}
+              {' '}Click the card again to cancel.
+            </div>
+          )}
+
           <div style={styles.slotsGrid}>
-            {team.slots.map((slot) => (
-              <TeamSlotComponent
-                key={slot.slotNumber}
-                slot={slot}
-                onUnequip={
-                  slot.type === 'hero' && slot.hero
-                    ? () => handleUnequipHero(slot.slotNumber)
-                    : slot.type === 'summon' && slot.summon
-                      ? () => handleUnequipSummon()
-                      : undefined
-                }
-                onHeroClick={(id) => navigate(`/hero/${id}`)}
-              />
-            ))}
+            {team.slots.map((slot) => {
+              let onUnequip: (() => void) | undefined;
+              if (slot.type === 'hero' && slot.hero) onUnequip = () => { handleUnequipHero(slot.slotNumber); };
+              else if (slot.type === 'summon' && slot.summon) onUnequip = () => { handleUnequipSummon(); };
+
+              let onEmptySlotClick: (() => void) | undefined;
+              if (selectedBenchHeroId !== null && slot.type === 'hero' && !slot.hero) {
+                onEmptySlotClick = () => { handleEquipHero(selectedBenchHeroId, slot.slotNumber); };
+              } else if (selectedBenchSummonId !== null && slot.type === 'summon' && !slot.summon) {
+                onEmptySlotClick = () => { handleEquipSummon(selectedBenchSummonId); };
+              }
+
+              return (
+                <TeamSlotComponent
+                  key={slot.slotNumber}
+                  slot={slot}
+                  onUnequip={onUnequip}
+                  onHeroClick={(id) => navigate(`/hero/${id}`)}
+                  onEmptySlotClick={onEmptySlotClick}
+                  selectedHeroTier={selectedHero?.tier}
+                />
+              );
+            })}
           </div>
+
+          <h3 style={styles.subtitle}>Bench Heroes</h3>
+          {benchHeroes.length === 0 ? (
+            <p style={styles.muted}>No heroes on bench. Buy heroes from the Shop!</p>
+          ) : (
+            <>
+              <p style={styles.benchHint}>Click a hero to select them, then click an empty team slot above to equip.</p>
+              <div style={styles.benchGrid}>
+                {benchHeroes.map((hero) => {
+                  const isSelected = selectedBenchHeroId === hero.id;
+                  return (
+                    <div
+                      key={hero.id}
+                      style={{ ...styles.benchItem, ...(isSelected ? styles.benchItemSelected : {}) }}
+                    >
+                      <HeroCard
+                        hero={hero}
+                        onClick={() => { setSelectedBenchHeroId(isSelected ? null : hero.id); setSelectedBenchSummonId(null); }}
+                      />
+                      <button
+                        style={styles.viewBtn}
+                        onClick={() => navigate(`/hero/${hero.id}`)}
+                        type="button"
+                      >
+                        View
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {benchSummons.length > 0 && (
+            <>
+              <h3 style={styles.subtitle}>Bench Summons</h3>
+              <p style={styles.benchHint}>Click a summon to select it, then click the summon slot above to equip.</p>
+              <div style={styles.benchGrid}>
+                {benchSummons.map((summon) => {
+                  const isSelected = selectedBenchSummonId === summon.id;
+                  const xpPct = summon.xpToNextLevel > 0
+                    ? Math.min((summon.currentXp / summon.xpToNextLevel) * 100, 100) : 0;
+                  return (
+                    <div
+                      key={summon.id}
+                      style={{ ...styles.benchItem, ...(isSelected ? styles.benchItemSelected : {}) }}
+                    >
+                      <button
+                        type="button"
+                        style={styles.summonCardBtn}
+                        onClick={() => {
+                          setSelectedBenchSummonId(isSelected ? null : summon.id);
+                          setSelectedBenchHeroId(null);
+                        }}
+                      >
+                        <HeroPortrait imagePath={summon.imagePath} name={summon.name} size={72} />
+                        <div style={styles.summonName}>{summon.name}</div>
+                        <div style={styles.muted}>Lv.{summon.level} | Cap: {summon.capacity}</div>
+                        <div style={{ color: '#4ade80', fontSize: 12 }}>{summon.teamBonus}</div>
+                        <div style={{ marginTop: 6 }}>
+                          <div style={{ color: '#a0a0b0', fontSize: 11, marginBottom: 2 }}>
+                            XP: {summon.currentXp} / {summon.xpToNextLevel}
+                          </div>
+                          <div style={styles.xpBarBg}>
+                            <div style={{ ...styles.xpBarFill, width: `${xpPct}%` }} />
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           {/* Equipment management section */}
           {heroes.length > 0 && (
@@ -246,62 +345,95 @@ export default function TeamPage() {
                         {eq.slots.map((slot) => {
                           const isPickerOpen = activePicker?.heroId === hero.id && activePicker?.slotNumber === slot.slotNumber;
 
+                          const matchedAbility = slot.type === 'ability'
+                            ? eq.heroAbilities.find((a) => a.slotNumber === slot.slotNumber)
+                            : null;
+                          const abilityTier = matchedAbility?.tier ?? null;
+                          const abilitySpell = matchedAbility?.spell ?? slot.spell ?? null;
+
                           return (
                             <div key={slot.slotNumber} style={styles.slotWrap}>
                               {slot.type ? (
                                 /* Occupied slot */
-                                <div style={{
-                                  ...styles.slotFilled,
-                                  borderColor: slot.type === 'ability' ? '#a78bfa' : '#60a5fa',
-                                }}>
-                                  <span style={{
-                                    ...styles.slotTypeTag,
-                                    color: slot.type === 'ability' ? '#a78bfa' : '#60a5fa',
+                                <EquipmentTooltip
+                                  name={slot.name ?? ''}
+                                  type={slot.type}
+                                  bonuses={slot.bonuses ?? {}}
+                                  tier={abilityTier}
+                                  sellPrice={slot.sellPrice}
+                                  copies={slot.copies ?? undefined}
+                                  spell={abilitySpell}
+                                >
+                                  <div style={{
+                                    ...styles.slotFilled,
+                                    borderColor: slot.type === 'ability' ? '#a78bfa' : '#60a5fa',
                                   }}>
-                                    {slot.type === 'ability' ? 'A' : 'I'}
-                                  </span>
-                                  <span style={styles.slotItemName} title={slot.name ?? ''}>
-                                    {slot.name}
-                                  </span>
-                                  <button
-                                    onClick={() => handleUnequipSlot(hero.id, slot)}
-                                    style={styles.unequipBtn}
-                                    title="Unequip (back to inventory)"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
+                                    <span style={{
+                                      ...styles.slotTypeTag,
+                                      color: slot.type === 'ability' ? '#a78bfa' : '#60a5fa',
+                                    }}>
+                                      {slot.type === 'ability' ? 'A' : 'I'}
+                                    </span>
+                                    <span style={styles.slotItemName} title={slot.name ?? ''}>
+                                      {slot.name}
+                                    </span>
+                                    <button
+                                      onClick={() => handleUnequipSlot(hero.id, slot)}
+                                      style={styles.unequipBtn}
+                                      title="Unequip (back to inventory)"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </EquipmentTooltip>
                               ) : (
                                 /* Empty slot */
                                 <div style={{ position: 'relative' }}>
                                   <button
                                     style={styles.emptySlot}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setActivePicker(isPickerOpen ? null : { heroId: hero.id, slotNumber: slot.slotNumber });
-                                    }}
                                     disabled={pickerOptions.length === 0}
                                     title={pickerOptions.length === 0 ? 'No items or abilities in inventory' : 'Equip item or ability'}
+                                    onMouseEnter={() => {
+                                      if (pickerCloseTimer.current) clearTimeout(pickerCloseTimer.current);
+                                      if (pickerOptions.length > 0) setActivePicker({ heroId: hero.id, slotNumber: slot.slotNumber });
+                                    }}
+                                    onMouseLeave={() => {
+                                      pickerCloseTimer.current = setTimeout(() => setActivePicker(null), 150);
+                                    }}
                                   >
                                     {pickerOptions.length === 0 ? '—' : '+'}
                                   </button>
 
                                   {isPickerOpen && (
-                                    <div style={styles.pickerDropdown} onClick={(e) => e.stopPropagation()}>
+                                    <div
+                                      style={styles.pickerDropdown}
+                                      onMouseEnter={() => { if (pickerCloseTimer.current) clearTimeout(pickerCloseTimer.current); }}
+                                      onMouseLeave={() => { pickerCloseTimer.current = setTimeout(() => setActivePicker(null), 150); }}
+                                    >
                                       {pickerOptions.map((opt) => (
-                                        <button
+                                        <EquipmentTooltip
                                           key={`${opt.type}-${opt.id}`}
-                                          style={styles.pickerOption}
-                                          onClick={() => handleEquipToSlot(hero.id, slot.slotNumber, opt)}
+                                          name={opt.label}
+                                          type={opt.type}
+                                          bonuses={opt.bonuses ?? {}}
+                                          tier={opt.tier}
+                                          sellPrice={opt.sellPrice}
+                                          copies={opt.copies}
+                                          spell={opt.spell}
                                         >
-                                          <span style={{
-                                            ...styles.pickerTypeTag,
-                                            color: opt.type === 'ability' ? '#a78bfa' : '#60a5fa',
-                                          }}>
-                                            {opt.type === 'ability' ? 'A' : 'I'}
-                                          </span>
-                                          {opt.label}
-                                        </button>
+                                          <button
+                                            style={styles.pickerOption}
+                                            onClick={() => handleEquipToSlot(hero.id, slot.slotNumber, opt)}
+                                          >
+                                            <span style={{
+                                              ...styles.pickerTypeTag,
+                                              color: opt.type === 'ability' ? '#a78bfa' : '#60a5fa',
+                                            }}>
+                                              {opt.type === 'ability' ? 'A' : 'I'}
+                                            </span>
+                                            {opt.label}
+                                          </button>
+                                        </EquipmentTooltip>
                                       ))}
                                     </div>
                                   )}
@@ -349,66 +481,6 @@ export default function TeamPage() {
               </div>
             </>
           )}
-        </>
-      )}
-
-      <h3 style={styles.subtitle}>Bench Heroes</h3>
-      {benchHeroes.length === 0 ? (
-        <p style={styles.muted}>No heroes on bench. Buy heroes from the Shop!</p>
-      ) : (
-        <div style={styles.benchGrid}>
-          {benchHeroes.map((hero) => (
-            <div key={hero.id} style={styles.benchItem}>
-              <HeroCard
-                hero={hero}
-                onClick={() => navigate(`/hero/${hero.id}`)}
-              />
-              {firstEmptySlot && (
-                <button
-                  onClick={() => handleEquipHero(hero.id, firstEmptySlot)}
-                  style={styles.equipBtn}
-                >
-                  Equip to Slot {firstEmptySlot}
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {benchSummons.length > 0 && (
-        <>
-          <h3 style={styles.subtitle}>Bench Summons</h3>
-          <div style={styles.benchGrid}>
-            {benchSummons.map((summon) => {
-              const xpPct = summon.xpToNextLevel > 0
-                ? Math.min((summon.currentXp / summon.xpToNextLevel) * 100, 100) : 0;
-              return (
-              <div key={summon.id} style={styles.benchItem}>
-                <div style={styles.summonCard}>
-                  <HeroPortrait imagePath={summon.imagePath} name={summon.name} size={72} />
-                  <div style={styles.summonName}>{summon.name}</div>
-                  <div style={styles.muted}>Lv.{summon.level} | Cap: {summon.capacity}</div>
-                  <div style={{ color: '#4ade80', fontSize: 12 }}>{summon.teamBonus}</div>
-                  <div style={{ marginTop: 6 }}>
-                    <div style={{ color: '#a0a0b0', fontSize: 11, marginBottom: 2 }}>
-                      XP: {summon.currentXp} / {summon.xpToNextLevel}
-                    </div>
-                    <div style={styles.xpBarBg}>
-                      <div style={{ ...styles.xpBarFill, width: `${xpPct}%` }} />
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleEquipSummon(summon.id)}
-                  style={styles.equipBtn}
-                >
-                  Equip Summon
-                </button>
-              </div>
-            );
-            })}
-          </div>
         </>
       )}
     </div>
@@ -629,19 +701,40 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
     gap: 12,
   },
+  selectionHint: {
+    color: '#60a5fa',
+    fontSize: 12,
+    padding: '6px 12px',
+    backgroundColor: 'rgba(96, 165, 250, 0.08)',
+    border: '1px solid rgba(96, 165, 250, 0.2)',
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  benchHint: {
+    color: '#666',
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginBottom: 10,
+    marginTop: -4,
+  },
   benchItem: {
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
   },
-  equipBtn: {
-    padding: '6px 12px',
-    backgroundColor: '#e94560',
-    color: '#fff',
-    border: 'none',
+  benchItemSelected: {
+    outline: '2px solid #60a5fa',
+    borderRadius: 6,
+  },
+  viewBtn: {
+    padding: '5px 12px',
+    backgroundColor: 'transparent',
+    color: '#a0a0b0',
+    border: '1px solid #333',
     borderRadius: 4,
     fontSize: 12,
     cursor: 'pointer',
+    alignSelf: 'flex-start',
   },
   muted: {
     color: '#666',
@@ -655,6 +748,18 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 4,
+  },
+  summonCardBtn: {
+    padding: 12,
+    backgroundColor: '#1a1a2e',
+    borderRadius: 6,
+    border: '1px solid #16213e',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    cursor: 'pointer',
+    textAlign: 'left',
+    width: '100%',
   },
   summonName: {
     color: '#e0e0e0',

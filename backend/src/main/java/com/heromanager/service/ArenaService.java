@@ -61,8 +61,8 @@ public class ArenaService {
             if (isSelf && !isOnline) continue;
 
             // Check for pending return challenge (not applicable for self)
-            boolean hasPendingReturn = !isSelf && battleLogRepository
-                    .findPendingReturnChallenge(p.getId(), playerId).isPresent();
+            boolean hasPendingReturn = !isSelf && !battleLogRepository
+                    .findPendingReturnChallenges(p.getId(), playerId).isEmpty();
 
             int energyCost;
             if (isSelf) {
@@ -83,6 +83,10 @@ public class ArenaService {
                 teamPower += stats.values().stream().mapToDouble(Double::doubleValue).sum();
             }
 
+            long wins = battleLogRepository.countWins(p.getId());
+            long totalBattles = battleLogRepository.countBattles(p.getId());
+            long losses = totalBattles - wins;
+
             opponents.add(ArenaOpponentResponse.builder()
                     .playerId(p.getId())
                     .username(p.getUsername())
@@ -93,6 +97,8 @@ public class ArenaService {
                     .energyCost(energyCost)
                     .profileImagePath(p.getProfileImagePath())
                     .teamName(p.getTeamName() != null ? p.getTeamName() : p.getUsername())
+                    .wins(wins)
+                    .losses(losses)
                     .build());
         }
 
@@ -131,8 +137,8 @@ public class ArenaService {
         }
 
         // Check return challenge
-        boolean isReturn = battleLogRepository
-                .findPendingReturnChallenge(defenderId, challengerId).isPresent();
+        boolean isReturn = !battleLogRepository
+                .findPendingReturnChallenges(defenderId, challengerId).isEmpty();
 
         boolean defenderOnline = energyService.isOnline(defender);
         int energyCost;
@@ -191,9 +197,10 @@ public class ArenaService {
         }
         battleLogRepository.save(log);
 
-        // Mark return challenge as used
+        // Mark return challenge as used (mark the most recent one)
         if (isReturn) {
-            battleLogRepository.findPendingReturnChallenge(defenderId, challengerId)
+            battleLogRepository.findPendingReturnChallenges(defenderId, challengerId)
+                    .stream().findFirst()
                     .ifPresent(original -> {
                         original.setReturnChallengeUsed(true);
                         battleLogRepository.save(original);

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getAccountData, setProfileImage, changeTeamName, changePassword } from '../api/accountApi';
+import { getHeroes } from '../api/playerApi';
 import { usePlayer } from '../context/PlayerContext';
 import type { AccountData, AvatarOption } from '../types';
 import HeroPortrait from '../components/Hero/HeroPortrait';
+import LevelUpPopup, { type LevelUpEvent } from '../components/Hero/LevelUpPopup';
 import { AxiosError } from 'axios';
 
 interface ErrorResponse { message: string; }
@@ -11,6 +13,10 @@ export default function AccountPage() {
   const [data, setData] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
   const { fetchPlayer } = usePlayer();
+
+  // Level-up detection
+  const heroLevelsRef = useRef<Record<number, number>>({});
+  const [levelUpQueue, setLevelUpQueue] = useState<LevelUpEvent[]>([]);
 
   // Team name form
   const [teamNameInput, setTeamNameInput] = useState('');
@@ -37,6 +43,43 @@ export default function AccountPage() {
   }
 
   useEffect(() => { load(); }, []);
+
+  // Poll for hero level-ups every 15 s while on this page
+  useEffect(() => {
+    let mounted = true;
+
+    async function checkLevels(isInitial: boolean) {
+      try {
+        const heroes = await getHeroes();
+        if (!mounted) return;
+        const newLevels: Record<number, number> = {};
+        heroes.forEach(h => { newLevels[h.id] = h.level; });
+
+        if (!isInitial) {
+          const prev = heroLevelsRef.current;
+          const events: LevelUpEvent[] = heroes
+            .filter(h => prev[h.id] !== undefined && h.level > prev[h.id])
+            .map(h => ({
+              heroId:      h.id,
+              heroName:    h.name,
+              imagePath:   h.imagePath,
+              oldLevel:    prev[h.id],
+              newLevel:    h.level,
+              baseStats:   h.baseStats,
+              growthStats: h.growthStats,
+              tier:        h.tier,
+            }));
+          if (events.length > 0) setLevelUpQueue(q => [...q, ...events]);
+        }
+
+        heroLevelsRef.current = newLevels;
+      } catch { /* non-fatal */ }
+    }
+
+    checkLevels(true);
+    const interval = setInterval(() => checkLevels(false), 15_000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
 
   async function handleSelectAvatar(av: AvatarOption) {
     try {
@@ -82,6 +125,12 @@ export default function AccountPage() {
 
   return (
     <div style={styles.page}>
+      {levelUpQueue.length > 0 && (
+        <LevelUpPopup
+          event={levelUpQueue[0]}
+          onClose={() => setLevelUpQueue(q => q.slice(1))}
+        />
+      )}
       {/* ── Profile header ── */}
       <div style={styles.profileCard}>
         <div style={styles.avatarBlock}>
@@ -111,6 +160,14 @@ export default function AccountPage() {
           <div style={styles.statItem}>
             <span style={{ ...styles.statVal, color: '#fbbf24' }}>{winRate}%</span>
             <span style={styles.statLabel}>Win Rate</span>
+          </div>
+          <div style={styles.statItem}>
+            <span style={{ ...styles.statVal, color: '#4ade80' }}>{data.winStreak}</span>
+            <span style={styles.statLabel}>Win Streak</span>
+          </div>
+          <div style={styles.statItem}>
+            <span style={{ ...styles.statVal, color: '#e94560' }}>{data.lossStreak}</span>
+            <span style={styles.statLabel}>Loss Streak</span>
           </div>
         </div>
       </div>

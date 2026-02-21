@@ -1,4 +1,5 @@
 import type { ShopItemResponse } from '../../types';
+import EquipmentTooltip from '../Equipment/EquipmentTooltip';
 
 interface Props {
   item: ShopItemResponse;
@@ -12,28 +13,30 @@ export default function ShopItemCard({ item, onBuy, playerGold, disabled }: Prop
   const canAfford = playerGold >= item.cost;
 
   return (
-    <div style={styles.card}>
-      <div style={styles.name}>{item.name}</div>
-      <div style={styles.cost}>{item.cost}g</div>
-      {bonusEntries.length > 0 && (
-        <div style={styles.bonuses}>
-          {bonusEntries.map(([stat, val]) => (
-            <span key={stat} style={styles.bonus}>+{val} {formatStat(stat)}</span>
-          ))}
-        </div>
-      )}
-      <button
-        onClick={() => onBuy(item.templateId)}
-        disabled={disabled || !canAfford}
-        style={{
-          ...styles.buyBtn,
-          opacity: disabled || !canAfford ? 0.5 : 1,
-          cursor: disabled || !canAfford ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {!canAfford ? 'Not enough gold' : 'Buy'}
-      </button>
-    </div>
+    <EquipmentTooltip name={item.name} type="item" bonuses={item.bonuses}>
+      <div style={styles.card}>
+        <div style={styles.name}>{item.name}</div>
+        <div style={styles.cost}>{item.cost}g</div>
+        {bonusEntries.length > 0 && (
+          <div style={styles.bonuses}>
+            {bonusEntries.map(([stat, val]) => (
+              <span key={stat} style={styles.bonus}>+{val} {formatStat(stat)}</span>
+            ))}
+          </div>
+        )}
+        <button
+          onClick={() => onBuy(item.templateId)}
+          disabled={disabled || !canAfford}
+          style={{
+            ...styles.buyBtn,
+            opacity: disabled || !canAfford ? 0.5 : 1,
+            cursor: disabled || !canAfford ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {!canAfford ? 'Not enough gold' : 'Buy'}
+        </button>
+      </div>
+    </EquipmentTooltip>
   );
 }
 

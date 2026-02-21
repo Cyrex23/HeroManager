@@ -135,6 +135,20 @@ export default function BattlePage() {
                 )}
               </div>
             )}
+            {((round.challengerSpells?.length ?? 0) > 0 || (round.defenderSpells?.length ?? 0) > 0) && (
+              <div style={styles.spellRow}>
+                {round.challengerSpells?.map((sp, i) => (
+                  <span key={i} style={styles.spellTag}>
+                    ✦ {sp.heroName}: <strong>{sp.spellName}</strong> <span style={styles.spellTagCost}>−{sp.manaCost} MP</span>
+                  </span>
+                ))}
+                {round.defenderSpells?.map((sp, i) => (
+                  <span key={`d${i}`} style={{ ...styles.spellTag, borderColor: 'rgba(96,165,250,0.3)' }}>
+                    ✦ {sp.heroName}: <strong>{sp.spellName}</strong> <span style={styles.spellTagCost}>−{sp.manaCost} MP</span>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -516,5 +530,26 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     letterSpacing: 0.5,
     transition: 'background 0.15s, color 0.15s',
+  },
+  spellRow: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: 6,
+    marginTop: 4,
+    paddingTop: 4,
+    borderTop: '1px solid rgba(59,130,246,0.15)',
+  },
+  spellTag: {
+    fontSize: 11,
+    color: '#93c5fd',
+    backgroundColor: 'rgba(59,130,246,0.08)',
+    border: '1px solid rgba(59,130,246,0.25)',
+    borderRadius: 4,
+    padding: '2px 7px',
+  },
+  spellTagCost: {
+    color: '#60a5fa',
+    fontWeight: 700,
+    marginLeft: 4,
   },
 };

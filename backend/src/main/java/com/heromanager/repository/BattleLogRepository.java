@@ -6,7 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface BattleLogRepository extends JpaRepository<BattleLog, Long> {
 
@@ -14,7 +14,7 @@ public interface BattleLogRepository extends JpaRepository<BattleLog, Long> {
     Page<BattleLog> findByPlayerInvolved(Long playerId, Pageable pageable);
 
     @Query("SELECT b FROM BattleLog b WHERE b.challengerId = ?1 AND b.defenderId = ?2 AND b.returnChallengeUsed = false ORDER BY b.createdAt DESC")
-    Optional<BattleLog> findPendingReturnChallenge(Long challengerId, Long defenderId);
+    List<BattleLog> findPendingReturnChallenges(Long challengerId, Long defenderId);
 
     @Query("SELECT COUNT(b) FROM BattleLog b WHERE b.challengerId = ?1 OR b.defenderId = ?1")
     long countBattles(Long playerId);

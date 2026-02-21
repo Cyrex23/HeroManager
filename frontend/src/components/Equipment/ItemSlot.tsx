@@ -1,4 +1,5 @@
 import type { CombinedSlot } from '../../types';
+import EquipmentTooltip from './EquipmentTooltip';
 
 interface Props {
   slot: CombinedSlot;
@@ -24,28 +25,37 @@ export default function ItemSlot({ slot, onUnequip, onSell }: Props) {
   const typeLabel = slot.type === 'ability' ? 'Ability' : 'Item';
 
   return (
-    <div style={{ ...styles.filled, borderColor: `${typeColor}40` }}>
-      <div style={styles.header}>
-        <span style={styles.slotLabel}>Slot {slot.slotNumber}</span>
-        <span style={{ ...styles.typeTag, color: typeColor }}>{typeLabel}</span>
-        <span style={styles.itemName}>{slot.name}</span>
-      </div>
-      {bonusEntries.length > 0 && (
-        <div style={styles.bonuses}>
-          {bonusEntries.map(([stat, val]) => (
-            <span key={stat} style={styles.bonus}>+{val} {formatStat(stat)}</span>
-          ))}
+    <EquipmentTooltip
+      name={slot.name ?? ''}
+      type={slot.type}
+      bonuses={slot.bonuses ?? {}}
+      sellPrice={slot.sellPrice}
+      copies={slot.copies ?? undefined}
+      spell={slot.spell ?? null}
+    >
+      <div style={{ ...styles.filled, borderColor: `${typeColor}40` }}>
+        <div style={styles.header}>
+          <span style={styles.slotLabel}>Slot {slot.slotNumber}</span>
+          <span style={{ ...styles.typeTag, color: typeColor }}>{typeLabel}</span>
+          <span style={styles.itemName}>{slot.name}</span>
         </div>
-      )}
-      <div style={styles.actions}>
-        <button onClick={() => onUnequip(slot.slotNumber)} style={styles.unequipBtn}>Unequip</button>
-        {slot.type === 'item' && slot.id !== null && slot.sellPrice !== null && (
-          <button onClick={() => onSell(slot.id!)} style={styles.sellBtn}>
-            Sell ({slot.sellPrice}g)
-          </button>
+        {bonusEntries.length > 0 && (
+          <div style={styles.bonuses}>
+            {bonusEntries.map(([stat, val]) => (
+              <span key={stat} style={styles.bonus}>+{val} {formatStat(stat)}</span>
+            ))}
+          </div>
         )}
+        <div style={styles.actions}>
+          <button onClick={() => onUnequip(slot.slotNumber)} style={styles.unequipBtn}>Unequip</button>
+          {slot.type === 'item' && slot.id !== null && slot.sellPrice !== null && (
+            <button onClick={() => onSell(slot.id!)} style={styles.sellBtn}>
+              Sell ({slot.sellPrice}g)
+            </button>
+          )}
+        </div>
       </div>
-    </div>
+    </EquipmentTooltip>
   );
 }
 

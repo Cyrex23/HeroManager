@@ -8,6 +8,10 @@ const ELEM_SYM: Record<string, string> = {
   FIRE: '🔥', WATER: '💧', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
 };
 
+const ELEM_COLOR: Record<string, string> = {
+  FIRE: '#f97316', WATER: '#38bdf8', WIND: '#4ade80', EARTH: '#a16207', LIGHTNING: '#facc15',
+};
+
 // Keyframes injected once into <head>
 const ANIM_CSS = `
 @keyframes baCR  { 0%{transform:translateX(0) scale(1)} 42%{transform:translateX(150px) scale(1.08)} 68%{transform:translateX(135px) scale(1.03)} 100%{transform:translateX(0) scale(1)} }
@@ -32,10 +36,15 @@ const ANIM_CSS = `
 @keyframes baScrLine { 0%{opacity:0;transform:translate(-50%,-50%) rotate(-40deg) scaleY(0)} 18%{opacity:1;transform:translate(-50%,-50%) rotate(-40deg) scaleY(1.05)} 55%{opacity:.9;transform:translate(-50%,-50%) rotate(-40deg) scaleY(1)} 100%{opacity:0;transform:translate(-50%,-50%) rotate(-40deg) scaleY(1)} }
 @keyframes baRasCor { 0%{opacity:0;transform:scale(0) rotate(0deg)} 30%{opacity:1;transform:scale(1.1) rotate(300deg)} 65%{opacity:1;transform:scale(1) rotate(680deg)} 100%{opacity:0;transform:scale(1.2) rotate(1040deg)} }
 @keyframes baRasOrb { 0%{opacity:0;transform:scale(0) rotate(0deg)} 30%{opacity:.6;transform:scale(1.2) rotate(-240deg)} 65%{opacity:.4;transform:scale(1.4) rotate(-560deg)} 100%{opacity:0;transform:scale(1.7) rotate(-820deg)} }
-@keyframes baSlashGrow { 0%{opacity:0;transform:translate(-50%,-50%) rotate(-45deg) scaleX(0)} 16%{opacity:1;transform:translate(-50%,-50%) rotate(-45deg) scaleX(1.08)} 50%{opacity:.85;transform:translate(-50%,-50%) rotate(-45deg) scaleX(1)} 100%{opacity:0;transform:translate(-50%,-50%) rotate(-45deg) scaleX(1.1)} }
+@keyframes baSlashV1 { 0%{opacity:0;transform:translate(-50%,-50%) rotate(-52deg) scaleX(0);filter:brightness(5)} 6%{opacity:1;transform:translate(-50%,-50%) rotate(-52deg) scaleX(1.12);filter:brightness(3.5)} 18%{transform:translate(-50%,-50%) rotate(-52deg) scaleX(0.96);filter:brightness(2)} 55%{opacity:1;transform:translate(-50%,-50%) rotate(-52deg) scaleX(1);filter:brightness(1.4)} 100%{opacity:0;transform:translate(-50%,-50%) rotate(-52deg) scaleX(1);filter:brightness(1)} }
+@keyframes baSlashV2 { 0%{opacity:0;transform:translate(-50%,-50%) rotate(40deg) scaleX(0)} 6%{opacity:1;transform:translate(-50%,-50%) rotate(40deg) scaleX(1.1)} 18%{transform:translate(-50%,-50%) rotate(40deg) scaleX(0.97)} 52%{opacity:0.8;transform:translate(-50%,-50%) rotate(40deg) scaleX(1)} 100%{opacity:0;transform:translate(-50%,-50%) rotate(40deg) scaleX(1)} }
+@keyframes baSlashBurst { 0%{opacity:0;transform:translate(-50%,-50%) scale(0)} 11%{opacity:1;transform:translate(-50%,-50%) scale(1.5)} 36%{opacity:0.65;transform:translate(-50%,-50%) scale(1.1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(2)} }
+@keyframes baSlashLine { 0%{opacity:0;transform:scaleY(0)} 13%{opacity:0.7;transform:scaleY(1)} 60%{opacity:0.35} 100%{opacity:0;transform:scaleY(1)} }
 @keyframes baBloodMain { 0%{opacity:0;transform:translate(-50%,-50%) scale(0) rotate(-12deg)} 28%{opacity:1;transform:translate(-50%,-50%) scale(1.3) rotate(-14deg)} 55%{transform:translate(-50%,-50%) scale(0.88) rotate(-11deg)} 100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-12deg)} }
 @keyframes baBloodDrop { 0%{opacity:0;transform:translate(-50%,-50%) scale(0)} 38%{opacity:1;transform:translate(-50%,-50%) scale(1.3)} 65%{transform:translate(-50%,-50%) scale(0.85)} 100%{opacity:1;transform:translate(-50%,-50%) scale(1)} }
 @keyframes baXP { 0%{opacity:0;transform:translateY(10px) scale(.75)} 55%{opacity:1;transform:translateY(-2px) scale(1.08)} 100%{opacity:1;transform:translateY(0) scale(1)} }
+@keyframes baSpell { 0%{opacity:0;transform:translateY(18px) scale(0.68);filter:brightness(1)} 7%{opacity:1;transform:translateY(-7px) scale(1.22);filter:brightness(3) saturate(2.2)} 15%{transform:translateX(-8px) scale(1.14);filter:brightness(2.4)} 23%{transform:translateX(8px) scale(1.17);filter:brightness(2.8)} 31%{transform:translateX(-6px) scale(1.10);filter:brightness(2.1)} 39%{transform:translateX(6px) scale(1.08);filter:brightness(1.8)} 47%{transform:translateX(-4px) scale(1.05);filter:brightness(1.5)} 55%{transform:translateX(3px) scale(1.03);filter:brightness(1.3)} 63%{transform:translateX(0) scale(1.01);filter:brightness(1.1)} 100%{opacity:1;transform:scale(1);filter:brightness(1)} }
+@keyframes baManaGlow { 0%,100%{box-shadow:0 0 8px rgba(59,130,246,0.55),0 0 0 rgba(96,165,250,0)} 50%{box-shadow:0 0 28px rgba(59,130,246,1),0 0 56px rgba(96,165,250,0.7),0 0 90px rgba(147,197,253,0.35)} }
 `;
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -105,10 +114,14 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
   const [rAnim, setRAnim] = useState<AnimSlot>(IDLE);
   const [showImpact, setShowImpact] = useState(false);
   const [impactKey, setImpactKey] = useState(0);
-  const [dmgL, setDmgL] = useState<{ v: number; k: number } | null>(null);
-  const [dmgR, setDmgR] = useState<{ v: number; k: number } | null>(null);
+  const [dmgL, setDmgL] = useState<{ v: number; k: number; elemBonus?: number; elem?: string } | null>(null);
+  const [dmgR, setDmgR] = useState<{ v: number; k: number; elemBonus?: number; elem?: string } | null>(null);
   const [roundRes, setRoundRes] = useState<'attacker' | 'defender' | null>(null);
   const [hitInd, setHitInd] = useState<{ type: HitType; side: 'left' | 'right'; k: number } | null>(null);
+  const [cSpellNotif, setCSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number }>; k: number } | null>(null);
+  const [dSpellNotif, setDSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number }>; k: number } | null>(null);
+  // -1 = show full mana (before any round plays); >= 0 = show mana after that round index
+  const [manaDisplayIdx, setManaDisplayIdx] = useState(-1);
 
   const cancelRef = useRef(false);
   const doneRef   = useRef(false); // true only when animation runs to natural completion
@@ -134,6 +147,9 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     setDmgL(null);
     setDmgR(null);
     setHitInd(null);
+    setCSpellNotif(null);
+    setDSpellNotif(null);
+    setManaDisplayIdx(-1);
   }, []);
 
   const doRound = useCallback(async (idx: number) => {
@@ -157,6 +173,15 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     if (leftEntering || rightEntering) {
       await sleep(950);
       if (cancelRef.current) { setBusy(false); return; }
+    }
+
+    // ── Spell notifications ───────────────────────────────────────────────────
+    const cSp = (round as any).challengerSpells as Array<{ spellName: string; manaCost: number }> | undefined;
+    const dSp = (round as any).defenderSpells as Array<{ spellName: string; manaCost: number }> | undefined;
+    if (cSp?.length) setCSpellNotif({ spells: cSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost })), k: Date.now() });
+    if (dSp?.length) setDSpellNotif({ spells: dSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost })), k: Date.now() + 1 });
+    if (cSp?.length || dSp?.length) {
+      setManaDisplayIdx(idx);  // update bar only now that the spell visually fires
     }
 
     const CHARGE_DUR = 950;
@@ -184,12 +209,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     if (leftGoesFirst) {
       // Left hits right → indicator + damage on right; right flashes
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
-      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1 });
+      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement });
       bump(setRAnim, 'baHF', 700 / speed);
     } else {
       // Right hits left → indicator + damage on left; left flashes
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
-      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1 });
+      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement });
       bump(setLAnim, 'baHF', 700 / speed);
     }
     await sleep(IMPACT_MS);
@@ -208,12 +233,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     if (leftGoesFirst) {
       // Right hits left → indicator + damage on left; left flashes
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
-      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1 });
+      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement });
       bump(setLAnim, 'baHF', 700 / speed);
     } else {
       // Left hits right → indicator + damage on right; right flashes
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
-      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1 });
+      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement });
       bump(setRAnim, 'baHF', 700 / speed);
     }
     await sleep(IMPACT_MS);
@@ -251,6 +276,8 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     setDmgL(null);
     setDmgR(null);
     setHitInd(null);
+    setCSpellNotif(null);
+    setDSpellNotif(null);
     await sleep(280);
     setBusy(false);
   }, [rounds, speed, bump]);
@@ -274,7 +301,10 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     setIsPlaying(false);
     setBusy(false);
     resetVisuals();
-    setRoundIdx(Math.max(0, Math.min(idx, rounds.length - 1)));
+    const clamped = Math.max(0, Math.min(idx, rounds.length - 1));
+    setRoundIdx(clamped);
+    // Show accumulated mana state: mana after the previous round (idx-1), or full at start (idx=0)
+    setManaDisplayIdx(clamped - 1);
   }, [rounds.length, resetVisuals]);
 
   const handlePlay = () => {
@@ -368,31 +398,84 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     );
   };
 
-  const renderSlash = (sp: number) => (
-    <>
-      {/* Main slash streak — centered on portrait */}
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%', width: '120%', height: 7,
-        background: 'linear-gradient(to right, transparent, rgba(251,191,36,0.6), #fbbf24, #ffffff, #fbbf24, rgba(251,191,36,0.4), transparent)',
-        filter: 'drop-shadow(0 0 10px #fbbf24) drop-shadow(0 0 20px rgba(251,191,36,0.6))',
-        animationName: 'baSlashGrow', animationDuration: `${950 / sp}ms`,
-        animationFillMode: 'forwards', animationTimingFunction: 'ease-out',
-        pointerEvents: 'none',
-      }} />
-      {/* Secondary thinner slash — slight offset for depth */}
-      <div style={{
-        position: 'absolute', top: 'calc(50% - 10px)', left: 'calc(50% - 8px)', width: '100%', height: 3,
-        background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.4), #ffffff, rgba(255,255,255,0.3), transparent)',
-        filter: 'blur(1px)',
-        animationName: 'baSlashGrow', animationDuration: `${850 / sp}ms`,
-        animationDelay: '40ms',
-        animationFillMode: 'forwards', animationTimingFunction: 'ease-out',
-        pointerEvents: 'none',
-      }} />
-    </>
-  );
+  const renderSlash = (sp: number) => {
+    const dur = 950 / sp;
+    const core = '#ffffff';
+    const edge = '#a5f3fc';  // light cyan
+    const glow = '#06b6d4';  // cyan
+    const speedLines = [
+      { x: -54, delay: 0,  h: '82%' },
+      { x: -22, delay: 22, h: '74%' },
+      { x:  18, delay: 12, h: '78%' },
+      { x:  50, delay: 38, h: '68%' },
+    ];
+    const aFill = 'both' as const;
+    const aEase = 'ease-out';
+    return (
+      <>
+        {/* Vertical speed lines — extreme speed feel */}
+        {speedLines.map((ln, i) => (
+          <div key={i} style={{
+            position: 'absolute', top: '12%', left: `calc(50% + ${ln.x}px)`,
+            width: 1.5, height: ln.h, transformOrigin: 'top center',
+            background: `linear-gradient(to bottom, transparent, ${edge}bb 25%, ${edge}66 75%, transparent)`,
+            filter: `drop-shadow(0 0 3px ${glow})`,
+            animationName: 'baSlashLine', animationDuration: `${dur * 0.7}ms`,
+            animationDelay: `${ln.delay}ms`, animationFillMode: aFill, animationTimingFunction: aEase,
+            pointerEvents: 'none',
+          }} />
+        ))}
+        {/* Primary slash: wide glow halo (renders behind) */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', width: '135%', height: 20,
+          background: `linear-gradient(to right, transparent, ${glow}33, ${glow}55, ${glow}33, transparent)`,
+          filter: 'blur(6px)',
+          animationName: 'baSlashV1', animationDuration: `${dur * 1.08}ms`,
+          animationDelay: '6ms', animationFillMode: aFill, animationTimingFunction: aEase,
+          pointerEvents: 'none',
+        }} />
+        {/* Primary slash: sharp bright core */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', width: '135%', height: 5,
+          background: `linear-gradient(to right, transparent, ${edge}99, ${core}, ${core}, ${edge}99, transparent)`,
+          filter: `drop-shadow(0 0 8px ${glow}) drop-shadow(0 0 18px ${glow}aa)`,
+          animationName: 'baSlashV1', animationDuration: `${dur}ms`,
+          animationFillMode: aFill, animationTimingFunction: aEase,
+          pointerEvents: 'none',
+        }} />
+        {/* Primary slash: motion trail (delayed, offset) */}
+        <div style={{
+          position: 'absolute', top: 'calc(50% + 7px)', left: '50%', width: '125%', height: 3,
+          background: `linear-gradient(to right, transparent, ${edge}55, ${edge}88, ${edge}55, transparent)`,
+          filter: 'blur(2px)',
+          animationName: 'baSlashV1', animationDuration: `${dur * 1.18}ms`,
+          animationDelay: '32ms', animationFillMode: aFill, animationTimingFunction: aEase,
+          pointerEvents: 'none',
+        }} />
+        {/* Counter-slash: secondary X stroke (delayed) */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', width: '115%', height: 4,
+          background: `linear-gradient(to right, transparent, ${edge}77, ${core}dd, ${edge}77, transparent)`,
+          filter: `drop-shadow(0 0 6px ${glow})`,
+          animationName: 'baSlashV2', animationDuration: `${dur * 0.88}ms`,
+          animationDelay: '88ms', animationFillMode: aFill, animationTimingFunction: aEase,
+          pointerEvents: 'none',
+        }} />
+        {/* Center impact burst */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', width: 72, height: 72,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, rgba(255,255,255,0.98) 0%, ${glow}cc 30%, ${glow}44 60%, transparent 75%)`,
+          filter: `drop-shadow(0 0 12px ${glow}) drop-shadow(0 0 28px ${glow}88)`,
+          animationName: 'baSlashBurst', animationDuration: `${dur * 0.62}ms`,
+          animationFillMode: aFill, animationTimingFunction: aEase,
+          pointerEvents: 'none',
+        }} />
+      </>
+    );
+  };
 
-  const renderBloodSplatter = (sp: number, label: string) => {
+  const renderBloodSplatter = (sp: number, label: string, elemBonus?: number, elem?: string) => {
     const poolDur = `${900 / sp}ms`;
     // Droplets scattered just outside the pool edges (pool is ~144×58)
     const droplets = [
@@ -437,6 +520,29 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
             {label}
           </span>
         </div>
+        {/* Elemental bonus badge — bottom-right corner */}
+        {elemBonus != null && elemBonus > 0 && elem && (
+          <div style={{
+            position: 'absolute', bottom: -6, right: -12,
+            display: 'flex', alignItems: 'center', gap: 2,
+            backgroundColor: 'rgba(0,0,0,0.82)',
+            border: `1px solid ${ELEM_COLOR[elem] ?? '#fff'}`,
+            borderRadius: 5,
+            padding: '2px 6px',
+            zIndex: 3,
+            boxShadow: `0 0 8px ${ELEM_COLOR[elem] ?? '#fff'}55`,
+          }}>
+            <span style={{ fontSize: 12, lineHeight: 1 }}>{ELEM_SYM[elem] ?? '⚡'}</span>
+            <span style={{
+              color: ELEM_COLOR[elem] ?? '#fff',
+              fontWeight: 900, fontSize: 14, lineHeight: 1,
+              textShadow: `0 0 8px ${ELEM_COLOR[elem] ?? '#fff'}`,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {elemBonus.toFixed(1)}
+            </span>
+          </div>
+        )}
       </div>
     );
   };
@@ -454,6 +560,9 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     anim: AnimSlot,
     isLeft: boolean,
     dmg: typeof dmgL,
+    manaTotal: number,
+    manaCurrent: number,
+    spellNotif: { spells: Array<{ name: string; manaCost: number }>; k: number } | null,
   ) => {
     if (!hero) return <div style={{ flex: 1 }} />;
     const isWinner = roundRes && ((isLeft && roundRes === 'attacker') || (!isLeft && roundRes === 'defender'));
@@ -478,7 +587,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
             animationTimingFunction: 'ease-out',
             pointerEvents: 'none',
           }}>
-            {renderBloodSplatter(speed, dmg.v.toFixed(1))}
+            {renderBloodSplatter(speed, dmg.v.toFixed(1), dmg.elemBonus, dmg.elem)}
           </div>
         )}
 
@@ -533,6 +642,41 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
         <div style={{ textAlign: 'center' }}>
           <div style={{ color: '#e0e0e0', fontWeight: 700, fontSize: 15, textShadow: '0 1px 6px rgba(0,0,0,.8)' }}>{hero.name}</div>
         </div>
+
+        {/* Mana bar — below the name, only if team has mana */}
+        {manaTotal > 0 && (() => {
+          const pct = Math.max(0, Math.min(1, manaCurrent / manaTotal));
+          return (
+            <div style={{ width: PORTRAIT_SIZE + 100, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ flex: 1, ...s.manaBarTrack }}>
+                <div style={{
+                  ...s.manaBarFill,
+                  width: `${pct * 100}%`,
+                  animationName: spellNotif ? 'baManaGlow' : 'none',
+                  animationDuration: '0.9s',
+                  animationIterationCount: 'infinite',
+                }} />
+              </div>
+              <span style={s.manaBarLabel}>{Math.round(manaCurrent)}/{Math.round(manaTotal)} MP</span>
+            </div>
+          );
+        })()}
+
+        {/* Spell notifications — each row pops in sequentially */}
+        {spellNotif && (
+          <div key={spellNotif.k} style={{ ...s.spellNotifWrap, width: PORTRAIT_SIZE + 40 }}>
+            {spellNotif.spells.map((sp, i) => (
+              <div key={sp.name + i} style={{
+                ...s.spellNotif,
+                animationDelay: `${i * 600}ms`,
+              }}>
+                <span style={s.spellNotifIcon}>✦</span>
+                <span style={s.spellNotifName}>{sp.name}</span>
+                <span style={s.spellNotifCost}>−{sp.manaCost} MP</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
@@ -607,7 +751,11 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
         {/* Subtle arena floor lines */}
         <div style={s.arenaFloor} />
 
-        {renderHeroColumn(cHero, lAnim, true, dmgL)}
+        {renderHeroColumn(cHero, lAnim, true, dmgL,
+          battleLog.challengerManaTotal ?? 0,
+          manaDisplayIdx >= 0 ? (rounds[manaDisplayIdx]?.challengerManaAfter ?? (battleLog.challengerManaTotal ?? 0)) : (battleLog.challengerManaTotal ?? 0),
+          cSpellNotif,
+        )}
 
         {/* Center panel */}
         <div style={s.center}>
@@ -636,7 +784,11 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
           )}
         </div>
 
-        {renderHeroColumn(dHero, rAnim, false, dmgR)}
+        {renderHeroColumn(dHero, rAnim, false, dmgR,
+          battleLog.defenderManaTotal ?? 0,
+          manaDisplayIdx >= 0 ? (rounds[manaDisplayIdx]?.defenderManaAfter ?? (battleLog.defenderManaTotal ?? 0)) : (battleLog.defenderManaTotal ?? 0),
+          dSpellNotif,
+        )}
       </div>
 
       {/* ── Controls ── */}
@@ -818,5 +970,82 @@ const s: Record<string, React.CSSProperties> = {
     backgroundColor: '#2a2a5a',
     color: '#c0c0e0',
     borderColor: '#4a4a9a',
+  },
+  manaBarWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  manaBarTrack: {
+    flex: 1,
+    height: 13,
+    backgroundColor: 'rgba(20,20,50,0.95)',
+    borderRadius: 7,
+    border: '1px solid rgba(59,130,246,0.35)',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  manaBarFill: {
+    height: '100%',
+    background: 'linear-gradient(to right, #1e3a8a, #2563eb, #3b82f6, #60a5fa)',
+    borderRadius: 7,
+    transition: 'width 0.6s ease',
+    boxShadow: '0 0 8px rgba(59,130,246,0.5)',
+  },
+  manaBarLabel: {
+    color: '#93c5fd',
+    fontSize: 12,
+    fontWeight: 800,
+    whiteSpace: 'nowrap',
+    fontVariantNumeric: 'tabular-nums',
+    letterSpacing: 0.3,
+    textShadow: '0 0 6px rgba(59,130,246,0.5)',
+  },
+  spellNotifWrap: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 5,
+    marginTop: 6,
+  },
+  spellNotif: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '7px 14px',
+    backgroundColor: 'rgba(59,130,246,0.18)',
+    border: '1px solid rgba(96,165,250,0.6)',
+    borderRadius: 8,
+    animationName: 'baSpell',
+    animationDuration: '3.5s',
+    animationFillMode: 'both',
+    animationTimingFunction: 'ease-out',
+    boxShadow: '0 0 22px rgba(59,130,246,0.55), 0 0 50px rgba(96,165,250,0.2)',
+  },
+  spellNotifIcon: {
+    color: '#60a5fa',
+    fontSize: 16,
+    textShadow: '0 0 12px #3b82f6, 0 0 24px rgba(96,165,250,0.8)',
+    flexShrink: 0,
+  },
+  spellNotifName: {
+    color: '#bfdbfe',
+    fontWeight: 800,
+    fontSize: 13,
+    letterSpacing: 0.4,
+    flex: 1,
+    textShadow: '0 0 10px rgba(147,197,253,0.7)',
+  },
+  spellNotifCost: {
+    color: '#93c5fd',
+    fontWeight: 900,
+    fontSize: 12,
+    backgroundColor: 'rgba(59,130,246,0.3)',
+    border: '1px solid rgba(96,165,250,0.4)',
+    borderRadius: 4,
+    padding: '2px 7px',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+    textShadow: '0 0 8px rgba(96,165,250,0.9)',
   },
 };

@@ -1,5 +1,7 @@
 piratemanagerofficial@gmail.com
 
+Install node.js in the computer so it recognizes npm commands
+
 Backend 
  
 

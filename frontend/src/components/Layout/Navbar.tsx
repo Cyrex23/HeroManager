@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getTeam } from '../../api/teamApi';
-import type { TeamResponse } from '../../types';
+import { useTeam } from '../../context/TeamContext';
 import HeroPortrait from '../Hero/HeroPortrait';
 
 const navItems = [
   { path: '/team', label: 'Team' },
   { path: '/shop', label: 'Shop' },
+  { path: '/inventory', label: 'Inventory' },
   { path: '/arena', label: 'Arena' },
+  { path: '/leaderboard', label: 'Ranks' },
 ];
 
 const ELEMENT_COLOR: Record<string, string> = {
@@ -26,11 +26,7 @@ const PORTRAIT = 52;
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [team, setTeam] = useState<TeamResponse | null>(null);
-
-  useEffect(() => {
-    getTeam().then(setTeam).catch(() => {/* non-fatal */});
-  }, []);
+  const { team } = useTeam();
 
   return (
     <nav style={styles.nav}>

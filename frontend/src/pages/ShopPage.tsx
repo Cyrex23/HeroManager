@@ -14,6 +14,7 @@ import type {
 import ShopHeroCard from '../components/Shop/ShopHeroCard';
 import ShopItemCard from '../components/Shop/ShopItemCard';
 import HeroPortrait from '../components/Hero/HeroPortrait';
+import EquipmentTooltip from '../components/Equipment/EquipmentTooltip';
 import { AxiosError } from 'axios';
 
 type Tab = 'heroes' | 'items' | 'abilities';
@@ -298,32 +299,41 @@ export default function ShopPage() {
                 {heroAbilities.map((ab) => {
                   const bonusEntries = Object.entries(ab.bonuses).filter(([, v]) => v !== 0);
                   return (
-                    <div key={ab.templateId} style={styles.abilityRow}>
-                      <div style={styles.abilityInfo}>
-                        <span style={styles.abilityName}>{ab.name}</span>
-                        <span style={styles.abilityTier}>Tier {ab.tier}</span>
-                        <span style={styles.abilityCost}>{ab.cost}g</span>
+                    <EquipmentTooltip
+                      key={ab.templateId}
+                      name={ab.name}
+                      type="ability"
+                      bonuses={ab.bonuses}
+                      tier={ab.tier}
+                      spell={ab.spell ?? null}
+                    >
+                      <div style={styles.abilityRow}>
+                        <div style={styles.abilityInfo}>
+                          <span style={styles.abilityName}>{ab.name}</span>
+                          <span style={styles.abilityTier}>Tier {ab.tier}</span>
+                          <span style={styles.abilityCost}>{ab.cost}g</span>
+                        </div>
+                        <div style={styles.abilityBonuses}>
+                          {bonusEntries.map(([stat, val]) => (
+                            <span key={stat} style={styles.abilityBonus}>+{val} {formatStat(stat)}</span>
+                          ))}
+                        </div>
+                        {ab.owned ? (
+                          <span style={styles.ownedTag}>Owned</span>
+                        ) : (
+                          <button
+                            onClick={() => handleBuyAbility(ab.templateId)}
+                            disabled={(player?.gold ?? 0) < ab.cost}
+                            style={{
+                              ...styles.smallBuyBtn,
+                              opacity: (player?.gold ?? 0) >= ab.cost ? 1 : 0.5,
+                            }}
+                          >
+                            Buy
+                          </button>
+                        )}
                       </div>
-                      <div style={styles.abilityBonuses}>
-                        {bonusEntries.map(([stat, val]) => (
-                          <span key={stat} style={styles.abilityBonus}>+{val} {formatStat(stat)}</span>
-                        ))}
-                      </div>
-                      {ab.owned ? (
-                        <span style={styles.ownedTag}>Owned</span>
-                      ) : (
-                        <button
-                          onClick={() => handleBuyAbility(ab.templateId)}
-                          disabled={(player?.gold ?? 0) < ab.cost}
-                          style={{
-                            ...styles.smallBuyBtn,
-                            opacity: (player?.gold ?? 0) >= ab.cost ? 1 : 0.5,
-                          }}
-                        >
-                          Buy
-                        </button>
-                      )}
-                    </div>
+                    </EquipmentTooltip>
                   );
                 })}
               </div>

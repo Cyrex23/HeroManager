@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { PlayerProvider } from './context/PlayerContext';
+import { TeamProvider } from './context/TeamContext';
 import App from './App';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -10,7 +11,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <AuthProvider>
         <PlayerProvider>
-          <App />
+          <TeamProvider>
+            <App />
+          </TeamProvider>
         </PlayerProvider>
       </AuthProvider>
     </BrowserRouter>

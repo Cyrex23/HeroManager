@@ -31,6 +31,8 @@ public class HeroResponse {
     private String element;
     private int clashesWon;
     private int clashesLost;
+    private int currentWinStreak;
+    private int currentLossStreak;
     private double maxDamageDealt;
     private double maxDamageReceived;
 

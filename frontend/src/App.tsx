@@ -11,6 +11,8 @@ import ArenaPage from './pages/ArenaPage';
 import BattlePage from './pages/BattlePage';
 import HeroDetailPage from './pages/HeroDetailPage';
 import AccountPage from './pages/AccountPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import InventoryPage from './pages/InventoryPage';
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -87,6 +89,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AppLayout><AccountPage /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/leaderboard"
+        element={
+          <ProtectedRoute>
+            <AppLayout><LeaderboardPage /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inventory"
+        element={
+          <ProtectedRoute>
+            <AppLayout><InventoryPage /></AppLayout>
           </ProtectedRoute>
         }
       />

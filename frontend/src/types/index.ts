@@ -123,6 +123,8 @@ export interface HeroResponse {
   element: string | null;
   clashesWon: number;
   clashesLost: number;
+  currentWinStreak: number;
+  currentLossStreak: number;
   maxDamageDealt: number;
   maxDamageReceived: number;
 }
@@ -161,7 +163,14 @@ export interface TeamSlotHero {
   xpToNextLevel: number;
   tier: 'COMMONER' | 'ELITE' | 'LEGENDARY' | null;
   element: string | null;
-  equippedSlots?: Array<{ slotNumber: number; type: 'item' | 'ability' | null; name: string | null }>;
+  equippedSlots?: Array<{
+    slotNumber: number;
+    type: 'item' | 'ability' | null;
+    name: string | null;
+    bonuses?: Partial<HeroStats>;
+    tier?: number | null;
+    copies?: number | null;
+  }>;
 }
 
 export interface TeamSlotSummon {
@@ -285,6 +294,21 @@ export interface BuyItemResponse {
   goldRemaining: number;
 }
 
+export interface SpellInfo {
+  name: string;
+  manaCost: number;
+  trigger: 'ENTRANCE' | 'ATTACK';
+  chance: number;
+  bonuses: Partial<HeroStats>;
+}
+
+export interface SpellEvent {
+  spellName: string;
+  manaCost: number;
+  heroName: string;
+  trigger: 'ENTRANCE' | 'ATTACK';
+}
+
 export interface ShopAbilityResponse {
   templateId: number;
   name: string;
@@ -292,6 +316,7 @@ export interface ShopAbilityResponse {
   tier: number;
   bonuses: Partial<HeroStats>;
   owned: boolean;
+  spell?: SpellInfo | null;
 }
 
 export interface ShopAbilityListResponse {
@@ -323,6 +348,8 @@ export interface ArenaOpponentResponse {
   energyCost: number;
   profileImagePath: string | null;
   teamName: string;
+  wins: number;
+  losses: number;
 }
 
 export interface ArenaOpponentListResponse {
@@ -375,6 +402,10 @@ export interface BattleRound {
   defenderElement?: string;
   attackerImagePath?: string;
   defenderImagePath?: string;
+  challengerSpells?: SpellEvent[];
+  defenderSpells?: SpellEvent[];
+  challengerManaAfter?: number;
+  defenderManaAfter?: number;
 }
 
 export interface BattleLog {
@@ -390,6 +421,8 @@ export interface BattleLog {
     challenger: number;
     defender: number;
   };
+  challengerManaTotal?: number;
+  defenderManaTotal?: number;
 }
 
 export interface BattleResultResponse {
@@ -429,6 +462,7 @@ export interface InventoryItem {
   name: string;
   bonuses: Partial<HeroStats>;
   sellPrice: number;
+  copies: number;
 }
 
 export interface HeroAbilityEntry {
@@ -438,6 +472,8 @@ export interface HeroAbilityEntry {
   tier: number;
   bonuses: Partial<HeroStats>;
   slotNumber: number | null;
+  copies: number;
+  spell?: SpellInfo | null;
 }
 
 export interface CombinedSlot {
@@ -448,6 +484,8 @@ export interface CombinedSlot {
   name: string | null;
   bonuses: Partial<HeroStats> | null;
   sellPrice: number | null;
+  copies: number | null;
+  spell?: SpellInfo | null;
 }
 
 export interface HeroEquipmentResponse {
@@ -485,7 +523,51 @@ export interface AccountData {
   totalBattles: number;
   wins: number;
   losses: number;
+  winStreak: number;
+  lossStreak: number;
   avatarOptions: AvatarOption[];
   canChangeTeamName: boolean;
   daysUntilTeamNameChange: number;
+}
+
+// ============================================================
+// Leaderboard Types
+// ============================================================
+
+export interface LeaderboardHeroEntry {
+  rank: number;
+  heroId: number;
+  name: string;
+  imagePath: string;
+  tier: 'COMMONER' | 'ELITE' | 'LEGENDARY' | null;
+  element: string | null;
+  level: number;
+  clashesWon: number;
+  clashesLost: number;
+  ownerPlayerId: number;
+  ownerUsername: string;
+  ownerTeamName: string;
+  ownerProfileImagePath: string | null;
+}
+
+export interface LeaderboardSummonEntry {
+  rank: number;
+  summonId: number;
+  name: string;
+  imagePath: string;
+  level: number;
+  ownerPlayerId: number;
+  ownerUsername: string;
+  ownerTeamName: string;
+  ownerProfileImagePath: string | null;
+}
+
+export interface LeaderboardTeamEntry {
+  rank: number;
+  playerId: number;
+  username: string;
+  teamName: string;
+  profileImagePath: string | null;
+  teamPower: number;
+  heroCount: number;
 }

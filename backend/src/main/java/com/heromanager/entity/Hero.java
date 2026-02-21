@@ -38,6 +38,12 @@ public class Hero {
     @Column(columnDefinition = "int default 0")
     private int clashesLost = 0;
 
+    @Column(columnDefinition = "int default 0")
+    private int currentWinStreak = 0;
+
+    @Column(columnDefinition = "int default 0")
+    private int currentLossStreak = 0;
+
     @Column(columnDefinition = "double default 0")
     private double maxDamageDealt = 0;
 

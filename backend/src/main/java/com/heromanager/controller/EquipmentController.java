@@ -92,4 +92,15 @@ public class EquipmentController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getErrorCode(), "message", e.getMessage()));
         }
     }
+
+    @PostMapping("/sell-ability")
+    public ResponseEntity<?> sellAbility(@RequestBody Map<String, Object> body, Authentication auth) {
+        Long playerId = Long.parseLong(auth.getName());
+        Long equippedAbilityId = ((Number) body.get("equippedAbilityId")).longValue();
+        try {
+            return ResponseEntity.ok(equipmentService.sellAbility(playerId, equippedAbilityId));
+        } catch (EquipmentService.EquipmentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getErrorCode(), "message", e.getMessage()));
+        }
+    }
 }

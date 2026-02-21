@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public interface EquippedItemRepository extends JpaRepository<EquippedItem, Long> {
 
+    List<EquippedItem> findByPlayerId(Long playerId);
+
     List<EquippedItem> findByHeroId(Long heroId);
 
     List<EquippedItem> findByHeroIdAndSlotNumberIsNotNull(Long heroId);

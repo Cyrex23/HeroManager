@@ -32,6 +32,9 @@ public class Player {
     @Column(nullable = false)
     private boolean emailConfirmed = false;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean banned = false;
+
     @Column(nullable = false)
     private int gold = 500;
 

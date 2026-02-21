@@ -46,6 +46,37 @@ public class AbilityTemplate {
     @Column(nullable = false)
     private double bonusStam = 0;
 
+    // ── Spell fields (T3/T4 only) ──────────────────────────────────────────────
+    @Column
+    private String spellName;
+
+    @Column(columnDefinition = "int default 0")
+    private int spellManaCost = 0;
+
+    @Column
+    private String spellTrigger; // "ENTRANCE" or "ATTACK"
+
+    @Column(columnDefinition = "double default 0")
+    private double spellChance = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double spellBonusPa = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double spellBonusMp = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double spellBonusDex = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double spellBonusElem = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double spellBonusMana = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double spellBonusStam = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "heroTemplateId", insertable = false, updatable = false)
     private HeroTemplate heroTemplate;

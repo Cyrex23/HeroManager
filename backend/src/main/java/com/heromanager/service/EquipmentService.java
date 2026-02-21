@@ -49,6 +49,7 @@ public class EquipmentService {
                 slotMap.put("name", t.getName());
                 slotMap.put("bonuses", buildItemBonuses(t));
                 slotMap.put("sellPrice", (int) Math.floor(t.getCost() * 0.75));
+                slotMap.put("copies", equippedItemRepository.countByPlayerAndItemTemplate(playerId, t.getId()));
                 slots.add(slotMap);
                 continue;
             }
@@ -64,6 +65,9 @@ public class EquipmentService {
                 slotMap.put("name", at.getName());
                 slotMap.put("bonuses", buildAbilityBonuses(at));
                 slotMap.put("sellPrice", null);
+                slotMap.put("copies", equippedAbilityRepository.countByPlayerAndAbilityTemplate(playerId, at.getId()));
+                Map<String, Object> spellData = buildSpellData(at);
+                if (spellData != null) slotMap.put("spell", spellData);
                 slots.add(slotMap);
                 continue;
             }
@@ -83,13 +87,14 @@ public class EquipmentService {
         List<Map<String, Object>> inventoryList = new ArrayList<>();
         for (EquippedItem ei : inventoryItems) {
             ItemTemplate t = ei.getItemTemplate();
-            inventoryList.add(Map.of(
-                    "equippedItemId", ei.getId(),
-                    "itemTemplateId", t.getId(),
-                    "name", t.getName(),
-                    "bonuses", buildItemBonuses(t),
-                    "sellPrice", (int) Math.floor(t.getCost() * 0.75)
-            ));
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("equippedItemId", ei.getId());
+            entry.put("itemTemplateId", t.getId());
+            entry.put("name", t.getName());
+            entry.put("bonuses", buildItemBonuses(t));
+            entry.put("sellPrice", (int) Math.floor(t.getCost() * 0.75));
+            entry.put("copies", equippedItemRepository.countByPlayerAndItemTemplate(playerId, t.getId()));
+            inventoryList.add(entry);
         }
 
         // Hero abilities (all owned for this hero, includes slotNumber if set)
@@ -104,6 +109,9 @@ public class EquipmentService {
             entry.put("tier", at.getTier());
             entry.put("bonuses", buildAbilityBonuses(at));
             entry.put("slotNumber", ea.getSlotNumber());
+            entry.put("copies", equippedAbilityRepository.countByPlayerAndAbilityTemplate(playerId, at.getId()));
+            Map<String, Object> spellData = buildSpellData(at);
+            if (spellData != null) entry.put("spell", spellData);
             abilityList.add(entry);
         }
 
@@ -243,6 +251,63 @@ public class EquipmentService {
         return Map.of("message", abilityName + " unslotted from " + hero.getTemplate().getDisplayName() + ".");
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, Object> getFullInventory(Long playerId) {
+        List<EquippedItem> allItems = equippedItemRepository.findByPlayerId(playerId);
+        Map<Long, String> heroNameCache = new HashMap<>();
+
+        List<Map<String, Object>> itemList = new ArrayList<>();
+        for (EquippedItem ei : allItems) {
+            ItemTemplate t = ei.getItemTemplate();
+            if (t == null) continue;
+            String heroName = null;
+            if (ei.getHeroId() != null) {
+                heroName = heroNameCache.computeIfAbsent(ei.getHeroId(), id ->
+                        heroRepository.findById(id)
+                                .filter(h -> h.getTemplate() != null)
+                                .map(h -> h.getTemplate().getDisplayName())
+                                .orElse("Unknown"));
+            }
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("equippedItemId", ei.getId());
+            entry.put("itemTemplateId", t.getId());
+            entry.put("name", t.getName());
+            entry.put("bonuses", buildItemBonuses(t));
+            entry.put("sellPrice", (int) Math.floor(t.getCost() * 0.75));
+            entry.put("equippedToHeroId", ei.getHeroId());
+            entry.put("equippedToHeroName", heroName);
+            entry.put("slotNumber", ei.getSlotNumber());
+            itemList.add(entry);
+        }
+
+        List<EquippedAbility> allAbilities = equippedAbilityRepository.findByPlayerId(playerId);
+        List<Map<String, Object>> abilityList = new ArrayList<>();
+        for (EquippedAbility ea : allAbilities) {
+            AbilityTemplate at = ea.getAbilityTemplate();
+            if (at == null) continue;
+            String heroName = heroNameCache.computeIfAbsent(ea.getHeroId(), id ->
+                    heroRepository.findById(id)
+                            .filter(h -> h.getTemplate() != null)
+                            .map(h -> h.getTemplate().getDisplayName())
+                            .orElse("Unknown"));
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("equippedAbilityId", ea.getId());
+            entry.put("abilityTemplateId", at.getId());
+            entry.put("name", at.getName());
+            entry.put("tier", at.getTier());
+            entry.put("bonuses", buildAbilityBonuses(at));
+            entry.put("sellPrice", (int) Math.floor(at.getCost() * 0.75));
+            entry.put("heroId", ea.getHeroId());
+            entry.put("heroName", heroName);
+            entry.put("slotNumber", ea.getSlotNumber());
+            Map<String, Object> spellData = buildSpellData(at);
+            if (spellData != null) entry.put("spell", spellData);
+            abilityList.add(entry);
+        }
+
+        return Map.of("items", itemList, "abilities", abilityList);
+    }
+
     @Transactional
     public Map<String, Object> sellItem(Long playerId, Long equippedItemId) {
         EquippedItem ei = equippedItemRepository.findById(equippedItemId)
@@ -260,6 +325,33 @@ public class EquipmentService {
         playerRepository.save(player);
 
         equippedItemRepository.delete(ei);
+
+        return Map.of(
+                "message", template.getName() + " sold for " + sellPrice + " gold.",
+                "goldEarned", sellPrice,
+                "goldTotal", player.getGold()
+        );
+    }
+
+    @Transactional
+    public Map<String, Object> sellAbility(Long playerId, Long equippedAbilityId) {
+        EquippedAbility ea = equippedAbilityRepository.findById(equippedAbilityId)
+                .orElseThrow(() -> new EquipmentException("ABILITY_NOT_FOUND", "Ability not found."));
+
+        // Verify ownership through the hero
+        heroRepository.findById(ea.getHeroId())
+                .filter(h -> h.getPlayerId().equals(playerId))
+                .orElseThrow(() -> new EquipmentException("ABILITY_NOT_FOUND", "Ability not found."));
+
+        AbilityTemplate template = ea.getAbilityTemplate();
+        int sellPrice = (int) Math.floor(template.getCost() * 0.75);
+
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new EquipmentException("PLAYER_NOT_FOUND", "Player not found."));
+        player.setGold(player.getGold() + sellPrice);
+        playerRepository.save(player);
+
+        equippedAbilityRepository.delete(ea);
 
         return Map.of(
                 "message", template.getName() + " sold for " + sellPrice + " gold.",
@@ -288,6 +380,24 @@ public class EquipmentService {
         if (t.getBonusMana() != 0) bonuses.put("mana", t.getBonusMana());
         if (t.getBonusStam() != 0) bonuses.put("stamina", t.getBonusStam());
         return bonuses;
+    }
+
+    private Map<String, Object> buildSpellData(AbilityTemplate t) {
+        if (t.getSpellName() == null || t.getSpellName().isBlank()) return null;
+        Map<String, Object> spellBonuses = new LinkedHashMap<>();
+        if (t.getSpellBonusPa() != 0) spellBonuses.put("physicalAttack", t.getSpellBonusPa());
+        if (t.getSpellBonusMp() != 0) spellBonuses.put("magicPower", t.getSpellBonusMp());
+        if (t.getSpellBonusDex() != 0) spellBonuses.put("dexterity", t.getSpellBonusDex());
+        if (t.getSpellBonusElem() != 0) spellBonuses.put("element", t.getSpellBonusElem());
+        if (t.getSpellBonusMana() != 0) spellBonuses.put("mana", t.getSpellBonusMana());
+        if (t.getSpellBonusStam() != 0) spellBonuses.put("stamina", t.getSpellBonusStam());
+        Map<String, Object> spell = new LinkedHashMap<>();
+        spell.put("name", t.getSpellName());
+        spell.put("manaCost", t.getSpellManaCost());
+        spell.put("trigger", t.getSpellTrigger());
+        spell.put("chance", t.getSpellChance());
+        spell.put("bonuses", spellBonuses);
+        return spell;
     }
 
     public static class EquipmentException extends RuntimeException {
