@@ -69,6 +69,64 @@ public class PlayerService {
     }
 
     @Transactional(readOnly = true)
+    public HeroResponse getHero(Long playerId, Long heroId) {
+        Hero hero = heroRepository.findByIdAndPlayerId(heroId, playerId)
+                .orElse(null);
+        if (hero == null || hero.getTemplate() == null) return null;
+
+        HeroTemplate t = hero.getTemplate();
+        int level = hero.getLevel();
+
+        Map<String, Double> stats = buildHeroStats(t, level);
+        Map<String, Double> baseStats = Map.of(
+                "physicalAttack", t.getBasePa(), "magicPower", t.getBaseMp(),
+                "dexterity", t.getBaseDex(), "element", t.getBaseElem(),
+                "mana", t.getBaseMana(), "stamina", t.getBaseStam()
+        );
+        Map<String, Double> growthStats = Map.of(
+                "physicalAttack", t.getGrowthPa(), "magicPower", t.getGrowthMp(),
+                "dexterity", t.getGrowthDex(), "element", t.getGrowthElem(),
+                "mana", t.getGrowthMana(), "stamina", t.getGrowthStam()
+        );
+        Map<String, Double> bonusStats = buildEquipmentBonuses(heroId);
+        Map<String, Double> totalStats = new HashMap<>(stats);
+        bonusStats.forEach((k, v) -> totalStats.merge(k, v, Double::sum));
+
+        List<TeamSlot> teamSlots = teamSlotRepository.findByPlayerId(playerId);
+        Integer slotNum = teamSlots.stream()
+                .filter(s -> heroId.equals(s.getHeroId()))
+                .map(TeamSlot::getSlotNumber)
+                .findFirst().orElse(null);
+
+        return HeroResponse.builder()
+                .id(hero.getId())
+                .templateId(hero.getTemplateId())
+                .name(t.getDisplayName())
+                .imagePath(t.getImagePath())
+                .level(level)
+                .currentXp(hero.getCurrentXp())
+                .xpToNextLevel(level * level * 10)
+                .capacity(t.getCapacity())
+                .isEquipped(slotNum != null)
+                .teamSlot(slotNum)
+                .stats(totalStats)
+                .baseStats(baseStats)
+                .growthStats(growthStats)
+                .bonusStats(bonusStats)
+                .equippedItems(Collections.emptyList())
+                .equippedAbilities(Collections.emptyList())
+                .tier(t.getTier() != null ? t.getTier().name() : null)
+                .element(t.getElement() != null ? t.getElement().name() : null)
+                .clashesWon(hero.getClashesWon())
+                .clashesLost(hero.getClashesLost())
+                .currentWinStreak(hero.getCurrentWinStreak())
+                .currentLossStreak(hero.getCurrentLossStreak())
+                .maxDamageDealt(hero.getMaxDamageDealt())
+                .maxDamageReceived(hero.getMaxDamageReceived())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public List<HeroResponse> getHeroes(Long playerId) {
         List<Hero> heroes = heroRepository.findByPlayerId(playerId);
         List<TeamSlot> teamSlots = teamSlotRepository.findByPlayerId(playerId);

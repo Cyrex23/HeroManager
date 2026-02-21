@@ -11,6 +11,15 @@ export async function getHeroes(): Promise<HeroResponse[]> {
   return res.data.heroes;
 }
 
+export async function getHero(heroId: number): Promise<HeroResponse | null> {
+  try {
+    const res = await apiClient.get<HeroResponse>(`/player/hero/${heroId}`);
+    return res.data;
+  } catch {
+    return null;
+  }
+}
+
 export async function getSummons(): Promise<SummonResponse[]> {
   const res = await apiClient.get<{ summons: SummonResponse[] }>('/player/summons');
   return res.data.summons;
@@ -37,7 +46,7 @@ export interface FullInventoryAbility {
   heroId: number;
   heroName: string;
   slotNumber: number | null;
-  spell?: { name: string; manaCost: number; trigger: string; chance: number; bonuses: Record<string, number> } | null;
+  spell?: { name: string; manaCost: number; trigger: 'ENTRANCE' | 'ATTACK'; chance: number; bonuses: Record<string, number> } | null;
 }
 
 export interface FullInventoryResponse {

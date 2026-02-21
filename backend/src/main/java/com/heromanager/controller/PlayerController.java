@@ -32,6 +32,14 @@ public class PlayerController {
         return ResponseEntity.ok(Map.of("heroes", playerService.getHeroes(playerId)));
     }
 
+    @GetMapping("/hero/{heroId}")
+    public ResponseEntity<?> getHero(@PathVariable Long heroId, Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        var hero = playerService.getHero(playerId, heroId);
+        if (hero == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(hero);
+    }
+
     @GetMapping("/summons")
     public ResponseEntity<?> getSummons(Authentication auth) {
         Long playerId = (Long) auth.getPrincipal();
