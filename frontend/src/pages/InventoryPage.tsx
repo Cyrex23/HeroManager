@@ -75,11 +75,11 @@ export default function InventoryPage() {
     abilitiesByHero[key].push(ab);
   }
 
-  if (loading) return <div style={{ color: '#a0a0b0' }}>Loading inventory...</div>;
+  if (loading) return <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}><span className="spinner" style={{ width: 18, height: 18 }} />Loading inventory...</div>;
 
   return (
     <div style={styles.page}>
-      <h2 style={styles.pageTitle}>Inventory</h2>
+      <h2 style={styles.pageTitle} className="gradient-title">Inventory</h2>
 
       {message && <div style={styles.success}>{message}</div>}
       {error && <div style={styles.error}>{error}</div>}

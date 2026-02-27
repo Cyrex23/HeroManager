@@ -1,5 +1,34 @@
 import { useEffect, useRef, useState } from 'react';
-import { getAccountData, setProfileImage, changeTeamName, changePassword } from '../api/accountApi';
+
+const ACCOUNT_CSS = `
+@keyframes statValGlowWhite {
+  0%, 100% { text-shadow: 0 0 6px rgba(200,200,255,0.15); }
+  50%       { text-shadow: 0 0 18px rgba(200,200,255,0.65), 0 0 36px rgba(200,200,255,0.18); }
+}
+@keyframes statValGlowGreen {
+  0%, 100% { text-shadow: 0 0 6px rgba(74,222,128,0.2); }
+  50%       { text-shadow: 0 0 18px rgba(74,222,128,0.8), 0 0 36px rgba(74,222,128,0.28); }
+}
+@keyframes statValGlowRed {
+  0%, 100% { text-shadow: 0 0 6px rgba(233,69,96,0.2); }
+  50%       { text-shadow: 0 0 18px rgba(233,69,96,0.8), 0 0 36px rgba(233,69,96,0.28); }
+}
+@keyframes statValGlowGold {
+  0%, 100% { text-shadow: 0 0 6px rgba(251,191,36,0.2); }
+  50%       { text-shadow: 0 0 18px rgba(251,191,36,0.85), 0 0 36px rgba(251,191,36,0.28); }
+}
+.stat-val-white { animation: statValGlowWhite 3.4s ease-in-out infinite; }
+.stat-val-green { animation: statValGlowGreen 3.4s ease-in-out infinite; }
+.stat-val-red   { animation: statValGlowRed   3.4s ease-in-out infinite; }
+.stat-val-gold  { animation: statValGlowGold  3.4s ease-in-out infinite; }
+@keyframes winRateBarFlow {
+  0%, 100% { filter: brightness(1); }
+  50%       { filter: brightness(1.3); }
+}
+.winrate-bar-fill { animation: winRateBarFlow 2.8s ease-in-out infinite; }
+`;
+
+import { getAccountData, setProfileImage, changeTeamName, changePassword, setChatSound } from '../api/accountApi';
 import { getHeroes } from '../api/playerApi';
 import { usePlayer } from '../context/PlayerContext';
 import type { AccountData, AvatarOption } from '../types';
@@ -102,6 +131,16 @@ export default function AccountPage() {
     }
   }
 
+  async function handleChatSoundToggle() {
+    if (!data) return;
+    const newVal = !data.chatSoundEnabled;
+    try {
+      await setChatSound(newVal);
+      await load();
+      await fetchPlayer();
+    } catch { /* non-fatal */ }
+  }
+
   async function handlePassword(e: React.FormEvent) {
     e.preventDefault();
     setPwMsg(''); setPwErr('');
@@ -123,8 +162,18 @@ export default function AccountPage() {
   const winRate = data.totalBattles > 0
     ? Math.round((data.wins / data.totalBattles) * 100) : 0;
 
+  const statItems = [
+    { value: String(data.totalBattles), label: 'Battles',     color: '#a0a0cc', glowClass: 'stat-val-white', barPct: null },
+    { value: String(data.wins),         label: 'Wins',        color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
+    { value: String(data.losses),       label: 'Losses',      color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
+    { value: `${winRate}%`,             label: 'Win Rate',    color: '#fbbf24', glowClass: 'stat-val-gold',  barPct: winRate },
+    { value: String(data.winStreak),    label: 'Win Streak',  color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
+    { value: String(data.lossStreak),   label: 'Loss Streak', color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
+  ];
+
   return (
     <div style={styles.page}>
+      <style>{ACCOUNT_CSS}</style>
       {levelUpQueue.length > 0 && (
         <LevelUpPopup
           event={levelUpQueue[0]}
@@ -141,34 +190,39 @@ export default function AccountPage() {
           )}
         </div>
         <div style={styles.profileInfo}>
-          <div style={styles.username}>{data.username}</div>
+          <div style={styles.username} className="gradient-title">{data.username}</div>
           <div style={styles.memberSince}>Member since {memberDate}</div>
         </div>
-        <div style={styles.statsBlock}>
-          <div style={styles.statItem}>
-            <span style={styles.statVal}>{data.totalBattles}</span>
-            <span style={styles.statLabel}>Battles</span>
-          </div>
-          <div style={styles.statItem}>
-            <span style={{ ...styles.statVal, color: '#4ade80' }}>{data.wins}</span>
-            <span style={styles.statLabel}>Wins</span>
-          </div>
-          <div style={styles.statItem}>
-            <span style={{ ...styles.statVal, color: '#e94560' }}>{data.losses}</span>
-            <span style={styles.statLabel}>Losses</span>
-          </div>
-          <div style={styles.statItem}>
-            <span style={{ ...styles.statVal, color: '#fbbf24' }}>{winRate}%</span>
-            <span style={styles.statLabel}>Win Rate</span>
-          </div>
-          <div style={styles.statItem}>
-            <span style={{ ...styles.statVal, color: '#4ade80' }}>{data.winStreak}</span>
-            <span style={styles.statLabel}>Win Streak</span>
-          </div>
-          <div style={styles.statItem}>
-            <span style={{ ...styles.statVal, color: '#e94560' }}>{data.lossStreak}</span>
-            <span style={styles.statLabel}>Loss Streak</span>
-          </div>
+      </div>
+
+      {/* ── Combat Record ── */}
+      <div style={styles.combatRecord}>
+        <div style={styles.combatRecordHeader}>
+          <span style={styles.combatRecordTitle}>⚔ Combat Record</span>
+          <div style={styles.combatRecordLine} />
+        </div>
+        <div style={styles.statCardsRow}>
+          {statItems.map(({ value, label, color, glowClass, barPct }) => (
+            <div
+              key={label}
+              style={{
+                ...styles.statCard,
+                borderTop: `3px solid ${color}`,
+                background: `linear-gradient(160deg, rgba(0,0,0,0.0) 0%, ${color}09 100%)`,
+                boxShadow: `0 2px 16px rgba(0,0,0,0.35), inset 0 1px 0 ${color}18`,
+              }}
+            >
+              {/* shimmer line */}
+              <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: `linear-gradient(90deg, transparent, ${color}88, transparent)` }} />
+              <span style={{ ...styles.statCardLabel, color: `${color}aa` }}>{label}</span>
+              <span className={glowClass} style={{ ...styles.statCardValue, color }}>{value}</span>
+              {barPct !== null && (
+                <div style={styles.winRateBarBg}>
+                  <div className="winrate-bar-fill" style={{ ...styles.winRateBarFill, width: `${barPct}%` }} />
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -261,6 +315,28 @@ export default function AccountPage() {
         {pwMsg && <div style={styles.success}>{pwMsg}</div>}
         {pwErr && <div style={styles.error}>{pwErr}</div>}
       </section>
+
+      {/* ── Chat Notifications ── */}
+      <section style={styles.section}>
+        <div style={styles.sectionTitle}>Chat Notifications</div>
+        <label style={styles.toggleRow}>
+          <div
+            onClick={handleChatSoundToggle}
+            style={{
+              ...styles.toggleSwitch,
+              backgroundColor: data.chatSoundEnabled ? '#a78bfa' : '#333',
+            }}
+          >
+            <div style={{
+              ...styles.toggleThumb,
+              transform: data.chatSoundEnabled ? 'translateX(18px)' : 'translateX(2px)',
+            }} />
+          </div>
+          <span style={styles.toggleLabel}>
+            Play sound on new chat messages
+          </span>
+        </label>
+      </section>
     </div>
   );
 }
@@ -275,7 +351,6 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#1a1a2e',
     borderRadius: 10,
     border: '1px solid #16213e',
-    flexWrap: 'wrap' as const,
   },
   avatarBlock: { flexShrink: 0 },
   noAvatar: {
@@ -288,10 +363,79 @@ const styles: Record<string, React.CSSProperties> = {
   username: { color: '#e0e0e0', fontSize: 22, fontWeight: 700 },
   teamNameDisplay: { color: '#a78bfa', fontSize: 14, fontWeight: 500 },
   memberSince: { color: '#666', fontSize: 12 },
-  statsBlock: { display: 'flex', gap: 20, flexWrap: 'wrap' as const },
-  statItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
-  statVal: { color: '#e0e0e0', fontSize: 20, fontWeight: 700 },
-  statLabel: { color: '#666', fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+  combatRecord: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 12,
+    padding: '18px 20px',
+    backgroundColor: '#1a1a2e',
+    borderRadius: 10,
+    border: '1px solid #16213e',
+  },
+  combatRecordHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  },
+  combatRecordTitle: {
+    color: '#4a4a7a',
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase' as const,
+    whiteSpace: 'nowrap' as const,
+    flexShrink: 0,
+  },
+  combatRecordLine: {
+    flex: 1,
+    height: 1,
+    background: 'linear-gradient(90deg, rgba(74,74,122,0.4), transparent)',
+  },
+  statCardsRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(6, 1fr)',
+    gap: 8,
+  },
+  statCard: {
+    position: 'relative' as const,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: 6,
+    padding: '14px 8px 12px',
+    border: '1px solid rgba(255,255,255,0.05)',
+    borderRadius: 8,
+    overflow: 'hidden',
+    transition: 'transform 0.15s',
+  },
+  statCardLabel: {
+    fontSize: 9,
+    fontWeight: 800,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase' as const,
+    lineHeight: 1,
+  },
+  statCardValue: {
+    fontSize: 30,
+    fontWeight: 900,
+    lineHeight: 1,
+    fontVariantNumeric: 'tabular-nums',
+    fontFamily: 'Inter, sans-serif',
+    letterSpacing: '-0.02em',
+  },
+  winRateBarBg: {
+    width: '70%',
+    height: 3,
+    backgroundColor: 'rgba(251,191,36,0.12)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  winRateBarFill: {
+    height: '100%',
+    background: 'linear-gradient(90deg, #d97706, #fbbf24)',
+    borderRadius: 2,
+    boxShadow: '0 0 4px rgba(251,191,36,0.7)',
+  },
   section: {
     padding: '20px 24px',
     backgroundColor: '#1a1a2e',
@@ -348,4 +492,17 @@ const styles: Record<string, React.CSSProperties> = {
   success: { color: '#4ade80', fontSize: 13 },
   error: { color: '#e94560', fontSize: 13 },
   muted: { color: '#666', fontSize: 13 },
+  toggleRow: {
+    display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
+  },
+  toggleSwitch: {
+    width: 40, height: 22, borderRadius: 11, position: 'relative',
+    transition: 'background-color 0.2s', cursor: 'pointer', flexShrink: 0,
+  },
+  toggleThumb: {
+    position: 'absolute', top: 2, width: 18, height: 18,
+    borderRadius: '50%', backgroundColor: '#fff',
+    transition: 'transform 0.2s',
+  },
+  toggleLabel: { color: '#c0c0d8', fontSize: 13 },
 };

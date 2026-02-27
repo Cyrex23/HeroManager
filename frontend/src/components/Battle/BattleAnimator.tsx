@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { BattleLog } from '../../types';
 import HeroPortrait from '../Hero/HeroPortrait';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const ELEM_SYM: Record<string, string> = {
-  FIRE: '🔥', WATER: '💧', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
+  FIRE: '🔥', WATER: '🌊', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
 };
 
 const ELEM_COLOR: Record<string, string> = {
@@ -45,6 +46,9 @@ const ANIM_CSS = `
 @keyframes baXP { 0%{opacity:0;transform:translateY(10px) scale(.75)} 55%{opacity:1;transform:translateY(-2px) scale(1.08)} 100%{opacity:1;transform:translateY(0) scale(1)} }
 @keyframes baSpell { 0%{opacity:0;transform:translateY(18px) scale(0.68);filter:brightness(1)} 7%{opacity:1;transform:translateY(-7px) scale(1.22);filter:brightness(3) saturate(2.2)} 15%{transform:translateX(-8px) scale(1.14);filter:brightness(2.4)} 23%{transform:translateX(8px) scale(1.17);filter:brightness(2.8)} 31%{transform:translateX(-6px) scale(1.10);filter:brightness(2.1)} 39%{transform:translateX(6px) scale(1.08);filter:brightness(1.8)} 47%{transform:translateX(-4px) scale(1.05);filter:brightness(1.5)} 55%{transform:translateX(3px) scale(1.03);filter:brightness(1.3)} 63%{transform:translateX(0) scale(1.01);filter:brightness(1.1)} 100%{opacity:1;transform:scale(1);filter:brightness(1)} }
 @keyframes baManaGlow { 0%,100%{box-shadow:0 0 8px rgba(59,130,246,0.55),0 0 0 rgba(96,165,250,0)} 50%{box-shadow:0 0 28px rgba(59,130,246,1),0 0 56px rgba(96,165,250,0.7),0 0 90px rgba(147,197,253,0.35)} }
+@keyframes baOverlayIn { 0%{opacity:0;transform:scale(0.92)} 100%{opacity:1;transform:scale(1)} }
+@keyframes baTitleIn { 0%{opacity:0;transform:translateY(-18px)} 100%{opacity:1;transform:translateY(0)} }
+@keyframes baSwordsIn { 0%{opacity:0;transform:scale(0.5) rotate(-20deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }
 `;
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -64,20 +68,38 @@ function getDominantStat(pa?: number, mp?: number, dex?: number): HitType {
   return 'DEX';
 }
 
-function buildRoster(rounds: BattleLog['rounds'], side: 'attacker' | 'defender'): HeroInfo[] {
-  const seen = new Set<string>();
-  const list: HeroInfo[] = [];
+function buildRoster(
+  teamHeroes: Array<{ name: string; imagePath: string; level: number; element?: string } | string>,
+  rounds: BattleLog['rounds'],
+  side: 'attacker' | 'defender',
+  summon?: { name: string; imagePath: string } | null,
+): HeroInfo[] {
+  // Build a map from rounds for supplemental data (backward compat + image fallback)
+  const roundMap = new Map<string, { imagePath: string | null; level?: number; element?: string }>();
   for (const r of rounds) {
     const name = side === 'attacker' ? r.attackerHero : r.defenderHero;
-    if (seen.has(name)) continue;
-    seen.add(name);
-    list.push({
-      name,
-      imagePath: (side === 'attacker' ? r.attackerImagePath : r.defenderImagePath) ?? null,
-      element: side === 'attacker' ? r.attackerElement : r.defenderElement,
-      level: side === 'attacker' ? r.attackerLevel : r.defenderLevel,
-    });
+    if (!roundMap.has(name)) {
+      roundMap.set(name, {
+        imagePath: (side === 'attacker' ? r.attackerImagePath : r.defenderImagePath) ?? null,
+        level: side === 'attacker' ? r.attackerLevel : r.defenderLevel,
+        element: side === 'attacker' ? r.attackerElement : r.defenderElement,
+      });
+    }
   }
+
+  const list: HeroInfo[] = teamHeroes.map(h => {
+    if (typeof h === 'string') {
+      // Old format (legacy battle logs stored as plain strings)
+      const rd = roundMap.get(h);
+      return { name: h, imagePath: rd?.imagePath ?? null, level: rd?.level, element: rd?.element };
+    }
+    return { name: h.name, imagePath: h.imagePath || null, level: h.level, element: h.element };
+  });
+
+  if (summon) {
+    list.push({ name: summon.name, imagePath: summon.imagePath || null });
+  }
+
   return list;
 }
 
@@ -100,9 +122,16 @@ interface Props {
 }
 
 export default function BattleAnimator({ battleLog, result, goldEarned }: Props) {
+  const navigate = useNavigate();
   const rounds = battleLog.rounds;
-  const cRoster = useMemo(() => buildRoster(rounds, 'attacker'), [rounds]);
-  const dRoster = useMemo(() => buildRoster(rounds, 'defender'), [rounds]);
+  const cRoster = useMemo(
+    () => buildRoster(battleLog.challenger.heroes as any, rounds, 'attacker', battleLog.challenger.summon),
+    [battleLog, rounds],
+  );
+  const dRoster = useMemo(
+    () => buildRoster(battleLog.defender.heroes as any, rounds, 'defender', battleLog.defender.summon),
+    [battleLog, rounds],
+  );
 
   const [roundIdx, setRoundIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -114,14 +143,17 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
   const [rAnim, setRAnim] = useState<AnimSlot>(IDLE);
   const [showImpact, setShowImpact] = useState(false);
   const [impactKey, setImpactKey] = useState(0);
-  const [dmgL, setDmgL] = useState<{ v: number; k: number; elemBonus?: number; elem?: string } | null>(null);
-  const [dmgR, setDmgR] = useState<{ v: number; k: number; elemBonus?: number; elem?: string } | null>(null);
+  const [dmgL, setDmgL] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number } | null>(null);
+  const [dmgR, setDmgR] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number } | null>(null);
   const [roundRes, setRoundRes] = useState<'attacker' | 'defender' | null>(null);
   const [hitInd, setHitInd] = useState<{ type: HitType; side: 'left' | 'right'; k: number } | null>(null);
   const [cSpellNotif, setCSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number }>; k: number } | null>(null);
   const [dSpellNotif, setDSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number }>; k: number } | null>(null);
   // -1 = show full mana (before any round plays); >= 0 = show mana after that round index
   const [manaDisplayIdx, setManaDisplayIdx] = useState(-1);
+
+  const [showEndOverlay, setShowEndOverlay] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   const cancelRef = useRef(false);
   const doneRef   = useRef(false); // true only when animation runs to natural completion
@@ -134,6 +166,15 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     document.head.appendChild(style);
     return () => style.remove();
   }, []);
+
+  // Show end overlay when battle finishes (after user has interacted)
+  useEffect(() => {
+    if (!hasInteracted) return;
+    if (roundIdx >= rounds.length - 1 && !isPlaying && !busy) {
+      const t = setTimeout(() => setShowEndOverlay(true), 420);
+      return () => clearTimeout(t);
+    }
+  }, [hasInteracted, roundIdx, rounds.length, isPlaying, busy]);
 
   const bump = useCallback((set: React.Dispatch<React.SetStateAction<AnimSlot>>, name: string, dur: number) => {
     set(a => ({ name, dur, key: a.key + 1 }));
@@ -209,12 +250,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     if (leftGoesFirst) {
       // Left hits right → indicator + damage on right; right flashes
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
-      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement });
+      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction });
       bump(setRAnim, 'baHF', 700 / speed);
     } else {
       // Right hits left → indicator + damage on left; left flashes
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
-      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement });
+      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction });
       bump(setLAnim, 'baHF', 700 / speed);
     }
     await sleep(IMPACT_MS);
@@ -233,12 +274,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     if (leftGoesFirst) {
       // Right hits left → indicator + damage on left; left flashes
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
-      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement });
+      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction });
       bump(setLAnim, 'baHF', 700 / speed);
     } else {
       // Left hits right → indicator + damage on right; right flashes
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
-      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement });
+      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction });
       bump(setRAnim, 'baHF', 700 / speed);
     }
     await sleep(IMPACT_MS);
@@ -308,6 +349,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
   }, [rounds.length, resetVisuals]);
 
   const handlePlay = () => {
+    setHasInteracted(true);
     if (!isPlaying && doneRef.current && !busy) {
       // Battle finished naturally → restart from the top
       doneRef.current = false;
@@ -323,6 +365,21 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     }
   };
 
+  const handleSkipAll = () => {
+    setHasInteracted(true);
+    skipTo(rounds.length - 1);
+  };
+
+  const handleRewatch = () => {
+    setShowEndOverlay(false);
+    doneRef.current = false;
+    cancelRef.current = true;
+    setBusy(false);
+    resetVisuals();
+    setRoundIdx(0);
+    setTimeout(() => setIsPlaying(true), 80);
+  };
+
   // ── Derived
   // Flat hero-name → xp lookup covering both sides
   const xpData = useMemo(() => {
@@ -331,8 +388,14 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
       Object.entries(battleLog.xpGained.challenger).forEach(([h, xp]) => { out[h] = xp; });
       Object.entries(battleLog.xpGained.defender).forEach(([h, xp]) => { out[h] = xp; });
     }
+    if (battleLog.summonXp) {
+      const cs = battleLog.challenger.summon;
+      const ds = battleLog.defender.summon;
+      if (cs && battleLog.summonXp.challenger > 0) out[cs.name] = battleLog.summonXp.challenger;
+      if (ds && battleLog.summonXp.defender   > 0) out[ds.name] = battleLog.summonXp.defender;
+    }
     return out;
-  }, [battleLog.xpGained]);
+  }, [battleLog.xpGained, battleLog.summonXp, battleLog.challenger.summon, battleLog.defender.summon]);
 
   const round = rounds[Math.min(roundIdx, rounds.length - 1)];
   const cDefeated = useMemo(() => getDefeated(rounds, roundIdx, 'attacker'), [rounds, roundIdx]);
@@ -475,8 +538,9 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     );
   };
 
-  const renderBloodSplatter = (sp: number, label: string, elemBonus?: number, elem?: string) => {
+  const renderBloodSplatter = (sp: number, label: string, elemBonus?: number, elem?: string, rawAttack?: number, staminaLost?: number) => {
     const poolDur = `${900 / sp}ms`;
+    const hasStamina = staminaLost != null && staminaLost > 0;
     // Droplets scattered just outside the pool edges (pool is ~144×58)
     const droplets = [
       { w: 14, h: 9,  tOff: -34, lOff: -16, delay: '80ms'  },
@@ -487,59 +551,99 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
       { w: 9,  h: 6,  tOff:  24, lOff:  46, delay: '120ms' },
     ];
     return (
-      <div style={{ position: 'relative', width: 148, height: 62, pointerEvents: 'none', flexShrink: 0 }}>
-        {/* Main blood pool — centered, grows from nothing */}
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          width: 144, height: 58, borderRadius: '50%',
-          background: 'radial-gradient(ellipse at 46% 40%, #cc1500 0%, #880000 42%, #550000 78%, rgba(40,0,0,0.9) 100%)',
-          filter: 'drop-shadow(0 0 8px rgba(160,0,0,.75))',
-          animationName: 'baBloodMain', animationDuration: poolDur,
-          animationFillMode: 'both', animationTimingFunction: 'ease-out',
-          zIndex: 1,
-        }} />
-        {/* Scatter droplets */}
-        {droplets.map((d, i) => (
-          <div key={i} style={{
-            position: 'absolute',
-            top: `calc(50% + ${d.tOff}px)`, left: `calc(50% + ${d.lOff}px)`,
-            width: d.w, height: d.h, borderRadius: '50%',
-            background: 'radial-gradient(ellipse, #cc1100 0%, #880000 72%, transparent 100%)',
-            animationName: 'baBloodDrop', animationDuration: `${760 / sp}ms`,
-            animationDelay: d.delay, animationFillMode: 'both', animationTimingFunction: 'ease-out',
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none', gap: 3 }}>
+        {/* Raw total damage — shown above when stamina reduced it */}
+        {hasStamina && rawAttack != null && (
+          <span style={{
+            fontSize: 17, fontWeight: 800, color: 'rgba(255,255,255,0.55)',
+            textShadow: '0 1px 4px rgba(0,0,0,0.9)',
+            textDecoration: 'line-through',
+            textDecorationColor: 'rgba(251,113,133,0.6)',
+            whiteSpace: 'nowrap', lineHeight: 1,
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            {rawAttack.toFixed(1)}
+          </span>
+        )}
+
+        {/* Blood pool + real damage number */}
+        <div style={{ position: 'relative', width: 148, height: 62, flexShrink: 0 }}>
+          {/* Main blood pool — centered, grows from nothing */}
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%',
+            width: 144, height: 58, borderRadius: '50%',
+            background: 'radial-gradient(ellipse at 46% 40%, #cc1500 0%, #880000 42%, #550000 78%, rgba(40,0,0,0.9) 100%)',
+            filter: 'drop-shadow(0 0 8px rgba(160,0,0,.75))',
+            animationName: 'baBloodMain', animationDuration: poolDur,
+            animationFillMode: 'both', animationTimingFunction: 'ease-out',
             zIndex: 1,
           }} />
-        ))}
-        {/* Number centered over the pool */}
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-          <span style={{
-            fontSize: 42, fontWeight: 900, color: '#fff',
-            textShadow: '0 0 8px rgba(0,0,0,1), 0 1px 3px rgba(0,0,0,1), 0 0 20px rgba(160,0,0,.9)',
-            whiteSpace: 'nowrap', lineHeight: 1,
-          }}>
-            {label}
-          </span>
-        </div>
-        {/* Elemental bonus badge — bottom-right corner */}
-        {elemBonus != null && elemBonus > 0 && elem && (
-          <div style={{
-            position: 'absolute', bottom: -6, right: -12,
-            display: 'flex', alignItems: 'center', gap: 2,
-            backgroundColor: 'rgba(0,0,0,0.82)',
-            border: `1px solid ${ELEM_COLOR[elem] ?? '#fff'}`,
-            borderRadius: 5,
-            padding: '2px 6px',
-            zIndex: 3,
-            boxShadow: `0 0 8px ${ELEM_COLOR[elem] ?? '#fff'}55`,
-          }}>
-            <span style={{ fontSize: 12, lineHeight: 1 }}>{ELEM_SYM[elem] ?? '⚡'}</span>
+          {/* Scatter droplets */}
+          {droplets.map((d, i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              top: `calc(50% + ${d.tOff}px)`, left: `calc(50% + ${d.lOff}px)`,
+              width: d.w, height: d.h, borderRadius: '50%',
+              background: 'radial-gradient(ellipse, #cc1100 0%, #880000 72%, transparent 100%)',
+              animationName: 'baBloodDrop', animationDuration: `${760 / sp}ms`,
+              animationDelay: d.delay, animationFillMode: 'both', animationTimingFunction: 'ease-out',
+              zIndex: 1,
+            }} />
+          ))}
+          {/* Number centered over the pool */}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
             <span style={{
-              color: ELEM_COLOR[elem] ?? '#fff',
-              fontWeight: 900, fontSize: 14, lineHeight: 1,
-              textShadow: `0 0 8px ${ELEM_COLOR[elem] ?? '#fff'}`,
-              fontVariantNumeric: 'tabular-nums',
+              fontSize: 42, fontWeight: 900, color: '#fff',
+              textShadow: '0 0 8px rgba(0,0,0,1), 0 1px 3px rgba(0,0,0,1), 0 0 20px rgba(160,0,0,.9)',
+              whiteSpace: 'nowrap', lineHeight: 1,
             }}>
-              {elemBonus.toFixed(1)}
+              {label}
+            </span>
+          </div>
+          {/* Elemental bonus badge — bottom-right corner */}
+          {elemBonus != null && elemBonus > 0 && elem && (
+            <div style={{
+              position: 'absolute', bottom: -6, right: -12,
+              display: 'flex', alignItems: 'center', gap: 2,
+              backgroundColor: 'rgba(0,0,0,0.82)',
+              border: `1px solid ${ELEM_COLOR[elem] ?? '#fff'}`,
+              borderRadius: 5,
+              padding: '2px 6px',
+              zIndex: 3,
+              boxShadow: `0 0 8px ${ELEM_COLOR[elem] ?? '#fff'}55`,
+            }}>
+              <span style={{ fontSize: 12, lineHeight: 1 }}>{ELEM_SYM[elem] ?? '⚡'}</span>
+              <span style={{
+                color: ELEM_COLOR[elem] ?? '#fff',
+                fontWeight: 900, fontSize: 14, lineHeight: 1,
+                textShadow: `0 0 8px ${ELEM_COLOR[elem] ?? '#fff'}`,
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {elemBonus.toFixed(1)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Stamina reduction — shown below when applicable */}
+        {hasStamina && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            backgroundColor: 'rgba(0,0,0,0.72)',
+            border: '1px solid rgba(251,113,133,0.35)',
+            borderRadius: 6,
+            padding: '2px 8px',
+          }}>
+            <span style={{ fontSize: 14, color: '#fb7185', lineHeight: 1 }}>↓</span>
+            <span style={{
+              fontSize: 14, fontWeight: 800, color: '#fb7185',
+              textShadow: '0 0 6px rgba(251,113,133,0.6)',
+              fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+            }}>
+              {staminaLost!.toFixed(1)}
+            </span>
+            <span style={{ fontSize: 10, color: 'rgba(251,113,133,0.55)', fontWeight: 600, letterSpacing: '0.05em' }}>
+              STAM
             </span>
           </div>
         )}
@@ -587,7 +691,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
             animationTimingFunction: 'ease-out',
             pointerEvents: 'none',
           }}>
-            {renderBloodSplatter(speed, dmg.v.toFixed(1), dmg.elemBonus, dmg.elem)}
+            {renderBloodSplatter(speed, dmg.v.toFixed(1), dmg.elemBonus, dmg.elem, dmg.rawAttack, dmg.staminaLost)}
           </div>
         )}
 
@@ -657,7 +761,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
                   animationIterationCount: 'infinite',
                 }} />
               </div>
-              <span style={s.manaBarLabel}>{Math.round(manaCurrent)}/{Math.round(manaTotal)} MP</span>
+              <span style={s.manaBarLabel}>{Math.round(manaCurrent)}/{Math.round(manaTotal)} Mana Pool</span>
             </div>
           );
         })()}
@@ -801,6 +905,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
           </button>
           <button onClick={() => skipTo(roundIdx + 1)} disabled={isAtEnd} title="Next" style={{ ...s.ctrl, opacity: isAtEnd ? 0.4 : 1 }}>▶</button>
           <button onClick={() => skipTo(rounds.length - 1)} disabled={isAtEnd} title="Last round" style={{ ...s.ctrl, opacity: isAtEnd ? 0.4 : 1 }}>⏭</button>
+          <button onClick={handleSkipAll} disabled={isAtEnd} title="Skip to end" style={{ ...s.ctrl, ...s.skipCtrl, opacity: isAtEnd ? 0.4 : 1 }}>SKIP</button>
         </div>
 
         <div style={s.speedGroup}>
@@ -816,6 +921,80 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
           {roundIdx + 1} / {rounds.length}
         </div>
       </div>
+
+      {/* ── End overlay ── */}
+      {showEndOverlay && (
+        <div style={s.overlayBackdrop}>
+          <div style={s.overlayCard}>
+            {(() => {
+              const challengerWon = result === 'WIN' || (!result && battleLog.winner === 'challenger');
+              const defenderWon   = result === 'LOSS' || (!result && battleLog.winner === 'defender');
+              const renderSide = (
+                won: boolean,
+                imagePath: string | undefined,
+                name: string | undefined,
+                username: string,
+              ) => (
+                <div style={{ ...s.overlayPlayerSide, opacity: won ? 1 : 0.45 }}>
+                  <div style={{
+                    ...s.overlayResultTitle,
+                    fontSize: won ? 26 : 18,
+                    color: won ? '#4ade80' : '#e94560',
+                    textShadow: won ? '0 0 28px rgba(74,222,128,0.8), 0 0 6px rgba(74,222,128,0.5)' : '0 0 10px rgba(233,69,96,0.4)',
+                  }}>
+                    {won ? 'VICTORY' : 'DEFEAT'}
+                  </div>
+                  {imagePath && (
+                    <div style={{
+                      borderRadius: 10,
+                      overflow: 'hidden',
+                      boxShadow: won
+                        ? '0 0 0 2px #4ade80, 0 0 30px rgba(74,222,128,0.55), 0 0 60px rgba(74,222,128,0.2)'
+                        : '0 0 20px rgba(0,0,0,.8)',
+                      transform: won ? 'scale(1.08)' : 'scale(0.92)',
+                      transition: 'transform 0.3s ease',
+                      filter: won ? 'none' : 'grayscale(40%) brightness(0.7)',
+                    }}>
+                      <HeroPortrait imagePath={imagePath} name={name ?? ''} size={won ? 110 : 80} />
+                    </div>
+                  )}
+                  <div style={{ ...s.overlayUsername, color: won ? '#e0e0f0' : '#6a6a8a' }}>{username}</div>
+                </div>
+              );
+              return (
+                <div style={s.overlaySides}>
+                  {renderSide(challengerWon, battleLog.challenger.profileImagePath ?? cRoster[0]?.imagePath ?? undefined, battleLog.challenger.username, battleLog.challenger.username)}
+                  <div style={s.overlayVsDivider}>VS</div>
+                  {renderSide(defenderWon, battleLog.defender.profileImagePath ?? dRoster[0]?.imagePath ?? undefined, battleLog.defender.username, battleLog.defender.username)}
+                </div>
+              );
+            })()}
+
+            {goldEarned != null && goldEarned > 0 && (
+              <div style={s.overlayGoldRow}>
+                <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                  {/* bottom coin */}
+                  <ellipse cx="13" cy="21" rx="8" ry="3" fill="#92400e" stroke="#fbbf24" strokeWidth="1.2"/>
+                  <ellipse cx="13" cy="20" rx="8" ry="3" fill="#d97706" stroke="#fbbf24" strokeWidth="1.2"/>
+                  {/* middle coin */}
+                  <ellipse cx="13" cy="16" rx="8" ry="3" fill="#92400e" stroke="#fbbf24" strokeWidth="1.2"/>
+                  <ellipse cx="13" cy="15" rx="8" ry="3" fill="#d97706" stroke="#fbbf24" strokeWidth="1.2"/>
+                  {/* top coin */}
+                  <ellipse cx="13" cy="11" rx="8" ry="3" fill="#92400e" stroke="#fbbf24" strokeWidth="1.2"/>
+                  <ellipse cx="13" cy="10" rx="8" ry="3" fill="#fbbf24" stroke="#fbbf24" strokeWidth="1.2"/>
+                  <ellipse cx="13" cy="10" rx="5" ry="1.8" fill="#fde68a" opacity="0.5"/>
+                </svg>
+                <span style={s.overlayGoldText}>+{goldEarned}</span>
+              </div>
+            )}
+
+            <div style={s.overlayActions}>
+              <button onClick={handleRewatch} style={s.overlayBtnRewatch}>⟳ Rewatch</button>
+              <button onClick={() => navigate('/arena')} style={s.overlayBtnFinish}>Finish</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1047,5 +1226,136 @@ const s: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
     flexShrink: 0,
     textShadow: '0 0 8px rgba(96,165,250,0.9)',
+  },
+  skipCtrl: {
+    backgroundColor: 'rgba(251,191,36,0.1)',
+    borderColor: 'rgba(251,191,36,0.28)',
+    color: '#fbbf24',
+    fontWeight: 700,
+    fontSize: 11,
+    letterSpacing: 0.8,
+  },
+  overlayBackdrop: {
+    position: 'fixed' as const,
+    inset: 0,
+    backgroundColor: 'rgba(0,0,0,0.52)',
+    backdropFilter: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+  },
+  overlayCard: {
+    backgroundColor: '#0e0e22',
+    border: '1px solid #2a2a50',
+    borderRadius: 18,
+    padding: '40px 56px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: 26,
+    boxShadow: '0 30px 90px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,0.04)',
+    animationName: 'baOverlayIn',
+    animationDuration: '0.42s',
+    animationFillMode: 'both' as const,
+    animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+    minWidth: 460,
+  },
+  overlaySwords: {
+    fontSize: 30,
+    color: '#e94560',
+    textShadow: '0 0 22px rgba(233,69,96,.65)',
+    animationName: 'baSwordsIn',
+    animationDuration: '0.5s',
+    animationFillMode: 'both' as const,
+    animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+    animationDelay: '0.1s',
+  },
+  overlaySides: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 44,
+    animationName: 'baTitleIn',
+    animationDuration: '0.45s',
+    animationFillMode: 'both' as const,
+    animationDelay: '0.15s',
+  },
+  overlayPlayerSide: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: 10,
+  },
+  overlayResultTitle: {
+    fontSize: 22,
+    fontWeight: 900,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase' as const,
+    textShadow: '0 0 22px currentColor',
+  },
+  overlayUsername: {
+    color: '#c0c0e0',
+    fontWeight: 700,
+    fontSize: 14,
+    letterSpacing: 0.3,
+  },
+  overlayVsDivider: {
+    color: '#3a3a6a',
+    fontSize: 13,
+    fontWeight: 900,
+    letterSpacing: 3,
+    flexShrink: 0,
+    paddingBottom: 28,
+  },
+  overlayGoldRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(251,191,36,0.07)',
+    border: '1px solid rgba(251,191,36,0.22)',
+    borderRadius: 10,
+    padding: '10px 26px',
+    animationName: 'baTitleIn',
+    animationDuration: '0.45s',
+    animationFillMode: 'both' as const,
+    animationDelay: '0.25s',
+  },
+  overlayGoldText: {
+    color: '#fbbf24',
+    fontWeight: 800,
+    fontSize: 18,
+    textShadow: '0 0 14px rgba(251,191,36,.5)',
+    fontVariantNumeric: 'tabular-nums' as const,
+  },
+  overlayActions: {
+    display: 'flex',
+    gap: 14,
+    animationName: 'baTitleIn',
+    animationDuration: '0.45s',
+    animationFillMode: 'both' as const,
+    animationDelay: '0.32s',
+  },
+  overlayBtnRewatch: {
+    padding: '10px 28px',
+    backgroundColor: 'transparent',
+    color: '#a0a0c0',
+    border: '1px solid #2a2a50',
+    borderRadius: 9,
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: 'pointer',
+    letterSpacing: 0.4,
+  },
+  overlayBtnFinish: {
+    padding: '10px 28px',
+    backgroundColor: '#e94560',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 9,
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: 'pointer',
+    letterSpacing: 0.4,
+    boxShadow: '0 0 20px rgba(233,69,96,.4)',
   },
 };

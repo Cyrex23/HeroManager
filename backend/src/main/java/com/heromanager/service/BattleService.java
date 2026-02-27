@@ -30,9 +30,9 @@ public class BattleService {
     }
 
     public record HeroSlot(Hero hero, int slotNumber) {}
-    public record TeamData(List<HeroSlot> heroSlots, Summon summon, double summonMpBonus, String username) {}
+    public record TeamData(List<HeroSlot> heroSlots, Summon summon, double summonMpBonus, String username, String profileImagePath) {}
 
-    public TeamData loadTeam(Long playerId, String username) {
+    public TeamData loadTeam(Long playerId, String username, String profileImagePath) {
         List<TeamSlot> slots = teamSlotRepository.findByPlayerId(playerId);
         slots.sort(Comparator.comparingInt(TeamSlot::getSlotNumber));
 
@@ -54,7 +54,7 @@ public class BattleService {
             }
         }
 
-        return new TeamData(heroSlots, summon, summonMpBonus, username);
+        return new TeamData(heroSlots, summon, summonMpBonus, username, profileImagePath);
     }
 
     @Transactional(readOnly = true)
@@ -65,8 +65,8 @@ public class BattleService {
 
         int cIdx = 0;
         int dIdx = 0;
-        double cStamina = 1.0;
-        double dStamina = 1.0;
+        int cConsecWins = 0;
+        int dConsecWins = 0;
         int roundNumber = 0;
 
         List<HeroSlot> cSlots = challengerTeam.heroSlots();
@@ -153,6 +153,10 @@ public class BattleService {
             }
             dEntranceFired.add(dHero.getId());
 
+            double cStaminaEff = Math.min(1.0, cStats.getOrDefault("stamina", 0.0) / (60.0 + cHero.getLevel() * 2.5));
+            double dStaminaEff = Math.min(1.0, dStats.getOrDefault("stamina", 0.0) / (60.0 + dHero.getLevel() * 2.5));
+            double cStamina = getTurnCapacity(cConsecWins, cStaminaEff);
+            double dStamina = getTurnCapacity(dConsecWins, dStaminaEff);
             BattleCalculator.AttackBreakdown cBreak = BattleCalculator.calculateAttack(cStats, cStamina);
             BattleCalculator.AttackBreakdown dBreak = BattleCalculator.calculateAttack(dStats, dStamina);
             double cAttack = cBreak.finalAttack();
@@ -213,7 +217,8 @@ public class BattleService {
                 round.put("winner", "attacker");
                 int xp = 4 + 2 * dHero.getLevel();
                 challengerXp.merge(cHero.getTemplate().getDisplayName(), xp, Integer::sum);
-                cStamina *= 0.9;
+                cConsecWins++;
+                dConsecWins = 0;
                 cHero.setClashesWon(cHero.getClashesWon() + 1);
                 cHero.setCurrentWinStreak(cHero.getCurrentWinStreak() + 1);
                 cHero.setCurrentLossStreak(0);
@@ -225,12 +230,12 @@ public class BattleService {
                 if (dAttack > cHero.getMaxDamageReceived()) cHero.setMaxDamageReceived(dAttack);
                 if (cAttack > dHero.getMaxDamageReceived()) dHero.setMaxDamageReceived(cAttack);
                 dIdx++;
-                dStamina = 1.0;
             } else {
                 round.put("winner", "defender");
                 int xp = 4 + 2 * cHero.getLevel();
                 defenderXp.merge(dHero.getTemplate().getDisplayName(), xp, Integer::sum);
-                dStamina *= 0.9;
+                dConsecWins++;
+                cConsecWins = 0;
                 dHero.setClashesWon(dHero.getClashesWon() + 1);
                 dHero.setCurrentWinStreak(dHero.getCurrentWinStreak() + 1);
                 dHero.setCurrentLossStreak(0);
@@ -242,7 +247,6 @@ public class BattleService {
                 if (cAttack > dHero.getMaxDamageReceived()) dHero.setMaxDamageReceived(cAttack);
                 if (dAttack > cHero.getMaxDamageReceived()) cHero.setMaxDamageReceived(dAttack);
                 cIdx++;
-                cStamina = 1.0;
             }
 
             rounds.add(round);
@@ -286,12 +290,45 @@ public class BattleService {
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("challenger", Map.of(
-                "username", challengerTeam.username(),
-                "heroes", challengerTeam.heroSlots().stream().map(hs -> hs.hero().getTemplate().getDisplayName()).toList()));
-        result.put("defender", Map.of(
-                "username", defenderTeam.username(),
-                "heroes", defenderTeam.heroSlots().stream().map(hs -> hs.hero().getTemplate().getDisplayName()).toList()));
+
+        Map<String, Object> challengerInfo = new LinkedHashMap<>();
+        challengerInfo.put("username", challengerTeam.username());
+        if (challengerTeam.profileImagePath() != null) challengerInfo.put("profileImagePath", challengerTeam.profileImagePath());
+        challengerInfo.put("heroes", challengerTeam.heroSlots().stream().map(hs -> {
+            Map<String, Object> h = new LinkedHashMap<>();
+            h.put("name", hs.hero().getTemplate().getDisplayName());
+            h.put("imagePath", hs.hero().getTemplate().getImagePath() != null ? hs.hero().getTemplate().getImagePath() : "");
+            h.put("level", hs.hero().getLevel());
+            if (hs.hero().getTemplate().getElement() != null) h.put("element", hs.hero().getTemplate().getElement().name());
+            return h;
+        }).toList());
+        if (challengerTeam.summon() != null) {
+            Map<String, Object> s = new LinkedHashMap<>();
+            s.put("name", challengerTeam.summon().getTemplate().getDisplayName());
+            s.put("imagePath", challengerTeam.summon().getTemplate().getImagePath() != null ? challengerTeam.summon().getTemplate().getImagePath() : "");
+            challengerInfo.put("summon", s);
+        }
+
+        Map<String, Object> defenderInfo = new LinkedHashMap<>();
+        defenderInfo.put("username", defenderTeam.username());
+        if (defenderTeam.profileImagePath() != null) defenderInfo.put("profileImagePath", defenderTeam.profileImagePath());
+        defenderInfo.put("heroes", defenderTeam.heroSlots().stream().map(hs -> {
+            Map<String, Object> h = new LinkedHashMap<>();
+            h.put("name", hs.hero().getTemplate().getDisplayName());
+            h.put("imagePath", hs.hero().getTemplate().getImagePath() != null ? hs.hero().getTemplate().getImagePath() : "");
+            h.put("level", hs.hero().getLevel());
+            if (hs.hero().getTemplate().getElement() != null) h.put("element", hs.hero().getTemplate().getElement().name());
+            return h;
+        }).toList());
+        if (defenderTeam.summon() != null) {
+            Map<String, Object> s = new LinkedHashMap<>();
+            s.put("name", defenderTeam.summon().getTemplate().getDisplayName());
+            s.put("imagePath", defenderTeam.summon().getTemplate().getImagePath() != null ? defenderTeam.summon().getTemplate().getImagePath() : "");
+            defenderInfo.put("summon", s);
+        }
+
+        result.put("challenger", challengerInfo);
+        result.put("defender", defenderInfo);
         result.put("rounds", rounds);
         result.put("winner", winner);
         result.put("xpGained", Map.of("challenger", challengerXp, "defender", defenderXp));
@@ -328,15 +365,48 @@ public class BattleService {
         if (summonMpBonus > 0) {
             stats.put("magicPower", stats.get("magicPower") + summonMpBonus);
         }
-        // Off-slot debuff: -20% stamina when hero tier doesn't match slot tier
+        // Off-slot debuff: proportional stamina penalty when hero tier doesn't match slot tier
         HeroTier heroTier = hero.getTemplate().getTier();
         if (heroTier != null) {
             String slotTier = TeamService.getSlotTier(slotNumber);
             if (!heroTier.name().equals(slotTier)) {
-                stats.put("stamina", stats.get("stamina") * 0.8);
+                double heroStamina = stats.getOrDefault("stamina", 0.0);
+                double requiredStamina = switch (slotTier) {
+                    case "COMMONER"  ->  50.0 + hero.getLevel() * 3.0;
+                    case "ELITE"     -> 100.0 + hero.getLevel() * 3.0;
+                    case "LEGENDARY" -> 150.0 + hero.getLevel() * 3.0;
+                    default -> Double.MAX_VALUE;
+                };
+                double maxPenalty = switch (slotTier) {
+                    case "COMMONER"  -> 0.80;
+                    case "ELITE"     -> 0.65;
+                    case "LEGENDARY" -> 0.50;
+                    default -> 0.0;
+                };
+                if (heroStamina < requiredStamina) {
+                    double penalty = maxPenalty * (1.0 - heroStamina / requiredStamina);
+                    stats.put("stamina", heroStamina * (1.0 - penalty));
+                }
             }
         }
         return stats;
+    }
+
+    /**
+     * Capacity modifier based on how many consecutive wins this hero has scored.
+     * staEff = min(1.0, heroStaminaStat / (60 + level * 2.5))
+     */
+    private double getTurnCapacity(int consecWins, double staEff) {
+        return switch (consecWins) {
+            case 0 -> 1.0;
+            case 1 -> (60 + 35 * staEff) / 100.0;
+            case 2 -> (30 + 50 * staEff) / 100.0;
+            case 3 -> (10 + 55 * staEff) / 100.0;
+            case 4 -> (50 * staEff) / 100.0;
+            case 5 -> (35 * staEff) / 100.0;
+            case 6 -> (20 * staEff) / 100.0;
+            default -> (5 * staEff) / 100.0;
+        };
     }
 
     private double calculateElementBonus(Hero attacker, Hero defender) {

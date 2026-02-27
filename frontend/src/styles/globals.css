@@ -1,0 +1,419 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ */
+/*  CSS Variables                                                       */
+/* ------------------------------------------------------------------ */
+:root {
+  --bg-deep:       #07061a;
+  --bg-dark:       #0f0f23;
+  --bg-card:       #1a1a2e;
+  --bg-hover:      #1e1e38;
+  --border-subtle: #16213e;
+  --border-accent: rgba(233, 69, 96, 0.3);
+  --text-primary:  #e0e0e0;
+  --text-muted:    #a0a0b0;
+  --text-faint:    #555;
+  --color-red:     #e94560;
+  --color-green:   #4ade80;
+  --color-gold:    #fbbf24;
+  --color-blue:    #60a5fa;
+  --color-purple:  #a78bfa;
+  --color-orange:  #f97316;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Reset & Base                                                        */
+/* ------------------------------------------------------------------ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; height: 100%; }
+
+html { background: #07061a; }   /* fallback behind everything */
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: transparent;       /* GameBackground provides real bg */
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root { height: 100%; }
+
+/* ------------------------------------------------------------------ */
+/*  Custom Scrollbar                                                    */
+/* ------------------------------------------------------------------ */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-red); }
+
+/* ------------------------------------------------------------------ */
+/*  Glassmorphism                                                       */
+/* ------------------------------------------------------------------ */
+.glass {
+  background: rgba(26, 26, 46, 0.75) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.glass-strong {
+  background: rgba(12, 12, 28, 0.88) !important;
+  backdrop-filter: blur(32px) !important;
+  -webkit-backdrop-filter: blur(32px) !important;
+  border: 1px solid rgba(233, 69, 96, 0.12) !important;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Gradient Text                                                       */
+/* ------------------------------------------------------------------ */
+.gold-text {
+  background: linear-gradient(90deg, #b8860b 0%, #ffd700 30%, #fbbf24 60%, #b8860b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% auto;
+}
+
+.gold-text-animated { animation: goldShimmer 3s linear infinite; }
+
+.diamond-text {
+  background: linear-gradient(90deg, #f97316 0%, #c084fc 40%, #f97316 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% auto;
+  animation: diamondShimmer 3s linear infinite;
+}
+
+.brand-text {
+  background: linear-gradient(135deg, #e94560 0%, #f97316 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Page / section title — Cinzel for that fantasy game feel */
+.gradient-title {
+  background: linear-gradient(135deg, #ffffff 0%, #ececff 40%, #c0aae8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Keyframes                                                           */
+/* ------------------------------------------------------------------ */
+@keyframes goldShimmer {
+  from { background-position: 0% center; }
+  to   { background-position: 200% center; }
+}
+
+@keyframes diamondShimmer {
+  from { background-position: 0% center; }
+  to   { background-position: 200% center; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(233, 69, 96, 0.3); }
+  50%       { box-shadow: 0 0 30px rgba(233, 69, 96, 0.7); }
+}
+
+@keyframes glowPulseGold {
+  0%, 100% { box-shadow: 0 0 10px rgba(251, 191, 36, 0.3); }
+  50%       { box-shadow: 0 0 28px rgba(251, 191, 36, 0.7); }
+}
+
+@keyframes glowPulsePurple {
+  0%, 100% { box-shadow: 0 0 8px rgba(167, 139, 250, 0.3); }
+  50%       { box-shadow: 0 0 20px rgba(167, 139, 250, 0.7); }
+}
+
+@keyframes logoGlow {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(233, 69, 96, 0.6)); }
+  50%       { filter: drop-shadow(0 0 20px rgba(233, 69, 96, 1)) drop-shadow(0 0 40px rgba(249, 115, 22, 0.5)); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmerSweep {
+  from { transform: translateX(-100%) skewX(-15deg); }
+  to   { transform: translateX(300%) skewX(-15deg); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes legendaryPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(249,115,22,0.4),  0 0 0 1px rgba(249,115,22,0.2); }
+  50%       { box-shadow: 0 0 20px rgba(249,115,22,0.9), 0 0 0 1px rgba(249,115,22,0.5); }
+}
+
+@keyframes elitePulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(167,139,250,0.4),  0 0 0 1px rgba(167,139,250,0.2); }
+  50%       { box-shadow: 0 0 16px rgba(167,139,250,0.9), 0 0 0 1px rgba(167,139,250,0.4); }
+}
+
+@keyframes energyShimmer {
+  from { transform: translateX(-150%); }
+  to   { transform: translateX(250%); }
+}
+
+@keyframes energyPulseGreen {
+  0%, 100% { box-shadow: 0 0 8px  rgba(74,222,128,0.5); }
+  50%       { box-shadow: 0 0 20px rgba(74,222,128,1), 0 0 40px rgba(74,222,128,0.4); }
+}
+
+@keyframes energyPulseGold {
+  0%, 100% { box-shadow: 0 0 8px  rgba(251,191,36,0.5); }
+  50%       { box-shadow: 0 0 20px rgba(251,191,36,1),  0 0 40px rgba(251,191,36,0.4); }
+}
+
+/* Game background aurora blobs */
+@keyframes blobDrift1 {
+  0%, 100% { transform: translate(0, 0); }
+  33%       { transform: translate(70px, -90px); }
+  66%       { transform: translate(-50px, 60px); }
+}
+
+@keyframes blobDrift2 {
+  0%, 100% { transform: translate(0, 0); }
+  33%       { transform: translate(-90px, -60px); }
+  66%       { transform: translate(60px, 80px); }
+}
+
+@keyframes blobDrift3 {
+  0%, 100% { transform: translate(-50%, -50%); }
+  33%       { transform: translate(calc(-50% + 80px), calc(-50% - 70px)); }
+  66%       { transform: translate(calc(-50% - 60px), calc(-50% + 50px)); }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Glow Utilities                                                      */
+/* ------------------------------------------------------------------ */
+.glow-red    { box-shadow: 0 0 20px rgba(233, 69, 96, 0.4); }
+.glow-gold   { box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); }
+.glow-purple { box-shadow: 0 0 20px rgba(167, 139, 250, 0.4); }
+.glow-orange { box-shadow: 0 0 20px rgba(249, 115, 22, 0.4); }
+
+.glow-pulse-red    { animation: glowPulse 2s ease-in-out infinite; }
+.glow-pulse-gold   { animation: glowPulseGold 2s ease-in-out infinite; }
+.glow-pulse-purple { animation: glowPulsePurple 2.5s ease-in-out infinite; }
+
+.text-glow-red  { text-shadow: 0 0 12px rgba(233, 69, 96, 0.8); }
+.text-glow-gold { text-shadow: 0 0 12px rgba(251, 191, 36, 0.8); }
+
+/* ------------------------------------------------------------------ */
+/*  Logo Animations                                                     */
+/* ------------------------------------------------------------------ */
+.logo-glow  { animation: logoGlow 2.5s ease-in-out infinite; }
+.logo-float { animation: float 4s ease-in-out infinite; }
+
+/* ------------------------------------------------------------------ */
+/*  Card Hover — lift + red glow                                        */
+/* ------------------------------------------------------------------ */
+.card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+.card-hover:hover {
+  transform: translateY(-3px) scale(1.01) !important;
+  box-shadow: 0 12px 40px rgba(233, 69, 96, 0.18) !important;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Tier Hero Glows                                                     */
+/* ------------------------------------------------------------------ */
+.tier-legendary { animation: legendaryPulse 3s ease-in-out infinite; }
+.tier-elite     { animation: elitePulse 3.5s ease-in-out infinite; }
+
+/* ------------------------------------------------------------------ */
+/*  Fancy Input                                                         */
+/* ------------------------------------------------------------------ */
+.fancy-input {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+  outline: none !important;
+}
+.fancy-input:focus {
+  border-color: var(--color-red) !important;
+  box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.15), 0 0 20px rgba(233, 69, 96, 0.08) !important;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Nav Link Underline                                                  */
+/* ------------------------------------------------------------------ */
+.nav-link {
+  position: relative;
+  transition: color 0.2s ease;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #e94560, #f97316);
+  transition: width 0.25s ease;
+  border-radius: 1px;
+}
+.nav-link:hover::after  { width: 80%; }
+.nav-link.active::after { width: 80%; }
+.nav-link.active        { color: #ffffff !important; }
+
+/* ------------------------------------------------------------------ */
+/*  Button Shimmer                                                      */
+/* ------------------------------------------------------------------ */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.btn-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.13), transparent);
+  transform: skewX(-15deg);
+}
+.btn-shimmer:hover::before { animation: shimmerSweep 0.65s ease forwards; }
+.btn-shimmer:active         { transform: scale(0.97); }
+
+/* ------------------------------------------------------------------ */
+/*  Spinner                                                             */
+/* ------------------------------------------------------------------ */
+.spinner {
+  display: inline-block;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  animation: spin 0.75s linear infinite;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Energy Bar (legacy shimmer class kept for compat)                  */
+/* ------------------------------------------------------------------ */
+.energy-bar-fill {
+  position: relative;
+  overflow: hidden;
+  transition: width 0.6s ease;
+}
+.energy-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  animation: energyShimmer 2.5s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Rank Badges                                                         */
+/* ------------------------------------------------------------------ */
+.rank-1 { color: #ffd700 !important; text-shadow: 0 0 12px rgba(255,215,0,0.6); }
+.rank-2 { color: #c0c0c0 !important; text-shadow: 0 0 10px rgba(192,192,192,0.5); }
+.rank-3 { color: #cd7f32 !important; text-shadow: 0 0 10px rgba(205,127,50,0.5); }
+
+/* ------------------------------------------------------------------ */
+/*  Portrait Hover                                                      */
+/* ------------------------------------------------------------------ */
+.portrait-hover {
+  transition: transform 0.2s ease, filter 0.2s ease;
+  cursor: pointer;
+}
+.portrait-hover:hover {
+  transform: scale(1.08);
+  filter: brightness(1.15);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Page Wrapper Fade-in                                                */
+/* ------------------------------------------------------------------ */
+.page-enter { animation: fadeInUp 0.4s ease forwards; }
+
+/* ------------------------------------------------------------------ */
+/*  Game Background — animated aurora blobs                            */
+/* ------------------------------------------------------------------ */
+.game-bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+}
+
+.blob-1 {
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(233,69,96,0.15) 0%, transparent 70%);
+  top: -250px; left: -150px;
+  animation: blobDrift1 28s ease-in-out infinite;
+}
+
+.blob-2 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(167,139,250,0.12) 0%, transparent 70%);
+  bottom: -150px; right: 50px;
+  animation: blobDrift2 22s ease-in-out infinite;
+}
+
+.blob-3 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%);
+  top: 45%; left: 55%;
+  transform: translate(-50%, -50%);
+  animation: blobDrift3 18s ease-in-out infinite;
+}
+
+.game-bg-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 55px 55px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Section Title — game divider header                                 */
+/* ------------------------------------------------------------------ */
+.section-title {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: rgba(233, 69, 96, 0.9) !important;
+  margin: 28px 0 14px !important;
+  padding: 0;
+  /* Prevent gradient-title class from clobbering if both applied */
+  -webkit-text-fill-color: initial;
+}
+.section-title::before {
+  content: '▸';
+  font-size: 10px;
+  color: #e94560;
+  flex-shrink: 0;
+}
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(233,69,96,0.35), transparent);
+}

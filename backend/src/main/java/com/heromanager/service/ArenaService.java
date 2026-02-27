@@ -77,7 +77,7 @@ public class ArenaService {
 
             // Calculate team power
             double teamPower = 0;
-            var teamData = battleService.loadTeam(p.getId(), p.getUsername());
+            var teamData = battleService.loadTeam(p.getId(), p.getUsername(), null);
             for (var heroSlot : teamData.heroSlots()) {
                 var stats = PlayerService.buildHeroStats(heroSlot.hero().getTemplate(), heroSlot.hero().getLevel());
                 teamPower += stats.values().stream().mapToDouble(Double::doubleValue).sum();
@@ -131,7 +131,7 @@ public class ArenaService {
                 .orElseThrow(() -> new ArenaException("PLAYER_NOT_FOUND", "Defender not found."));
 
         // Check challenger has heroes
-        var challengerTeam = battleService.loadTeam(challengerId, challenger.getUsername());
+        var challengerTeam = battleService.loadTeam(challengerId, challenger.getUsername(), challenger.getProfileImagePath());
         if (challengerTeam.heroSlots().isEmpty()) {
             throw new ArenaException("EMPTY_TEAM", "You need at least 1 hero in your team to battle.");
         }
@@ -166,7 +166,7 @@ public class ArenaService {
         energyService.setOnline(challenger);
 
         // Run battle
-        var defenderTeam = battleService.loadTeam(defenderId, defender.getUsername());
+        var defenderTeam = battleService.loadTeam(defenderId, defender.getUsername(), defender.getProfileImagePath());
         Map<String, Object> battleLog = battleService.simulateBattle(challengerTeam, defenderTeam);
 
         String winner = (String) battleLog.get("winner");

@@ -73,4 +73,22 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message",
                 "If an unconfirmed account exists for this email, a new confirmation link has been sent."));
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        authService.forgotPassword(request.get("email"));
+        return ResponseEntity.ok(Map.of("message",
+                "If an account exists for this email, a password reset link has been sent."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        try {
+            authService.resetPassword(request.get("token"), request.get("newPassword"));
+            return ResponseEntity.ok(Map.of("message", "Password reset successfully. You can now log in."));
+        } catch (AuthService.AuthException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getErrorCode(), "message", e.getMessage()));
+        }
+    }
 }

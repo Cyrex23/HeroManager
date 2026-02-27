@@ -94,7 +94,7 @@ public class LeaderboardService {
 
             double teamPower = 0;
             try {
-                var teamData = battleService.loadTeam(player.getId(), player.getUsername());
+                var teamData = battleService.loadTeam(player.getId(), player.getUsername(), null);
                 for (var heroSlot : teamData.heroSlots()) {
                     var stats = PlayerService.buildHeroStats(
                             heroSlot.hero().getTemplate(), heroSlot.hero().getLevel());

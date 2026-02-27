@@ -55,6 +55,7 @@ export interface PlayerResponse {
   onlineMinutesRemaining: number;
   profileImagePath: string | null;
   teamName: string;
+  chatSoundEnabled: boolean;
 }
 
 // ============================================================
@@ -127,6 +128,11 @@ export interface HeroResponse {
   currentLossStreak: number;
   maxDamageDealt: number;
   maxDamageReceived: number;
+  sellPrice: number;
+  statPurchaseCount: number;
+  nextStatCost: number;
+  capacityHalved: boolean;
+  purchasedStats: HeroStats;
 }
 
 export interface SummonResponse {
@@ -141,6 +147,8 @@ export interface SummonResponse {
   isEquipped: boolean;
   stats: SummonStats;
   teamBonus: string;
+  sellPrice: number;
+  capacityHalved: boolean;
 }
 
 // ============================================================
@@ -180,6 +188,8 @@ export interface TeamSlotSummon {
   level: number;
   capacity: number;
   teamBonus: string;
+  magicPower: number;
+  mana: number;
   currentXp: number;
   xpToNextLevel: number;
 }
@@ -408,9 +418,26 @@ export interface BattleRound {
   defenderManaAfter?: number;
 }
 
+export interface BattleHeroInfo {
+  name: string;
+  imagePath: string;
+  level: number;
+  element?: string;
+}
+
 export interface BattleLog {
-  challenger: { username: string; heroes: string[] };
-  defender: { username: string; heroes: string[] };
+  challenger: {
+    username: string;
+    profileImagePath?: string | null;
+    heroes: BattleHeroInfo[];
+    summon?: { name: string; imagePath: string } | null;
+  };
+  defender: {
+    username: string;
+    profileImagePath?: string | null;
+    heroes: BattleHeroInfo[];
+    summon?: { name: string; imagePath: string } | null;
+  };
   rounds: BattleRound[];
   winner: 'challenger' | 'defender';
   xpGained: {
@@ -528,6 +555,28 @@ export interface AccountData {
   avatarOptions: AvatarOption[];
   canChangeTeamName: boolean;
   daysUntilTeamNameChange: number;
+  chatSoundEnabled: boolean;
+}
+
+// ============================================================
+// Chat Types
+// ============================================================
+
+export interface ChatMessage {
+  id: number;
+  senderId: number;
+  senderUsername: string;
+  content: string;
+  createdAt: string;
+  isOwn: boolean;
+  receiverId: number | null;
+}
+
+export interface ChatPartner {
+  playerId: number;
+  username: string;
+  profileImagePath: string | null;
+  isOnline: boolean;
 }
 
 // ============================================================
@@ -570,4 +619,28 @@ export interface LeaderboardTeamEntry {
   profileImagePath: string | null;
   teamPower: number;
   heroCount: number;
+}
+
+// ============================================================
+// Friends
+// ============================================================
+
+export interface FriendEntry {
+  playerId: number;
+  username: string;
+  teamName: string | null;
+  profileImagePath: string | null;
+  isOnline: boolean;
+  relationStatus: 'ACCEPTED' | 'PENDING_SENT' | 'PENDING_RECEIVED' | 'NONE';
+}
+
+// ============================================================
+// Team Setup Types
+// ============================================================
+
+export interface TeamSetupResponse {
+  id: number;
+  setupIndex: number;
+  name: string;
+  isActive: boolean;
 }

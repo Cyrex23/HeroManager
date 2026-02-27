@@ -28,3 +28,13 @@ export async function resendConfirmation(email: string): Promise<MessageResponse
   const res = await apiClient.post<MessageResponse>('/auth/resend-confirmation', { email });
   return res.data;
 }
+
+export async function forgotPassword(email: string): Promise<MessageResponse> {
+  const res = await apiClient.post<MessageResponse>('/auth/forgot-password', { email });
+  return res.data;
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<MessageResponse> {
+  const res = await apiClient.post<MessageResponse>('/auth/reset-password', { token, newPassword });
+  return res.data;
+}

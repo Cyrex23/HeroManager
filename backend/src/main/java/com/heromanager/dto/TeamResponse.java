@@ -55,6 +55,8 @@ public class TeamResponse {
         private int level;
         private int capacity;
         private String teamBonus;
+        private double magicPower;
+        private double mana;
         private int currentXp;
         private int xpToNextLevel;
     }

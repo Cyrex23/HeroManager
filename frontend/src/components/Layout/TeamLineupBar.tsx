@@ -29,7 +29,7 @@ const ELEMENT_COLOR: Record<string, string> = {
 };
 
 const ELEMENT_SYMBOL: Record<string, string> = {
-  FIRE: '🔥', WATER: '💧', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
+  FIRE: '🔥', WATER: '🌊', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
 };
 
 

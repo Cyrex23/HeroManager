@@ -35,6 +35,12 @@ public class HeroResponse {
     private int currentLossStreak;
     private double maxDamageDealt;
     private double maxDamageReceived;
+    private int sellPrice;
+    private int statPurchaseCount;
+    private int nextStatCost;
+    @JsonProperty("capacityHalved")
+    private boolean capacityHalved;
+    private Map<String, Double> purchasedStats;
 
     @Getter
     @Builder

@@ -50,6 +50,30 @@ public class Hero {
     @Column(columnDefinition = "double default 0")
     private double maxDamageReceived = 0;
 
+    @Column(columnDefinition = "int default 0")
+    private int statPurchaseCount = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusPa = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusMp = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusDex = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusElem = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusMana = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusStam = 0;
+
+    // null = use template capacity; set = player has overridden it
+    private Integer capacityOverride;
+
     @Column(nullable = false)
     private LocalDateTime acquiredAt;
 

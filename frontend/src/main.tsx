@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { PlayerProvider } from './context/PlayerContext';
 import { TeamProvider } from './context/TeamContext';
 import App from './App';
+import './styles/globals.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

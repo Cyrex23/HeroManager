@@ -1,5 +1,6 @@
 import type { HeroAbilityEntry } from '../../types';
 import EquipmentTooltip from './EquipmentTooltip';
+import AbilityTierIcon from './AbilityTierIcon';
 
 interface Props {
   ability: HeroAbilityEntry;
@@ -20,8 +21,8 @@ export default function AbilitySlot({ ability, onUnequip }: Props) {
     >
       <div style={styles.container}>
         <div style={styles.header}>
+          <AbilityTierIcon tier={ability.tier} />
           <span style={styles.name}>{ability.name}</span>
-          <span style={styles.tier}>Tier {ability.tier}</span>
           {ability.slotNumber !== null && (
             <span style={styles.slotTag}>Slot {ability.slotNumber}</span>
           )}
@@ -72,13 +73,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     fontSize: 13,
     flex: 1,
-  },
-  tier: {
-    color: '#60a5fa',
-    fontSize: 11,
-    padding: '1px 6px',
-    backgroundColor: 'rgba(96, 165, 250, 0.1)',
-    borderRadius: 8,
   },
   slotTag: {
     color: '#a78bfa',

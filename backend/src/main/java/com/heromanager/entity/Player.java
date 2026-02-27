@@ -62,6 +62,9 @@ public class Player {
 
     private LocalDateTime teamNameLastChanged;
 
+    @Column(nullable = false)
+    private boolean chatSoundEnabled = true;
+
     @ElementCollection
     @CollectionTable(name = "player_unlocked_avatars", joinColumns = @JoinColumn(name = "player_id"))
     @Column(name = "image_path")

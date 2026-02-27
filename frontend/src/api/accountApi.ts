@@ -17,3 +17,7 @@ export async function changeTeamName(teamName: string): Promise<void> {
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   await apiClient.put('/account/password', { currentPassword, newPassword });
 }
+
+export async function setChatSound(enabled: boolean): Promise<void> {
+  await apiClient.put('/account/chat-sound', { enabled });
+}

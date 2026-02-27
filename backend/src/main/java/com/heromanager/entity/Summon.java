@@ -32,6 +32,9 @@ public class Summon {
     @Column(nullable = false)
     private int currentXp = 0;
 
+    @Column
+    private Integer capacityOverride;
+
     @Column(nullable = false)
     private LocalDateTime acquiredAt;
 

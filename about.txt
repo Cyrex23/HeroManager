@@ -1,0 +1,16 @@
+About
+Learn more about NinjaManager and its history!
+
+About NinjaManager
+NinjaManager is a free browser based MMORPG (Massive Multiplayer Online Role-Playing Game) set in a shinobi world inspired by manga, anime and mythology. Manage a team of ninjas in a strategic and addictive game while exploring a troubled ninja world and leveling your ninjas against other players - with the ultimate goal of serving your village, equipping your ninjas with even more advanced abilites and legendary items, and of course, becoming the strongest kage in the world of shinobi. Will you be the one to save the world from disaster?
+
+
+System Requirements
+As the entire game is played in your web browser, you will not have to download any client to play. The better your browser, the smoother the in-game fights and overall game experience will be. Chrome is the preferred web browser. The game can also be played on tablets and mobile phones.
+
+History
+Brief history of the development of the game since its launch.
+
+Development began early 2015.
+Open beta started in July 2016.
+Beta ended and release was on the 10th of June 2017.

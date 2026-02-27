@@ -45,6 +45,18 @@ public class AccountController {
         }
     }
 
+    @PutMapping("/chat-sound")
+    public ResponseEntity<?> setChatSound(Authentication auth, @RequestBody Map<String, Object> body) {
+        Long playerId = (Long) auth.getPrincipal();
+        try {
+            boolean enabled = Boolean.TRUE.equals(body.get("enabled"));
+            accountService.setChatSoundEnabled(playerId, enabled);
+            return ResponseEntity.ok(Map.of("message", "Chat sound setting updated."));
+        } catch (AccountService.AccountException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getErrorCode(), "message", e.getMessage()));
+        }
+    }
+
     @PutMapping("/password")
     public ResponseEntity<?> changePassword(Authentication auth, @RequestBody Map<String, String> body) {
         Long playerId = (Long) auth.getPrincipal();

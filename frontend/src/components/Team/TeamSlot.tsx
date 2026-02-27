@@ -1,9 +1,10 @@
 import type { TeamSlot as TeamSlotType } from '../../types';
 import HeroPortrait from '../Hero/HeroPortrait';
+import CapBadge from '../Hero/CapBadge';
 
-// Inject XP shimmer keyframe once
+// Inject XP + level keyframes once
 if (typeof document !== 'undefined') {
-  const id = 'inspect-popup-css';
+  const id = 'team-slot-css';
   if (!document.getElementById(id)) {
     const el = document.createElement('style');
     el.id = id;
@@ -11,6 +12,28 @@ if (typeof document !== 'undefined') {
       @keyframes xpShimmer {
         0%   { background-position: 200% center; }
         100% { background-position: -200% center; }
+      }
+      @keyframes slotXpBreathe {
+        0%, 100% { filter: brightness(1); }
+        50%       { filter: brightness(1.35); }
+      }
+      @keyframes slotLvlGlow {
+        0%, 100% { background-position: 0% 0%; }
+        50%       { background-position: 0% 100%; }
+      }
+      .slot-lvl-num {
+        background: linear-gradient(180deg, #c8c8c8 0%, #ff6b85 45%, #b01c32 100%);
+        background-size: 100% 200%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        filter:
+          drop-shadow(0  1px 0 rgba(0,0,0,0.95))
+          drop-shadow(0 -1px 0 rgba(0,0,0,0.85))
+          drop-shadow( 1px 0 0 rgba(0,0,0,0.85))
+          drop-shadow(-1px 0 0 rgba(0,0,0,0.85))
+          drop-shadow(0  2px 4px rgba(0,0,0,0.75));
+        animation: slotLvlGlow 2.4s ease-in-out infinite;
       }
     `;
     document.head.appendChild(el);
@@ -22,7 +45,7 @@ const ELEMENT_COLOR: Record<string, string> = {
   EARTH: '#a16207', LIGHTNING: '#facc15',
 };
 const ELEMENT_SYMBOL: Record<string, string> = {
-  FIRE: '🔥', WATER: '💧', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
+  FIRE: '🔥', WATER: '🌊', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
 };
 const SLOT_TIER_LABEL: Record<string, string> = {
   COMMONER: 'Commoner', ELITE: 'Elite', LEGENDARY: 'Legendary',
@@ -35,6 +58,7 @@ interface Props {
   slot: TeamSlotType;
   onUnequip?: () => void;
   onHeroClick?: (heroId: number) => void;
+  onSummonClick?: (summonId: number) => void;
   onEmptySlotClick?: () => void;
   selectedHeroTier?: string | null;
 }
@@ -56,7 +80,7 @@ function EmptyTarget({ offSlot, onClick }: Readonly<{ offSlot: boolean; onClick:
   );
 }
 
-export default function TeamSlotComponent({ slot, onUnequip, onHeroClick, onEmptySlotClick, selectedHeroTier }: Props) {
+export default function TeamSlotComponent({ slot, onUnequip, onHeroClick, onSummonClick, onEmptySlotClick, selectedHeroTier }: Props) {
   if (slot.type === 'summon') {
     const summon = slot.summon;
     const xpPct = summon && summon.xpToNextLevel > 0
@@ -70,15 +94,33 @@ export default function TeamSlotComponent({ slot, onUnequip, onHeroClick, onEmpt
         <div style={styles.slotLabel}>Summon</div>
         {summon ? (
           <div style={styles.filled}>
-            <HeroPortrait imagePath={summon.imagePath} name={summon.name} size={60} />
+            <div
+              style={{ position: 'relative', ...(onSummonClick ? { cursor: 'pointer' } : {}) }}
+              onClick={onSummonClick ? () => onSummonClick(summon.id) : undefined}
+            >
+              <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 6 }}>
+                <HeroPortrait imagePath={summon.imagePath} name={summon.name} size={60} />
+                <div style={styles.portraitXpBg}>
+                  <div style={{ ...styles.portraitXpFill, width: `${xpPct}%` }} />
+                  <div style={styles.xpPctLabel}>{Math.round(xpPct)}%</div>
+                </div>
+              </div>
+              <span className="slot-lvl-num" style={styles.lvlNum}>{summon.level}</span>
+            </div>
             <div style={styles.info}>
-              <div style={styles.name}>{summon.name}</div>
-              <div style={styles.detail}>Lv.{summon.level} | Cap: {summon.capacity}</div>
-              <div style={styles.bonus}>{summon.teamBonus}</div>
-              <div style={styles.xpWrap}>
-                <div style={styles.xpLabel}>XP: {summon.currentXp} / {summon.xpToNextLevel}</div>
-                <div style={styles.xpBarBg}>
-                  <div style={{ ...styles.xpBarFill, width: `${xpPct}%` }} />
+              <div
+                style={{ ...styles.name, ...(onSummonClick ? { cursor: 'pointer' } : {}) }}
+                onClick={onSummonClick ? () => onSummonClick(summon.id) : undefined}
+              >{summon.name}</div>
+              <CapBadge value={summon.capacity} />
+              <div style={styles.miniStatTable}>
+                <div style={styles.miniStatRow}>
+                  <span style={styles.miniStatLabel}>Magic Power</span>
+                  <span style={styles.miniStatVal}>{Math.round(summon.magicPower)}</span>
+                </div>
+                <div style={styles.miniStatRow}>
+                  <span style={styles.miniStatLabel}>Mana</span>
+                  <span style={styles.miniStatVal}>{Math.round(summon.mana)}</span>
                 </div>
               </div>
             </div>
@@ -123,17 +165,29 @@ export default function TeamSlotComponent({ slot, onUnequip, onHeroClick, onEmpt
             onClick={onHeroClick ? () => onHeroClick(slot.hero!.id) : undefined}
             style={{ position: 'relative', ...(onHeroClick ? { cursor: 'pointer' } : {}) }}
           >
-            <HeroPortrait
-              imagePath={slot.hero.imagePath}
-              name={slot.hero.name}
-              size={60}
-              tier={slot.hero.tier}
-            />
-            {isOffSlot(slot.hero.tier, slot.slotTier) && (
-              <div style={styles.offSlotOverlay} title="Off-slot: -20% damage">
-                <span style={styles.offSlotText}>-20%</span>
+            <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 6 }}>
+              <HeroPortrait
+                imagePath={slot.hero.imagePath}
+                name={slot.hero.name}
+                size={60}
+                tier={slot.hero.tier}
+              />
+              {isOffSlot(slot.hero.tier, slot.slotTier) && (
+                <div style={styles.offSlotOverlay} title="Off-slot: -20% damage">
+                  <span style={styles.offSlotText}>-20%</span>
+                </div>
+              )}
+              <div style={styles.portraitXpBg}>
+                <div style={{
+                  ...styles.portraitXpFill,
+                  width: `${slot.hero.xpToNextLevel > 0 ? Math.min((slot.hero.currentXp / slot.hero.xpToNextLevel) * 100, 100) : 0}%`,
+                }} />
+                <div style={styles.xpPctLabel}>
+                  {slot.hero.xpToNextLevel > 0 ? Math.round((slot.hero.currentXp / slot.hero.xpToNextLevel) * 100) : 0}%
+                </div>
               </div>
-            )}
+            </div>
+            <span className="slot-lvl-num" style={styles.lvlNum}>{slot.hero.level}</span>
           </div>
           <div style={styles.info}>
             <div style={styles.nameRow}>
@@ -152,22 +206,9 @@ export default function TeamSlotComponent({ slot, onUnequip, onHeroClick, onEmpt
                 </span>
               )}
             </div>
-            <div style={styles.detail}>Lv.{slot.hero.level} | Cap: {slot.hero.capacity}</div>
+            <CapBadge value={slot.hero.capacity} />
             {isOffSlot(slot.hero.tier, slot.slotTier) && (
               <div style={styles.offSlotBadge}>⚠ Off-slot · -20% dmg</div>
-            )}
-            {slot.hero.xpToNextLevel > 0 && (
-              <div style={styles.xpWrap}>
-                <div style={styles.xpLabel}>
-                  XP: {slot.hero.currentXp} / {slot.hero.xpToNextLevel}
-                </div>
-                <div style={styles.xpBarBg}>
-                  <div style={{
-                    ...styles.xpBarFill,
-                    width: `${Math.min((slot.hero.currentXp / slot.hero.xpToNextLevel) * 100, 100)}%`,
-                  }} />
-                </div>
-              </div>
             )}
           </div>
           {onUnequip && (
@@ -207,6 +248,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 2,
+    alignItems: 'flex-start',
   },
   nameRow: {
     display: 'flex',
@@ -228,37 +270,73 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     lineHeight: '1',
   },
-  detail: {
-    color: '#a0a0b0',
-    fontSize: 12,
+  miniStatTable: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 1,
+    marginTop: 1,
   },
-  bonus: {
-    color: '#4ade80',
-    fontSize: 12,
+  miniStatRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
   },
-  xpWrap: {
-    marginTop: 4,
-  },
-  xpLabel: {
-    color: '#a0a0b0',
+  miniStatLabel: {
+    color: '#8888aa',
     fontSize: 11,
-    marginBottom: 2,
+    fontStyle: 'italic',
+    minWidth: 72,
   },
-  xpBarBg: {
-    height: 7,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 4,
+  miniStatVal: {
+    color: '#60a5fa',
+    fontSize: 12,
+    fontWeight: 700,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  portraitXpBg: {
+    position: 'absolute' as const,
+    bottom: 0, left: 0, right: 0,
+    height: 12,
+    backgroundColor: 'rgba(0,0,0,0.82)',
+    border: '1px solid rgba(251,191,36,0.45)',
     overflow: 'hidden',
-    maxWidth: 160,
-    border: '1px solid rgba(251,191,36,0.22)',
+    zIndex: 4,
   },
-  xpBarFill: {
+  portraitXpFill: {
     height: '100%',
-    background: 'linear-gradient(90deg, #92400e 0%, #d97706 30%, #fbbf24 55%, #fde68a 75%, #fbbf24 100%)',
-    backgroundSize: '200% 100%',
-    animation: 'xpShimmer 2.5s ease-in-out infinite',
-    borderRadius: 3,
-    boxShadow: '0 0 6px rgba(251,191,36,0.45)',
+    background: 'linear-gradient(90deg, #d97706 0%, #fbbf24 60%, #fde68a 100%)',
+    boxShadow: '0 0 8px rgba(251,191,36,0.7), 0 0 2px rgba(251,191,36,0.7)',
+    animation: 'slotXpBreathe 2.2s ease-in-out infinite',
+    transition: 'width 0.55s cubic-bezier(0.22, 1, 0.36, 1)',
+  },
+  xpPctLabel: {
+    position: 'absolute' as const,
+    inset: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: 8,
+    fontWeight: 900,
+    letterSpacing: '0.05em',
+    fontFamily: 'Inter, sans-serif',
+    textShadow: '0 1px 2px rgba(0,0,0,0.95)',
+    pointerEvents: 'none' as const,
+    zIndex: 5,
+  },
+  lvlNum: {
+    position: 'absolute' as const,
+    bottom: 12,
+    right: 5,
+    transform: 'translateY(50%)',
+    zIndex: 5,
+    fontSize: 15,
+    fontWeight: 900,
+    fontStyle: 'italic',
+    lineHeight: 1,
+    letterSpacing: '-0.01em',
+    fontFamily: 'Inter, sans-serif',
+    pointerEvents: 'none' as const,
   },
   empty: {
     color: '#555',

@@ -1,6 +1,7 @@
 import apiClient from './client';
 import type {
   TeamResponse,
+  TeamSetupResponse,
   EquipHeroRequest,
   UnequipHeroRequest,
   EquipSummonRequest,
@@ -36,5 +37,20 @@ export async function unequipSummon(): Promise<EquipResponse> {
 
 export async function reorderTeam(data: ReorderRequest): Promise<MessageResponse> {
   const res = await apiClient.post<MessageResponse>('/team/reorder', data);
+  return res.data;
+}
+
+export async function getTeamSetups(): Promise<TeamSetupResponse[]> {
+  const res = await apiClient.get<TeamSetupResponse[]>('/team/setups');
+  return res.data;
+}
+
+export async function switchTeamSetup(setupIndex: number): Promise<TeamResponse> {
+  const res = await apiClient.post<TeamResponse>('/team/setups/switch', { setupIndex });
+  return res.data;
+}
+
+export async function renameTeamSetup(setupIndex: number, name: string): Promise<MessageResponse> {
+  const res = await apiClient.put<MessageResponse>(`/team/setups/${setupIndex}/name`, { name });
   return res.data;
 }

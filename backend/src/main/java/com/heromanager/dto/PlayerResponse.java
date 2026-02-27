@@ -21,4 +21,5 @@ public class PlayerResponse {
     private int onlineMinutesRemaining;
     private String profileImagePath;
     private String teamName;
+    private boolean chatSoundEnabled;
 }

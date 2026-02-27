@@ -104,6 +104,7 @@ public class AccountService {
         result.put("avatarOptions", avatarOptions);
         result.put("canChangeTeamName", daysUntilTeamNameChange == 0);
         result.put("daysUntilTeamNameChange", daysUntilTeamNameChange);
+        result.put("chatSoundEnabled", player.isChatSoundEnabled());
         return result;
     }
 
@@ -142,6 +143,14 @@ public class AccountService {
         }
         player.setTeamName(newName);
         player.setTeamNameLastChanged(LocalDateTime.now());
+        playerRepository.save(player);
+    }
+
+    @Transactional
+    public void setChatSoundEnabled(Long playerId, boolean enabled) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new AccountException(PLAYER_NOT_FOUND_CODE, PLAYER_NOT_FOUND_MSG));
+        player.setChatSoundEnabled(enabled);
         playerRepository.save(player);
     }
 

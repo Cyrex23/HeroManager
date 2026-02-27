@@ -12,13 +12,27 @@ import type {
   HeroResponse, ErrorResponse,
 } from '../types';
 import ShopHeroCard from '../components/Shop/ShopHeroCard';
+import ShopSummonCard from '../components/Shop/ShopSummonCard';
 import ShopItemCard from '../components/Shop/ShopItemCard';
-import HeroPortrait from '../components/Hero/HeroPortrait';
 import EquipmentTooltip from '../components/Equipment/EquipmentTooltip';
 import { AxiosError } from 'axios';
+import { Coins } from 'lucide-react';
 
 type Tab = 'heroes' | 'items' | 'abilities';
 type TierFilter = 'COMMONER' | 'ELITE' | 'LEGENDARY' | 'SUMMONS';
+type StatFilter = 'PA' | 'MP' | 'DEX';
+
+const STAT_FILTER_CONFIG: { key: StatFilter; label: string; color: string }[] = [
+  { key: 'PA',  label: '⚔ PA',  color: '#f97316' },
+  { key: 'MP',  label: '✦ MP',  color: '#60a5fa' },
+  { key: 'DEX', label: '◈ DEX', color: '#4ade80' },
+];
+
+function growthValue(h: ShopHeroResponse, stat: StatFilter): number {
+  if (stat === 'PA')  return h.growthStats.physicalAttack;
+  if (stat === 'MP')  return h.growthStats.magicPower;
+  return h.growthStats.dexterity;
+}
 
 const TIER_COLOR: Record<string, string> = {
   COMMONER: '#6b7280', ELITE: '#a78bfa', LEGENDARY: '#f97316', SUMMONS: '#a78bfa',
@@ -39,6 +53,7 @@ export default function ShopPage() {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [visibleTiers, setVisibleTiers] = useState<Set<TierFilter>>(new Set(ALL_FILTERS));
+  const [statFilter, setStatFilter] = useState<StatFilter | null>(null);
   const { player, fetchPlayer } = usePlayer();
   const abilityReqId = useRef(0);
 
@@ -140,13 +155,21 @@ export default function ShopPage() {
     }
   }
 
-  if (loading) return <div style={{ color: '#a0a0b0' }}>Loading shop...</div>;
+  if (loading) return <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}><span className="spinner" style={{ width: 18, height: 18 }} />Loading shop...</div>;
 
   return (
     <div>
       <div style={styles.header}>
-        <h2 style={styles.title}>Shop</h2>
-        <div style={styles.gold}>Gold: {player?.gold ?? 0}</div>
+        <h2 style={styles.title} className="gradient-title">Shop</h2>
+        <div style={styles.goldBadge}>
+          <span style={styles.goldIcon}><Coins size={22} /></span>
+          <div style={styles.goldInfo}>
+            <span style={styles.goldLabel}>Gold</span>
+            <span className="gold-text gold-text-animated" style={styles.goldValue}>
+              {(player?.gold ?? 0).toLocaleString()}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div style={styles.tabs}>
@@ -191,9 +214,33 @@ export default function ShopPage() {
             })}
           </div>
 
+          <div style={styles.statFilterRow}>
+            <span style={styles.statFilterLabel}>Scaling:</span>
+            {STAT_FILTER_CONFIG.map(({ key, label, color }) => {
+              const active = statFilter === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setStatFilter(active ? null : key)}
+                  style={{
+                    ...styles.statFilterBtn,
+                    borderColor: color,
+                    color: active ? '#0f0f23' : color,
+                    backgroundColor: active ? color : 'rgba(0,0,0,0)',
+                    boxShadow: active ? `0 0 8px ${color}55` : 'none',
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
           {(['COMMONER', 'ELITE', 'LEGENDARY'] as const).map((tier) => {
             if (!visibleTiers.has(tier)) return null;
-            const tierHeroes = heroes.filter((h) => h.tier === tier);
+            const tierHeroes = heroes
+              .filter((h) => h.tier === tier)
+              .sort((a, b) => statFilter ? growthValue(b, statFilter) - growthValue(a, statFilter) : 0);
             if (tierHeroes.length === 0) return null;
             return (
               <div key={tier}>
@@ -220,33 +267,12 @@ export default function ShopPage() {
           </div>
           <div style={styles.grid}>
             {shopSummons.map((summon) => (
-              <div key={summon.templateId} style={{ ...styles.summonCard, opacity: summon.owned ? 0.6 : 1 }}>
-                <HeroPortrait imagePath={summon.imagePath} name={summon.name} size={80} />
-                <div style={styles.summonInfo}>
-                  <div style={styles.summonName}>{summon.name}</div>
-                  <div style={styles.summonCost}>{summon.cost}g | Cap: {summon.capacity}</div>
-                  <div style={styles.summonStat}>
-                    MP: {summon.baseStats.magicPower} (+{summon.growthStats.magicPower}/lv)
-                  </div>
-                  <div style={styles.summonStat}>
-                    Mana: {summon.baseStats.mana} (+{summon.growthStats.mana}/lv)
-                  </div>
-                  {summon.owned ? (
-                    <div style={styles.ownedBadge}>Owned</div>
-                  ) : (
-                    <button
-                      onClick={() => handleBuySummon(summon.templateId)}
-                      disabled={(player?.gold ?? 0) < summon.cost}
-                      style={{
-                        ...styles.buyBtn,
-                        opacity: (player?.gold ?? 0) >= summon.cost ? 1 : 0.5,
-                      }}
-                    >
-                      Buy
-                    </button>
-                  )}
-                </div>
-              </div>
+              <ShopSummonCard
+                key={summon.templateId}
+                summon={summon}
+                playerGold={player?.gold ?? 0}
+                onBuy={() => handleBuySummon(summon.templateId)}
+              />
             ))}
           </div>
           </>}
@@ -369,10 +395,38 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 22,
     margin: 0,
   },
-  gold: {
+  goldBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '8px 14px',
+    borderRadius: 10,
+    background: 'linear-gradient(135deg, rgba(251,191,36,0.1) 0%, rgba(251,191,36,0.04) 100%)',
+    border: '1px solid rgba(251,191,36,0.25)',
+    overflow: 'hidden' as const,
+  },
+  goldIcon: {
     color: '#fbbf24',
-    fontWeight: 600,
-    fontSize: 18,
+    filter: 'drop-shadow(0 0 6px rgba(251,191,36,0.7))',
+    flexShrink: 0,
+    display: 'flex',
+  },
+  goldInfo: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 1,
+  },
+  goldLabel: {
+    color: '#9090c0',
+    fontSize: 9,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.12em',
+    fontWeight: 700,
+  },
+  goldValue: {
+    fontSize: 20,
+    fontWeight: 800,
+    lineHeight: 1,
   },
   tabs: {
     display: 'flex',
@@ -411,7 +465,7 @@ const styles: Record<string, React.CSSProperties> = {
   filterRow: {
     display: 'flex',
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 6,
     flexWrap: 'wrap' as const,
   },
   filterBtn: {
@@ -424,6 +478,31 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.5,
     textTransform: 'uppercase' as const,
     transition: 'all 0.15s',
+  },
+  statFilterRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  statFilterLabel: {
+    color: '#4a4a6a',
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.08em',
+    marginRight: 2,
+  },
+  statFilterBtn: {
+    padding: '3px 12px',
+    border: '1px solid',
+    borderRadius: 20,
+    fontSize: 11,
+    fontWeight: 700,
+    cursor: 'pointer',
+    letterSpacing: 0.5,
+    transition: 'all 0.15s',
+    fontFamily: 'Inter, sans-serif',
   },
   error: {
     color: '#e94560',
@@ -456,33 +535,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
     gap: 12,
-  },
-  summonCard: {
-    display: 'flex',
-    gap: 16,
-    padding: 16,
-    backgroundColor: '#1a1a2e',
-    borderRadius: 8,
-    border: '1px solid #16213e',
-  },
-  summonInfo: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-  },
-  summonName: {
-    color: '#e0e0e0',
-    fontWeight: 700,
-    fontSize: 16,
-  },
-  summonCost: {
-    color: '#fbbf24',
-    fontSize: 13,
-  },
-  summonStat: {
-    color: '#a0a0b0',
-    fontSize: 12,
   },
   buyBtn: {
     padding: '8px 16px',

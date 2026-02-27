@@ -6,11 +6,13 @@ import com.heromanager.dto.RegisterRequest;
 import com.heromanager.entity.ConfirmationToken;
 import com.heromanager.entity.Hero;
 import com.heromanager.entity.HeroTemplate;
+import com.heromanager.entity.PasswordResetToken;
 import com.heromanager.entity.Player;
 import com.heromanager.entity.TeamSlot;
 import com.heromanager.repository.ConfirmationTokenRepository;
 import com.heromanager.repository.HeroRepository;
 import com.heromanager.repository.HeroTemplateRepository;
+import com.heromanager.repository.PasswordResetTokenRepository;
 import com.heromanager.repository.PlayerRepository;
 import com.heromanager.repository.TeamSlotRepository;
 import com.heromanager.util.JwtUtil;
@@ -26,6 +28,7 @@ public class AuthService {
 
     private final PlayerRepository playerRepository;
     private final ConfirmationTokenRepository tokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final HeroRepository heroRepository;
     private final HeroTemplateRepository heroTemplateRepository;
     private final TeamSlotRepository teamSlotRepository;
@@ -35,6 +38,7 @@ public class AuthService {
 
     public AuthService(PlayerRepository playerRepository,
                        ConfirmationTokenRepository tokenRepository,
+                       PasswordResetTokenRepository passwordResetTokenRepository,
                        HeroRepository heroRepository,
                        HeroTemplateRepository heroTemplateRepository,
                        TeamSlotRepository teamSlotRepository,
@@ -43,6 +47,7 @@ public class AuthService {
                        EmailService emailService) {
         this.playerRepository = playerRepository;
         this.tokenRepository = tokenRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.heroRepository = heroRepository;
         this.heroTemplateRepository = heroTemplateRepository;
         this.teamSlotRepository = teamSlotRepository;
@@ -198,6 +203,53 @@ public class AuthService {
             }
         });
         // Always silently succeed to prevent email enumeration
+    }
+
+    @Transactional
+    public void forgotPassword(String email) {
+        playerRepository.findByEmail(email).ifPresent(player -> {
+            if (!player.isEmailConfirmed()) return;
+
+            // Invalidate any existing reset token
+            passwordResetTokenRepository.deleteByPlayerId(player.getId());
+
+            String tokenValue = UUID.randomUUID().toString();
+            PasswordResetToken resetToken = new PasswordResetToken();
+            resetToken.setToken(tokenValue);
+            resetToken.setPlayerId(player.getId());
+            resetToken.setExpiresAt(LocalDateTime.now().plusHours(1));
+            passwordResetTokenRepository.save(resetToken);
+
+            emailService.sendPasswordResetEmail(player.getEmail(), player.getUsername(), tokenValue);
+        });
+        // Always silently succeed to prevent email enumeration
+    }
+
+    @Transactional
+    public void resetPassword(String tokenValue, String newPassword) {
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new AuthException("INVALID_PASSWORD", "Password must be at least 6 characters.");
+        }
+
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(tokenValue)
+                .orElseThrow(() -> new AuthException("INVALID_TOKEN",
+                        "This reset link is invalid or has already been used."));
+
+        if (resetToken.getUsedAt() != null) {
+            throw new AuthException("INVALID_TOKEN", "This reset link has already been used.");
+        }
+        if (resetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new AuthException("INVALID_TOKEN", "This reset link has expired. Please request a new one.");
+        }
+
+        Player player = playerRepository.findById(resetToken.getPlayerId())
+                .orElseThrow(() -> new AuthException("INVALID_TOKEN", "Player not found."));
+
+        player.setPasswordHash(passwordEncoder.encode(newPassword));
+        playerRepository.save(player);
+
+        resetToken.setUsedAt(LocalDateTime.now());
+        passwordResetTokenRepository.save(resetToken);
     }
 
     // Custom exception for auth errors

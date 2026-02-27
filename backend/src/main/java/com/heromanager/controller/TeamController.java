@@ -1,6 +1,7 @@
 package com.heromanager.controller;
 
 import com.heromanager.dto.TeamResponse;
+import com.heromanager.dto.TeamSetupResponse;
 import com.heromanager.service.TeamService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -92,5 +93,38 @@ public class TeamController {
 
         teamService.reorderTeam(playerId, order);
         return ResponseEntity.ok(Map.of("message", "Team order updated."));
+    }
+
+    @GetMapping("/setups")
+    public ResponseEntity<List<TeamSetupResponse>> getSetups(Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(teamService.getSetups(playerId));
+    }
+
+    @PostMapping("/setups/switch")
+    public ResponseEntity<?> switchSetup(Authentication auth, @RequestBody Map<String, Object> body) {
+        Long playerId = (Long) auth.getPrincipal();
+        int setupIndex = ((Number) body.get("setupIndex")).intValue();
+        try {
+            return ResponseEntity.ok(teamService.switchSetup(playerId, setupIndex));
+        } catch (TeamService.TeamException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getErrorCode(), "message", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/setups/{idx}/name")
+    public ResponseEntity<?> renameSetup(Authentication auth,
+                                         @PathVariable int idx,
+                                         @RequestBody Map<String, Object> body) {
+        Long playerId = (Long) auth.getPrincipal();
+        String name = (String) body.get("name");
+        try {
+            teamService.renameSetup(playerId, idx, name);
+            return ResponseEntity.ok(Map.of("message", "Setup renamed."));
+        } catch (TeamService.TeamException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getErrorCode(), "message", e.getMessage()));
+        }
     }
 }

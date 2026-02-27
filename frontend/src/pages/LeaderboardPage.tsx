@@ -7,7 +7,7 @@ import TeamInspectHover from '../components/Leaderboard/TeamInspectHover';
 type Tab = 'heroes' | 'summons' | 'teams';
 
 const ELEMENT_SYMBOL: Record<string, string> = {
-  FIRE: '🔥', WATER: '💧', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
+  FIRE: '🔥', WATER: '🌊', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
 };
 const ELEMENT_COLOR: Record<string, string> = {
   FIRE: '#f97316', WATER: '#38bdf8', WIND: '#86efac',
@@ -22,6 +22,13 @@ function rankStyle(rank: number): React.CSSProperties {
   if (rank === 2) return { color: '#c0c0c0', fontWeight: 700 };
   if (rank === 3) return { color: '#cd7f32', fontWeight: 700 };
   return { color: '#555', fontWeight: 600 };
+}
+
+function rankClass(rank: number): string {
+  if (rank === 1) return 'rank-1';
+  if (rank === 2) return 'rank-2';
+  if (rank === 3) return 'rank-3';
+  return '';
 }
 
 export default function LeaderboardPage() {
@@ -49,7 +56,7 @@ export default function LeaderboardPage() {
 
   return (
     <div style={styles.page}>
-      <h2 style={styles.title}>Leaderboards</h2>
+      <h2 style={styles.title} className="gradient-title">Leaderboards</h2>
 
       {/* Tabs */}
       <div style={styles.tabs}>
@@ -78,7 +85,7 @@ export default function LeaderboardPage() {
           </div>
           {teams.map((t) => (
             <div key={t.playerId} style={{ ...styles.row, ...(t.rank <= 3 ? styles.topRow : {}) }}>
-              <span style={{ ...styles.col, ...styles.colRank, ...rankStyle(t.rank) }}>{t.rank}</span>
+              <span style={{ ...styles.col, ...styles.colRank, ...rankStyle(t.rank) }} className={rankClass(t.rank)}>{t.rank}</span>
               <span style={{ ...styles.col, width: 44 }}>
                 {t.profileImagePath
                   ? <HeroPortrait imagePath={t.profileImagePath} name={t.username} size={36} />
@@ -124,7 +131,7 @@ export default function LeaderboardPage() {
             const tierColor = h.tier ? (TIER_COLOR[h.tier] ?? '#6b7280') : '#6b7280';
             return (
               <div key={h.heroId} style={{ ...styles.row, ...(h.rank <= 3 ? styles.topRow : {}) }}>
-                <span style={{ ...styles.col, ...styles.colRank, ...rankStyle(h.rank) }}>{h.rank}</span>
+                <span style={{ ...styles.col, ...styles.colRank, ...rankStyle(h.rank) }} className={rankClass(h.rank)}>{h.rank}</span>
                 <span style={{ ...styles.col, width: 44, position: 'relative' }}>
                   <HeroPortrait imagePath={h.imagePath} name={h.name} size={36} tier={h.tier} />
                   {elemSymbol && (
@@ -140,7 +147,7 @@ export default function LeaderboardPage() {
                 <span style={{ ...styles.col, ...styles.colNum, color: '#60a5fa', fontWeight: 700 }}>{h.level}</span>
                 <span style={{ ...styles.col, ...styles.colNum, fontSize: 11 }}>
                   <span style={{ color: '#4ade80' }}>{h.clashesWon}</span>
-                  <span style={{ color: '#555' }}> / </span>
+                  <span style={{ color: '#555577', fontWeight: 800 }}> / </span>
                   <span style={{ color: '#e94560' }}>{h.clashesLost}</span>
                 </span>
                 <div style={{ ...styles.col, flex: 1, flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
@@ -175,7 +182,7 @@ export default function LeaderboardPage() {
           </div>
           {summons.map((s) => (
             <div key={s.summonId} style={{ ...styles.row, ...(s.rank <= 3 ? styles.topRow : {}) }}>
-              <span style={{ ...styles.col, ...styles.colRank, ...rankStyle(s.rank) }}>{s.rank}</span>
+              <span style={{ ...styles.col, ...styles.colRank, ...rankStyle(s.rank) }} className={rankClass(s.rank)}>{s.rank}</span>
               <span style={{ ...styles.col, width: 44 }}>
                 <HeroPortrait imagePath={s.imagePath} name={s.name} size={36} />
               </span>

@@ -44,7 +44,10 @@
       "Bash(python3:*)",
       "Bash(python -c:*)",
       "Bash(npm run build:*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(wc:*)",
+      "Bash(echo:*)",
+      "Bash(xargs sed -i \"s/💧/🌊/g\")"
     ]
   }
 }

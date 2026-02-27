@@ -9,7 +9,7 @@ const ELEMENT_COLOR: Record<string, string> = {
   EARTH: '#a16207', LIGHTNING: '#facc15',
 };
 const ELEMENT_SYMBOL: Record<string, string> = {
-  FIRE: '🔥', WATER: '💧', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
+  FIRE: '🔥', WATER: '🌊', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
 };
 const ELEM_BEATS: Record<string, string> = {
   FIRE: 'WIND', WATER: 'FIRE', LIGHTNING: 'EARTH', WIND: 'LIGHTNING', EARTH: 'WATER',
@@ -46,7 +46,9 @@ export default function BattlePage() {
 
   return (
     <div>
-      <Link to="/arena" style={styles.backLink}>Back to Arena</Link>
+      <Link to="/arena" style={styles.backLink}>
+        <span style={styles.backArrow}>‹</span> Back to Arena
+      </Link>
 
       {/* ── Battle Animator ── */}
       <BattleAnimator battleLog={battleLog} result={result} goldEarned={goldEarned} />
@@ -86,7 +88,7 @@ export default function BattlePage() {
           </h3>
           <div style={styles.heroList}>
             {battleLog.challenger.heroes.map((h, i) => (
-              <span key={i} style={styles.heroName}>{h}</span>
+              <span key={i} style={styles.heroName}>{typeof h === 'string' ? h : h.name}</span>
             ))}
           </div>
         </div>
@@ -98,7 +100,7 @@ export default function BattlePage() {
           </h3>
           <div style={styles.heroList}>
             {battleLog.defender.heroes.map((h, i) => (
-              <span key={i} style={styles.heroName}>{h}</span>
+              <span key={i} style={styles.heroName}>{typeof h === 'string' ? h : h.name}</span>
             ))}
           </div>
         </div>
@@ -343,11 +345,27 @@ export default function BattlePage() {
 
 const styles: Record<string, React.CSSProperties> = {
   backLink: {
-    color: '#a0a0b0',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
     textDecoration: 'none',
-    fontSize: 13,
-    display: 'inline-block',
+    color: '#a0a0b0',
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase' as const,
+    padding: '6px 14px 6px 10px',
+    borderRadius: 7,
+    border: '1px solid rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
     marginBottom: 16,
+    transition: 'all 0.15s ease',
+  },
+  backArrow: {
+    fontSize: 20,
+    lineHeight: 1,
+    marginTop: -1,
+    color: '#e94560',
   },
   resultBanner: {
     display: 'flex',

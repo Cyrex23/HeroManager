@@ -1,9 +1,10 @@
 import type { ShopHeroResponse } from '../../types';
 import HeroPortrait from '../Hero/HeroPortrait';
 import HexStatDiagram from '../Hero/HexStatDiagram';
+import CapBadge from '../Hero/CapBadge';
 
 const ELEMENT_SYMBOL: Record<string, string> = {
-  FIRE: '🔥', WATER: '💧', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
+  FIRE: '🔥', WATER: '🌊', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
 };
 const ELEMENT_COLOR: Record<string, string> = {
   FIRE: '#f97316', WATER: '#38bdf8', WIND: '#86efac',
@@ -23,7 +24,7 @@ export default function ShopHeroCard({ hero, playerGold, onBuy }: Props) {
   const canBuy = !hero.owned && playerGold >= hero.cost;
 
   return (
-    <div style={{ ...styles.card, opacity: hero.owned ? 0.6 : 1 }}>
+    <div style={{ ...styles.card, opacity: hero.owned ? 0.6 : 1 }} className="card-hover">
       <HeroPortrait imagePath={hero.imagePath} name={hero.displayName} size={100} tier={hero.tier} />
       <div style={styles.info}>
         <div style={styles.nameRow}>
@@ -41,7 +42,7 @@ export default function ShopHeroCard({ hero, playerGold, onBuy }: Props) {
         </div>
         <div style={styles.costRow}>
           <span style={styles.gold}>{hero.cost}g</span>
-          <span style={styles.capacity}>Cap: {hero.capacity}</span>
+          <CapBadge value={hero.capacity} />
         </div>
         <HexStatDiagram
           stats={hero.baseStats}
@@ -54,8 +55,10 @@ export default function ShopHeroCard({ hero, playerGold, onBuy }: Props) {
           <button
             onClick={onBuy}
             disabled={!canBuy}
+            className={canBuy ? 'btn-shimmer' : ''}
             style={{
               ...styles.buyBtn,
+              background: canBuy ? 'linear-gradient(135deg, #e94560 0%, #c73652 100%)' : '#2a1a20',
               opacity: canBuy ? 1 : 0.5,
               cursor: canBuy ? 'pointer' : 'not-allowed',
             }}
@@ -101,9 +104,6 @@ const styles: Record<string, React.CSSProperties> = {
   gold: {
     color: '#fbbf24',
     fontWeight: 600,
-  },
-  capacity: {
-    color: '#a0a0b0',
   },
   buyBtn: {
     padding: '8px 16px',

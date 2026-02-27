@@ -21,4 +21,7 @@ public class SummonResponse {
     private boolean isEquipped;
     private Map<String, Double> stats;
     private String teamBonus;
+    private int sellPrice;
+    @JsonProperty("capacityHalved")
+    private boolean capacityHalved;
 }
