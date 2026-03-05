@@ -47,7 +47,15 @@
       "Bash(xargs cat:*)",
       "Bash(wc:*)",
       "Bash(echo:*)",
-      "Bash(xargs sed -i \"s/💧/🌊/g\")"
+      "Bash(xargs sed -i \"s/💧/🌊/g\")",
+      "Bash(sort -k5 -n)",
+      "Bash(xargs grep -l \"ShopItem\\\\|ItemTemplate\")",
+      "Bash(\"d:/HeroManager/backend/src/main/resources/data.sql\":*)",
+      "Bash(python gen_material_recipes.py)",
+      "Bash(file *.png)",
+      "Bash(python:*)",
+      "Bash(/c/Python310/python:*)",
+      "Bash(sort -t: -k2 -n)"
     ]
   }
 }

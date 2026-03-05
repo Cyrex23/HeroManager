@@ -56,6 +56,14 @@ export interface PlayerResponse {
   profileImagePath: string | null;
   teamName: string;
   chatSoundEnabled: boolean;
+  extraLineupGoldPurchased: boolean;
+  extraLineupDiamondsPurchased: boolean;
+  energyPlusPurchased: boolean;
+  heroPlusCapacityPurchased: boolean;
+  capacityPlusCount: number;
+  lineupSlots: number;
+  heroRosterMax: number;
+  teamCapacityMax: number;
 }
 
 // ============================================================
@@ -177,6 +185,7 @@ export interface TeamSlotHero {
     name: string | null;
     bonuses?: Partial<HeroStats>;
     tier?: number | null;
+    cost?: number | null;
     copies?: number | null;
   }>;
 }
@@ -643,4 +652,118 @@ export interface TeamSetupResponse {
   setupIndex: number;
   name: string;
   isActive: boolean;
+}
+
+// ============================================================
+// Blacksmith
+// ============================================================
+
+export interface MaterialTemplate {
+  id: number;
+  name: string;
+  iconKey: string;
+  tier: number;
+  category: string;
+  quantity: number;
+}
+
+export interface WeaponIngredient {
+  materialId: number;
+  materialName: string;
+  iconKey: string;
+  required: number;
+  have: number;
+}
+
+export interface WeaponSpellInfo {
+  name: string;
+  manaCost: number;
+  trigger: string;
+  chance: number;
+  // Base stats
+  bonusPa: number;
+  bonusMp: number;
+  bonusDex: number;
+  bonusElem: number;
+  bonusMana: number;
+  bonusStam: number;
+  // Combat modifiers
+  bonusAttack: number;
+  bonusMagicProficiency: number;
+  bonusSpellMastery: number;
+  bonusSpellActivation: number;
+  bonusDexProficiency: number;
+  bonusDexPosture: number;
+  bonusCritChance: number;
+  bonusCritDamage: number;
+  // Progression
+  bonusExpBonus: number;
+  bonusGoldBonus: number;
+  bonusItemDiscovery: number;
+  // Immunities
+  bonusPhysicalImmunity: number;
+  bonusMagicImmunity: number;
+  bonusDexEvasiveness: number;
+  // Meta
+  maxUsages: number;
+  lastsTurns: number;
+  affectsOpponent: boolean;
+  turnThreshold: number;
+}
+
+export interface WeaponRecipe {
+  recipeId: number;
+  itemTemplateId: number;
+  name: string;
+  iconKey: string;
+  weaponTier: 'COMMON' | 'EPIC' | 'LEGENDARY';
+  cost: number;
+  // Base stats
+  bonusPa: number;
+  bonusMp: number;
+  bonusDex: number;
+  bonusElem: number;
+  bonusMana: number;
+  bonusStam: number;
+  // Combat modifiers
+  bonusAttack: number;
+  bonusMagicProficiency: number;
+  bonusSpellMastery: number;
+  bonusSpellActivation: number;
+  bonusDexProficiency: number;
+  bonusDexPosture: number;
+  bonusCritChance: number;
+  bonusCritDamage: number;
+  // Progression
+  bonusExpBonus: number;
+  bonusGoldBonus: number;
+  bonusItemDiscovery: number;
+  // Defenses
+  bonusPhysicalImmunity: number;
+  bonusMagicImmunity: number;
+  bonusDexEvasiveness: number;
+  // Spells
+  spells: WeaponSpellInfo[];
+  craftHours: number;
+  ingredients: WeaponIngredient[];
+}
+
+export interface MaterialRecipeIngredient {
+  materialId: number;
+  materialName: string;
+  iconKey: string;
+  required: number;
+  have: number;
+}
+
+export interface MaterialRecipe {
+  recipeId: number;
+  outputMaterialId: number;
+  outputName: string;
+  outputIconKey: string;
+  outputTier: number;
+  outputQuantity: number;
+  currentQuantity: number;
+  craftHours: number;
+  ingredients: MaterialRecipeIngredient[];
 }

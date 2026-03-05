@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Coins, Gem, User, LogOut, Shield, Users, ChevronDown, ChevronUp, Search, Trophy, Newspaper, BookOpen, Star } from 'lucide-react';
+import { Coins, Gem, User, LogOut, Shield, Users, ChevronDown, ChevronUp, Search, Trophy, Newspaper, BookOpen, Star, MessageCircle } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 import { useAuth } from '../../context/AuthContext';
 import HeroPortrait from '../Hero/HeroPortrait';
@@ -313,8 +313,13 @@ export default function Sidebar() {
                               >
                                 {f.username}
                               </span>
-                              <button style={styles.inspectBtn} title="Inspect team"
-                                onClick={() => setInspectFriend(f)}>👁</button>
+                              <button
+                                style={styles.whisperBtn}
+                                title={`Whisper ${f.username}`}
+                                onClick={() => window.dispatchEvent(new CustomEvent('openWhisper', { detail: { playerId: f.playerId, username: f.username, profileImagePath: f.profileImagePath, isOnline: f.isOnline } }))}
+                              >
+                                <MessageCircle size={12} />
+                              </button>
                               <button style={styles.declineBtn} title="Remove friend"
                                 onClick={() => handleDelete(f.playerId)}>✕</button>
                             </div>
@@ -585,9 +590,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11, cursor: 'pointer', padding: '2px 3px', flexShrink: 0,
     lineHeight: 1,
   },
-  inspectBtn: {
-    background: 'none', border: 'none', color: '#555577',
-    fontSize: 12, cursor: 'pointer', padding: '2px 3px', flexShrink: 0, lineHeight: 1,
+  whisperBtn: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'none', border: 'none', color: '#5555aa',
+    cursor: 'pointer', padding: '2px 3px', flexShrink: 0, lineHeight: 1,
+    transition: 'color 0.15s',
   },
   pendingLabel: { color: '#555', fontSize: 10, flexShrink: 0 },
   friendsLabel: { color: '#4ade80', fontSize: 10, flexShrink: 0 },

@@ -807,6 +807,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
               ? <HeroPortrait imagePath={h.imagePath} name={h.name} size={DOT_SIZE} />
               : <div style={{ width: DOT_SIZE, height: Math.round(DOT_SIZE * 200 / 180), backgroundColor: '#16213e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: 11 }}>{h.name.charAt(0)}</div>
             }
+            {/* Element symbol — top left of dot portrait */}
+            {h.element && ELEM_SYM[h.element] && (
+              <div style={{ position: 'absolute', top: 2, left: 2, fontSize: 11, lineHeight: 1, textShadow: '0 1px 4px rgba(0,0,0,.95)', pointerEvents: 'none', zIndex: 5 }}>
+                {ELEM_SYM[h.element]}
+              </div>
+            )}
             {/* XP overlay — bottom strip inside the portrait */}
             {heroXp != null && (
               <div style={{

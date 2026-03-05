@@ -27,19 +27,22 @@ public class ArenaService {
     private final BattleService battleService;
     private final EnergyService energyService;
     private final ObjectMapper objectMapper;
+    private final PlayerService playerService;
 
     public ArenaService(PlayerRepository playerRepository,
                         TeamSlotRepository teamSlotRepository,
                         BattleLogRepository battleLogRepository,
                         BattleService battleService,
                         EnergyService energyService,
-                        ObjectMapper objectMapper) {
+                        ObjectMapper objectMapper,
+                        PlayerService playerService) {
         this.playerRepository = playerRepository;
         this.teamSlotRepository = teamSlotRepository;
         this.battleLogRepository = battleLogRepository;
         this.battleService = battleService;
         this.energyService = energyService;
         this.objectMapper = objectMapper;
+        this.playerService = playerService;
     }
 
     @Transactional(readOnly = true)
@@ -79,7 +82,9 @@ public class ArenaService {
             double teamPower = 0;
             var teamData = battleService.loadTeam(p.getId(), p.getUsername(), null);
             for (var heroSlot : teamData.heroSlots()) {
-                var stats = PlayerService.buildHeroStats(heroSlot.hero().getTemplate(), heroSlot.hero().getLevel());
+                Map<String, Double> stats = new java.util.HashMap<>(PlayerService.buildHeroStats(heroSlot.hero().getTemplate(), heroSlot.hero().getLevel()));
+                playerService.buildEquipmentBonuses(heroSlot.hero().getId())
+                        .forEach((k, v) -> stats.merge(k, v, Double::sum));
                 teamPower += stats.values().stream().mapToDouble(Double::doubleValue).sum();
             }
 
@@ -171,8 +176,23 @@ public class ArenaService {
 
         String winner = (String) battleLog.get("winner");
         boolean challengerWon = "challenger".equals(winner);
-        int challengerGold = challengerWon ? 2 : 1;
-        int defenderGold = challengerWon ? 1 : 2;
+
+        // Base gold: winner gets 2, loser gets 1
+        int challengerGoldBase = challengerWon ? 2 : 1;
+        int defenderGoldBase   = challengerWon ? 1 : 2;
+
+        // Apply Gold Bonus (team-wide additive percentage)
+        double cGoldBonus = ((Number) battleLog.getOrDefault("challengerGoldBonus", 0.0)).doubleValue();
+        double dGoldBonus = ((Number) battleLog.getOrDefault("defenderGoldBonus",   0.0)).doubleValue();
+        int challengerGold = (int) Math.round(challengerGoldBase * (1.0 + cGoldBonus));
+        int defenderGold   = (int) Math.round(defenderGoldBase   * (1.0 + dGoldBonus));
+
+        // Apply Item Discovery (probability of +1 bonus gold)
+        double cItemDisc = ((Number) battleLog.getOrDefault("challengerItemDiscovery", 0.0)).doubleValue();
+        double dItemDisc = ((Number) battleLog.getOrDefault("defenderItemDiscovery",   0.0)).doubleValue();
+        java.util.Random discRng = new java.util.Random();
+        if (cItemDisc > 0 && discRng.nextDouble() < cItemDisc) challengerGold++;
+        if (dItemDisc > 0 && discRng.nextDouble() < dItemDisc) defenderGold++;
 
         // Award gold
         challenger.setGold(challenger.getGold() + challengerGold);

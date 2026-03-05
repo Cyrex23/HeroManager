@@ -5,6 +5,7 @@ const LINKS = [
   { to: '/privacy', label: 'Privacy Policy' },
   { to: '/terms',   label: 'Terms of Use' },
   { to: '/rules',   label: 'Game Rules' },
+  { to: '/legal',   label: 'Legal Disclaimer' },
 ];
 
 function DiscordIcon() {
@@ -86,8 +87,8 @@ const s: Record<string, React.CSSProperties> = {
     letterSpacing: '0.04em', fontFamily: 'Inter, sans-serif',
     transition: 'color 0.2s',
   },
-  sep:  { color: '#1c1c30', fontSize: 14 },
-  copy: { color: '#252542', fontSize: 11, fontFamily: 'Inter, sans-serif' },
+  sep:  { color: '#3a3a5a', fontSize: 14 },
+  copy: { color: '#6b6b90', fontSize: 11, fontFamily: 'Inter, sans-serif' },
   discordPill: {
     display: 'flex', alignItems: 'center', gap: 5,
     padding: '3px 9px', borderRadius: 20,

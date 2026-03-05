@@ -8,9 +8,9 @@ const TIER_COLOR: Record<number, string> = {
 function tc(tier: number) { return TIER_COLOR[tier] ?? '#fbbf24'; }
 
 // T1 — Dagger (gray, common)
-function Dagger({ c }: { c: string }) {
+function Dagger({ c, s }: { c: string; s: number }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+    <svg width={s} height={s} viewBox="0 0 20 20" fill="none">
       <polygon
         points="10,1 12.5,12 10,14.5 7.5,12"
         fill={`${c}30`} stroke={c} strokeWidth="1.4" strokeLinejoin="round"
@@ -22,9 +22,9 @@ function Dagger({ c }: { c: string }) {
 }
 
 // T2 — Dual blades (blue, uncommon)
-function DualBlades({ c }: { c: string }) {
+function DualBlades({ c, s }: { c: string; s: number }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+    <svg width={s} height={s} viewBox="0 0 20 20" fill="none">
       <polygon
         points="6.5,1 8.5,11 6.5,13 4.5,11"
         fill={`${c}30`} stroke={c} strokeWidth="1.3" strokeLinejoin="round"
@@ -40,9 +40,9 @@ function DualBlades({ c }: { c: string }) {
 }
 
 // T3 — Crystal (purple, rare)
-function Crystal({ c }: { c: string }) {
+function Crystal({ c, s }: { c: string; s: number }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+    <svg width={s} height={s} viewBox="0 0 20 20" fill="none">
       <polygon
         points="10,1 16,7 10,19 4,7"
         fill={`${c}28`} stroke={c} strokeWidth="1.4" strokeLinejoin="round"
@@ -56,9 +56,9 @@ function Crystal({ c }: { c: string }) {
 }
 
 // T4 — 4-pointed star (orange, epic)
-function Star({ c }: { c: string }) {
+function Star({ c, s }: { c: string; s: number }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+    <svg width={s} height={s} viewBox="0 0 20 20" fill="none">
       <path
         d="M10 1L11.9 8.1L19 10L11.9 11.9L10 19L8.1 11.9L1 10L8.1 8.1Z"
         fill={`${c}28`} stroke={c} strokeWidth="1.3" strokeLinejoin="round"
@@ -73,9 +73,9 @@ function Star({ c }: { c: string }) {
 }
 
 // T5 — Crown (gold, legendary)
-function Crown({ c }: { c: string }) {
+function Crown({ c, s }: { c: string; s: number }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+    <svg width={s} height={s} viewBox="0 0 20 20" fill="none">
       <path
         d="M2 15L2 9L6.5 13L10 2L13.5 13L18 9L18 15Z"
         fill={`${c}28`} stroke={c} strokeWidth="1.3" strokeLinejoin="round"
@@ -93,29 +93,32 @@ interface Props {
   size?: number;
 }
 
-export default function AbilityTierIcon({ tier }: Props) {
+const BASE_CONTAINER = 26;
+const BASE_SVG = 18;
+
+export default function AbilityTierIcon({ tier, size = BASE_CONTAINER }: Props) {
   const c = tc(tier);
-  const bg = `${c}14`;
-  const border = `1px solid ${c}40`;
+  const svgSize = Math.round(size * BASE_SVG / BASE_CONTAINER);
+  const radius = Math.round(5 * size / BASE_CONTAINER);
 
   const icon =
-    tier === 1 ? <Dagger c={c} /> :
-    tier === 2 ? <DualBlades c={c} /> :
-    tier === 3 ? <Crystal c={c} /> :
-    tier === 4 ? <Star c={c} /> :
-    <Crown c={c} />;
+    tier === 1 ? <Dagger c={c} s={svgSize} /> :
+    tier === 2 ? <DualBlades c={c} s={svgSize} /> :
+    tier === 3 ? <Crystal c={c} s={svgSize} /> :
+    tier === 4 ? <Star c={c} s={svgSize} /> :
+    <Crown c={c} s={svgSize} />;
 
   return (
     <span style={{
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: 26,
-      height: 26,
-      minWidth: 26,
-      backgroundColor: bg,
-      border,
-      borderRadius: 5,
+      width: size,
+      height: size,
+      minWidth: size,
+      backgroundColor: `${c}14`,
+      border: `1px solid ${c}40`,
+      borderRadius: radius,
       flexShrink: 0,
     }}>
       {icon}

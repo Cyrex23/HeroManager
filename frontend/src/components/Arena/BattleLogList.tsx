@@ -1,4 +1,6 @@
 import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { Coins } from 'lucide-react';
 import type { BattleLogEntry, TeamResponse } from '../../types';
 import { getOpponentTeam } from '../../api/arenaApi';
 import TeamInspectBody, { INSPECT_CSS } from './TeamInspectBody';
@@ -139,11 +141,7 @@ export default function BattleLogList({ battles, onReturnChallenge, onViewBattle
                   color: '#fbbf24', fontSize: 11.5, fontWeight: 700,
                   fontFamily: 'Inter, sans-serif',
                 }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="11" fill="#92400e" stroke="#fbbf24" strokeWidth="1.5" />
-                    <circle cx="12" cy="12" r="6" fill="#fbbf24" opacity="0.25" />
-                    <text x="12" y="16.5" textAnchor="middle" fill="#fef3c7" fontSize="10" fontWeight="900" fontFamily="sans-serif">G</text>
-                  </svg>
+                  <Coins size={13} color="#fbbf24" />
                   +{b.goldEarned}
                 </div>
               )}
@@ -192,48 +190,48 @@ export default function BattleLogList({ battles, onReturnChallenge, onViewBattle
         })}
       </div>
 
-      {/* Hover team inspect popup */}
-      {hoverEntry && (
+      {hoverEntry && createPortal(
         <div
-          style={{
-            position: 'fixed',
-            top: hoverEntry.pos.top,
-            left: hoverEntry.pos.left,
-            zIndex: 9998,
-            width: 560,
-            backgroundColor: '#0e0e22',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 10,
-            padding: '14px 14px 12px',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.88), 0 0 0 1px rgba(255,255,255,0.04)',
-            pointerEvents: 'auto',
-          }}
-          onMouseEnter={() => { if (hoverCloseTimer.current) clearTimeout(hoverCloseTimer.current); }}
-          onMouseLeave={handleUsernameLeave}
-        >
-          {/* header */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            marginBottom: 12, paddingBottom: 10,
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-          }}>
+            style={{
+              position: 'fixed',
+              top: hoverEntry.pos.top,
+              left: hoverEntry.pos.left,
+              zIndex: 9998,
+              width: 560,
+              backgroundColor: '#0e0e22',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 10,
+              padding: '14px 14px 12px',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.88), 0 0 0 1px rgba(255,255,255,0.04)',
+              pointerEvents: 'auto',
+            }}
+            onMouseEnter={() => { if (hoverCloseTimer.current) clearTimeout(hoverCloseTimer.current); }}
+            onMouseLeave={handleUsernameLeave}
+          >
+            {/* header */}
             <div style={{
-              width: 32, height: 32, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #1e1e3e, #2a2a5a)',
-              border: '2px solid rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13, fontWeight: 700, color: '#e0e0e0', flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 8,
+              marginBottom: 12, paddingBottom: 10,
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
             }}>
-              {hoverEntry.username.charAt(0).toUpperCase()}
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #1e1e3e, #2a2a5a)',
+                border: '2px solid rgba(255,255,255,0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 700, color: '#e0e0e0', flexShrink: 0,
+              }}>
+                {hoverEntry.username.charAt(0).toUpperCase()}
+              </div>
+              <span style={{ color: '#e8e8f0', fontWeight: 700, fontSize: 15 }}>{hoverEntry.username}</span>
             </div>
-            <span style={{ color: '#e8e8f0', fontWeight: 700, fontSize: 15 }}>{hoverEntry.username}</span>
-          </div>
-          {teamCache[hoverEntry.opponentId] ? (
-            <TeamInspectBody team={teamCache[hoverEntry.opponentId]} />
-          ) : (
-            <div style={{ color: '#555577', fontSize: 12, textAlign: 'center', padding: '10px 0' }}>Loading...</div>
-          )}
-        </div>
+            {teamCache[hoverEntry.opponentId] ? (
+              <TeamInspectBody team={teamCache[hoverEntry.opponentId]} />
+            ) : (
+              <div style={{ color: '#555577', fontSize: 12, textAlign: 'center', padding: '10px 0' }}>Loading...</div>
+            )}
+          </div>,
+        document.body
       )}
     </>
   );

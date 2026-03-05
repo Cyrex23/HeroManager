@@ -77,6 +77,51 @@ public class AbilityTemplate {
     @Column(columnDefinition = "double default 0")
     private double spellBonusStam = 0;
 
+    // ── Combat mechanics ───────────────────────────────────────────────────────
+    @Column(columnDefinition = "double default 0")
+    private double bonusAttack = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusMagicProficiency = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusSpellMastery = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusSpellActivation = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusDexProficiency = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusDexPosture = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusCritChance = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusCritDamage = 0;
+
+    // ── Progression bonuses ────────────────────────────────────────────────────
+    @Column(columnDefinition = "double default 0")
+    private double bonusExpBonus = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusGoldBonus = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusItemDiscovery = 0;
+
+    // ── Damage immunities ──────────────────────────────────────────────────────
+    @Column(columnDefinition = "double default 0")
+    private double bonusPhysicalImmunity = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusMagicImmunity = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusDexEvasiveness = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "heroTemplateId", insertable = false, updatable = false)
     private HeroTemplate heroTemplate;

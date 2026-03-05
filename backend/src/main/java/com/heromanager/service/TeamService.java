@@ -19,6 +19,9 @@ public class TeamService {
     private final EquippedAbilityRepository equippedAbilityRepository;
     private final TeamSetupRepository teamSetupRepository;
     private final TeamSetupSlotRepository teamSetupSlotRepository;
+    private final TeamSetupHeroEquipmentRepository heroEquipmentRepository;
+    private final PlayerService playerService;
+    private final PlayerRepository playerRepository;
 
     public TeamService(TeamSlotRepository teamSlotRepository,
                        HeroRepository heroRepository,
@@ -26,7 +29,10 @@ public class TeamService {
                        EquippedItemRepository equippedItemRepository,
                        EquippedAbilityRepository equippedAbilityRepository,
                        TeamSetupRepository teamSetupRepository,
-                       TeamSetupSlotRepository teamSetupSlotRepository) {
+                       TeamSetupSlotRepository teamSetupSlotRepository,
+                       TeamSetupHeroEquipmentRepository heroEquipmentRepository,
+                       PlayerService playerService,
+                       PlayerRepository playerRepository) {
         this.teamSlotRepository = teamSlotRepository;
         this.heroRepository = heroRepository;
         this.summonRepository = summonRepository;
@@ -34,6 +40,21 @@ public class TeamService {
         this.equippedAbilityRepository = equippedAbilityRepository;
         this.teamSetupRepository = teamSetupRepository;
         this.teamSetupSlotRepository = teamSetupSlotRepository;
+        this.heroEquipmentRepository = heroEquipmentRepository;
+        this.playerService = playerService;
+        this.playerRepository = playerRepository;
+    }
+
+    private int getMaxSetups(Long playerId) {
+        return playerRepository.findById(playerId)
+                .map(p -> 2 + (p.isExtraLineupGoldPurchased() ? 1 : 0) + (p.isExtraLineupDiamondsPurchased() ? 1 : 0))
+                .orElse(2);
+    }
+
+    private int getTeamCapacityMax(Long playerId) {
+        return playerRepository.findById(playerId)
+                .map(p -> 100 + p.getCapacityPlusCount() * 10)
+                .orElse(100);
     }
 
     @Transactional(readOnly = true)
@@ -59,7 +80,7 @@ public class TeamService {
         int capacityUsed = 0;
         double teamPower = 0;
 
-        // Build slots 1-6 (hero slots)
+        // Build hero slots 1-6
         for (int i = 1; i <= 6; i++) {
             final int slotNum = i;
             TeamSlot slot = slots.stream()
@@ -71,11 +92,12 @@ public class TeamService {
                 Hero hero = heroRepository.findById(slot.getHeroId()).orElse(null);
                 if (hero != null && hero.getTemplate() != null) {
                     HeroTemplate t = hero.getTemplate();
-                    Map<String, Double> totalStats = PlayerService.buildHeroStats(t, hero.getLevel());
+                    Map<String, Double> totalStats = new HashMap<>(PlayerService.buildHeroStats(t, hero.getLevel()));
+                    playerService.buildEquipmentBonuses(hero.getId())
+                            .forEach((k, v) -> totalStats.merge(k, v, Double::sum));
 
                     // Add summon MP + Mana bonuses
                     if (summonMpBonus > 0 || summonManaBonus > 0) {
-                        totalStats = new HashMap<>(totalStats);
                         if (summonMpBonus > 0)
                             totalStats.put("magicPower", totalStats.getOrDefault("magicPower", 0.0) + summonMpBonus);
                         if (summonManaBonus > 0)
@@ -94,12 +116,18 @@ public class TeamService {
                         Optional<EquippedItem> eItem = equippedItemRepository.findByHeroIdAndSlotNumber(hero.getId(), sn);
                         if (eItem.isPresent()) {
                             ItemTemplate it = eItem.get().getItemTemplate();
+                            if (it == null) {
+                                Map<String, Object> empty = new LinkedHashMap<>();
+                                empty.put("slotNumber", s); empty.put("type", null); empty.put("name", null);
+                                eqSlots.add(empty); continue;
+                            }
                             Map<String, Object> slotEntry = new LinkedHashMap<>();
                             slotEntry.put("slotNumber", s);
                             slotEntry.put("type", "item");
                             slotEntry.put("name", it.getName());
                             slotEntry.put("bonuses", buildBonuses(it.getBonusPa(), it.getBonusMp(), it.getBonusDex(), it.getBonusElem(), it.getBonusMana(), it.getBonusStam()));
                             slotEntry.put("tier", null);
+                            slotEntry.put("cost", it.getCost());
                             slotEntry.put("copies", equippedItemRepository.countByPlayerAndItemTemplate(playerId, it.getId()));
                             eqSlots.add(slotEntry);
                             continue;
@@ -107,6 +135,11 @@ public class TeamService {
                         Optional<EquippedAbility> eAbility = equippedAbilityRepository.findByHeroIdAndSlotNumber(hero.getId(), sn);
                         if (eAbility.isPresent()) {
                             AbilityTemplate at = eAbility.get().getAbilityTemplate();
+                            if (at == null) {
+                                Map<String, Object> empty = new LinkedHashMap<>();
+                                empty.put("slotNumber", s); empty.put("type", null); empty.put("name", null);
+                                eqSlots.add(empty); continue;
+                            }
                             Map<String, Object> slotEntry = new LinkedHashMap<>();
                             slotEntry.put("slotNumber", s);
                             slotEntry.put("type", "ability");
@@ -175,7 +208,7 @@ public class TeamService {
                 .build());
 
         return TeamResponse.builder()
-                .capacity(TeamResponse.CapacityInfo.builder().used(capacityUsed).max(100).build())
+                .capacity(TeamResponse.CapacityInfo.builder().used(capacityUsed).max(getTeamCapacityMax(playerId)).build())
                 .teamPower(teamPower)
                 .slots(slotInfos)
                 .build();
@@ -225,7 +258,7 @@ public class TeamService {
         teamSlotRepository.save(slot);
 
         int newCapacity = currentCapacity + heroCapacity;
-        return TeamResponse.CapacityInfo.builder().used(newCapacity).max(100).build();
+        return TeamResponse.CapacityInfo.builder().used(newCapacity).max(getTeamCapacityMax(playerId)).build();
     }
 
     @Transactional
@@ -243,7 +276,7 @@ public class TeamService {
         teamSlotRepository.save(slot);
 
         int newCapacity = calculateCapacity(playerId);
-        return TeamResponse.CapacityInfo.builder().used(newCapacity).max(100).build();
+        return TeamResponse.CapacityInfo.builder().used(newCapacity).max(getTeamCapacityMax(playerId)).build();
     }
 
     @Transactional
@@ -281,7 +314,7 @@ public class TeamService {
         teamSlotRepository.save(slot);
 
         int newCapacity = currentCapacity + summonCapacity;
-        return TeamResponse.CapacityInfo.builder().used(newCapacity).max(100).build();
+        return TeamResponse.CapacityInfo.builder().used(newCapacity).max(getTeamCapacityMax(playerId)).build();
     }
 
     @Transactional
@@ -297,7 +330,7 @@ public class TeamService {
         teamSlotRepository.save(slot);
 
         int newCapacity = calculateCapacity(playerId);
-        return TeamResponse.CapacityInfo.builder().used(newCapacity).max(100).build();
+        return TeamResponse.CapacityInfo.builder().used(newCapacity).max(getTeamCapacityMax(playerId)).build();
     }
 
     @Transactional
@@ -376,6 +409,8 @@ public class TeamService {
     @Transactional
     public List<TeamSetupResponse> getSetups(Long playerId) {
         List<TeamSetup> existing = teamSetupRepository.findByPlayerIdOrderBySetupIndex(playerId);
+        int maxSetups = getMaxSetups(playerId);
+
         if (existing.isEmpty()) {
             // Lazy-init: snapshot current TeamSlot into Setup 1 (active), create empty Setup 2
             TeamSetup setup1 = new TeamSetup();
@@ -395,6 +430,21 @@ public class TeamService {
 
             existing = teamSetupRepository.findByPlayerIdOrderBySetupIndex(playerId);
         }
+
+        // Lazy-create any newly unlocked setup slots
+        int currentMax = existing.stream().mapToInt(TeamSetup::getSetupIndex).max().orElse(0);
+        for (int idx = currentMax + 1; idx <= maxSetups; idx++) {
+            TeamSetup newSetup = new TeamSetup();
+            newSetup.setPlayerId(playerId);
+            newSetup.setSetupIndex(idx);
+            newSetup.setName("Team Setup " + idx);
+            newSetup.setActive(false);
+            teamSetupRepository.save(newSetup);
+        }
+        if (currentMax < maxSetups) {
+            existing = teamSetupRepository.findByPlayerIdOrderBySetupIndex(playerId);
+        }
+
         return existing.stream()
                 .map(s -> TeamSetupResponse.builder()
                         .id(s.getId())
@@ -407,33 +457,53 @@ public class TeamService {
 
     @Transactional
     public TeamResponse switchSetup(Long playerId, int targetIndex) {
-        // Find current active setup and snapshot current TeamSlot into it
-        TeamSetup current = teamSetupRepository.findByPlayerIdAndActiveTrue(playerId)
-                .orElse(null);
+        TeamSetup current = teamSetupRepository.findByPlayerIdAndActiveTrue(playerId).orElse(null);
         if (current != null && current.getSetupIndex() == targetIndex) {
-            return getTeamLineup(playerId); // already active
+            return getTeamLineup(playerId);
         }
 
+        // 1. Snapshot current team into the departing setup
         if (current != null) {
             snapshotCurrentTeamIntoSetup(playerId, current.getId());
             current.setActive(false);
             teamSetupRepository.save(current);
         }
 
-        // Clear all current TeamSlots
-        List<TeamSlot> slots = teamSlotRepository.findByPlayerId(playerId);
-        for (TeamSlot slot : slots) {
+        // 2. Clear equipment for ALL player heroes (lineup + bench).
+        //    Presets own the full equipment state of every hero, so every switch
+        //    does a complete reset before restoring the target preset's snapshot.
+        for (Hero hero : heroRepository.findByPlayerId(playerId)) {
+            Long heroId = hero.getId();
+            equippedItemRepository.findByHeroIdAndSlotNumberIsNotNull(heroId).forEach(item -> {
+                item.setHeroId(null);
+                item.setSlotNumber(null);
+                equippedItemRepository.save(item);
+            });
+            equippedAbilityRepository.findByHeroId(heroId)
+                    .stream().filter(a -> a.getSlotNumber() != null)
+                    .forEach(a -> {
+                        a.setSlotNumber(null);
+                        equippedAbilityRepository.save(a);
+                    });
+        }
+
+        // 3. Clear TeamSlots
+        List<TeamSlot> currentSlots = teamSlotRepository.findByPlayerId(playerId);
+        for (TeamSlot slot : currentSlots) {
             slot.setHeroId(null);
             slot.setSummonId(null);
             teamSlotRepository.save(slot);
         }
 
-        // Load target setup's slots into TeamSlot
+        // 4. Load target setup
         TeamSetup target = teamSetupRepository.findByPlayerIdAndSetupIndex(playerId, targetIndex)
                 .orElseThrow(() -> new TeamException("SETUP_NOT_FOUND", "Team setup not found."));
         List<TeamSetupSlot> setupSlots = teamSetupSlotRepository.findBySetupId(target.getId());
+        List<TeamSetupHeroEquipment> targetEquipment = heroEquipmentRepository.findBySetupId(target.getId());
+
+        // 4a. Restore lineup slots
         for (TeamSetupSlot ss : setupSlots) {
-            TeamSlot slot = slots.stream()
+            TeamSlot slot = currentSlots.stream()
                     .filter(s -> s.getSlotNumber() == ss.getSlotNumber())
                     .findFirst()
                     .orElseGet(() -> {
@@ -445,6 +515,29 @@ public class TeamService {
             slot.setHeroId(ss.getHeroId());
             slot.setSummonId(ss.getSummonId());
             teamSlotRepository.save(slot);
+        }
+
+        // 4b. Restore equipment for ALL heroes in the snapshot (lineup + bench).
+        //     Step 2 set all items to heroId=null and all ability slotNumbers to null,
+        //     so the finders below will locate them correctly.
+        for (TeamSetupHeroEquipment eq : targetEquipment) {
+            Long heroId = eq.getHeroId();
+            if (eq.getItemTemplateId() != null) {
+                equippedItemRepository
+                        .findFirstByPlayerIdAndHeroIdIsNullAndItemTemplateId(playerId, eq.getItemTemplateId())
+                        .ifPresent(item -> {
+                            item.setHeroId(heroId);
+                            item.setSlotNumber(eq.getSlotNumber());
+                            equippedItemRepository.save(item);
+                        });
+            } else if (eq.getAbilityTemplateId() != null) {
+                equippedAbilityRepository
+                        .findFirstByHeroIdAndAbilityTemplateIdAndSlotNumberIsNull(heroId, eq.getAbilityTemplateId())
+                        .ifPresent(ability -> {
+                            ability.setSlotNumber(eq.getSlotNumber());
+                            equippedAbilityRepository.save(ability);
+                        });
+            }
         }
 
         target.setActive(true);
@@ -465,7 +558,14 @@ public class TeamService {
     }
 
     private void snapshotCurrentTeamIntoSetup(Long playerId, Long setupId) {
-        teamSetupSlotRepository.deleteBySetupId(setupId);
+        // Use entity-level deletes so JPA L1 cache marks entities as REMOVED,
+        // preventing phantom re-inserts on flush.
+        List<TeamSetupHeroEquipment> oldEquipment = heroEquipmentRepository.findBySetupId(setupId);
+        heroEquipmentRepository.deleteAll(oldEquipment);
+        List<TeamSetupSlot> oldSlots = teamSetupSlotRepository.findBySetupId(setupId);
+        teamSetupSlotRepository.deleteAll(oldSlots);
+
+        // Snapshot lineup slots
         List<TeamSlot> slots = teamSlotRepository.findByPlayerId(playerId);
         for (TeamSlot slot : slots) {
             if (slot.getHeroId() != null || slot.getSummonId() != null) {
@@ -475,6 +575,35 @@ public class TeamService {
                 ss.setHeroId(slot.getHeroId());
                 ss.setSummonId(slot.getSummonId());
                 teamSetupSlotRepository.save(ss);
+            }
+        }
+
+        // Snapshot equipment for ALL player heroes (lineup + bench).
+        // Presets manage the full equipment state, so bench heroes' items/abilities
+        // must also be captured and restored on each switch.
+        for (Hero hero : heroRepository.findByPlayerId(playerId)) {
+            Long heroId = hero.getId();
+            for (int eqSlot = 1; eqSlot <= 3; eqSlot++) {
+                final int sn = eqSlot;
+                Optional<EquippedItem> item = equippedItemRepository.findByHeroIdAndSlotNumber(heroId, sn);
+                if (item.isPresent()) {
+                    TeamSetupHeroEquipment eq = new TeamSetupHeroEquipment();
+                    eq.setSetupId(setupId);
+                    eq.setHeroId(heroId);
+                    eq.setSlotNumber(sn);
+                    eq.setItemTemplateId(item.get().getItemTemplateId());
+                    heroEquipmentRepository.save(eq);
+                    continue;
+                }
+                Optional<EquippedAbility> ability = equippedAbilityRepository.findByHeroIdAndSlotNumber(heroId, sn);
+                if (ability.isPresent()) {
+                    TeamSetupHeroEquipment eq = new TeamSetupHeroEquipment();
+                    eq.setSetupId(setupId);
+                    eq.setHeroId(heroId);
+                    eq.setSlotNumber(sn);
+                    eq.setAbilityTemplateId(ability.get().getAbilityTemplateId());
+                    heroEquipmentRepository.save(eq);
+                }
             }
         }
     }

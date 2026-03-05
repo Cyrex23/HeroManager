@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { HeroStats, SpellInfo } from '../../types';
 
 interface Props {
@@ -10,10 +11,11 @@ interface Props {
   copies?: number | null;
   spell?: SpellInfo | null;
   children: React.ReactNode;
+  block?: boolean;
 }
 
 const STATS: Array<{ key: keyof HeroStats; label: string }> = [
-  { key: 'physicalAttack', label: 'ATK' },
+  { key: 'physicalAttack', label: 'PA' },
   { key: 'magicPower',     label: 'MAGIC' },
   { key: 'dexterity',      label: 'DEX' },
   { key: 'element',        label: 'ELEM' },
@@ -21,28 +23,44 @@ const STATS: Array<{ key: keyof HeroStats; label: string }> = [
   { key: 'stamina',        label: 'STAM' },
 ];
 
-export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice, copies, spell, children }: Props) {
-  const [visible, setVisible] = useState(false);
+const TOOLTIP_WIDTH = 270;
+
+export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice, copies, spell, children, block }: Props) {
+  const [pos, setPos] = useState<{ x: number; y: number; above: boolean } | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   function scheduleClose() {
-    closeTimer.current = setTimeout(() => setVisible(false), 150);
+    closeTimer.current = setTimeout(() => setPos(null), 150);
   }
 
   function cancelClose() {
     if (closeTimer.current) clearTimeout(closeTimer.current);
   }
 
+  function handleMouseEnter() {
+    cancelClose();
+    if (wrapRef.current) {
+      const r = wrapRef.current.getBoundingClientRect();
+      let x = r.left + r.width / 2 - TOOLTIP_WIDTH / 2;
+      x = Math.max(8, Math.min(x, window.innerWidth - TOOLTIP_WIDTH - 8));
+      // Show above unless there's not enough space (use 240px as conservative estimate)
+      const above = r.top >= 240;
+      setPos({ x, y: above ? r.top : r.bottom, above });
+    }
+  }
+
   return (
     <div
-      style={{ position: 'relative', display: 'inline-block' }}
-      onMouseEnter={() => { cancelClose(); setVisible(true); }}
+      ref={wrapRef}
+      style={{ position: 'relative', display: block ? 'block' : 'inline-block' }}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={scheduleClose}
     >
       {children}
-      {visible && (
+      {pos && createPortal(
         <div
-          style={styles.popup}
+          style={{ ...styles.popup, left: pos.x, top: pos.y, transform: pos.above ? 'translateY(calc(-100% - 8px))' : 'translateY(8px)' }}
           onMouseEnter={cancelClose}
           onMouseLeave={scheduleClose}
         >
@@ -131,7 +149,8 @@ export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice,
               </span>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -139,16 +158,13 @@ export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice,
 
 const styles: Record<string, React.CSSProperties> = {
   popup: {
-    position: 'absolute',
-    bottom: 'calc(100% + 8px)',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: 270,
+    position: 'fixed',
+    width: TOOLTIP_WIDTH,
     backgroundColor: '#0b0b1e',
     border: '1px solid #7a5a1a',
     borderRadius: 6,
     padding: '10px 14px',
-    zIndex: 200,
+    zIndex: 9999,
     boxShadow: '0 4px 20px rgba(0,0,0,0.8)',
     pointerEvents: 'auto',
   },

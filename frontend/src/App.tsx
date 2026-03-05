@@ -21,7 +21,9 @@ import AboutPage from './pages/AboutPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import GameRulesPage from './pages/GameRulesPage';
+import LegalPage from './pages/LegalPage';
 import GuidePage from './pages/GuidePage';
+import BlacksmithPage from './pages/BlacksmithPage';
 import Footer from './components/Layout/Footer';
 import ChatPanel from './components/chat/ChatPanel';
 
@@ -98,11 +100,13 @@ export default function App() {
       <Route path="/privacy"  element={<PrivacyPage />} />
       <Route path="/terms"    element={<TermsPage />} />
       <Route path="/rules"    element={<GameRulesPage />} />
+      <Route path="/legal"    element={<LegalPage />} />
 
       {/* Protected layout — AppLayout renders once, only Outlet content changes */}
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/team"        element={<TeamPage />} />
         <Route path="/shop"        element={<ShopPage />} />
+        <Route path="/blacksmith"  element={<BlacksmithPage />} />
         <Route path="/arena"       element={<ArenaPage />} />
         <Route path="/battle/:id"  element={<BattlePage />} />
         <Route path="/hero/:id"    element={<HeroDetailPage />} />

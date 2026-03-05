@@ -190,8 +190,7 @@ function FallbackBackground() {
       background:
         'radial-gradient(ellipse at 20% 30%, rgba(233,69,96,0.14) 0%, transparent 55%),' +
         'radial-gradient(ellipse at 80% 70%, rgba(167,139,250,0.09) 0%, transparent 55%),' +
-        'radial-gradient(ellipse at 50% 110%, rgba(251,191,36,0.06) 0%, transparent 40%),' +
-        '#07041a',
+        'radial-gradient(ellipse at 50% 110%, rgba(251,191,36,0.06) 0%, transparent 40%)',
     }} />
   );
 }
@@ -203,8 +202,8 @@ export default function ParticleBackground() {
         <Canvas
           camera={{ position: [0, 0, 6], fov: 65 }}
           dpr={[1, 1.5]}
-          gl={{ antialias: false, powerPreference: 'default', alpha: false }}
-          style={{ background: '#07041a' }}
+          gl={{ antialias: false, powerPreference: 'default', alpha: true }}
+          style={{ background: 'transparent' }}
         >
           <ambientLight intensity={0.02} />
           <Scene />

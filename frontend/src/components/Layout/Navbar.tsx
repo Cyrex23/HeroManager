@@ -10,7 +10,7 @@ import { getOnlineCount } from '../../api/playerApi';
 
 const navItems: Array<{ path: string; label: string; locked?: boolean }> = [
   { path: '/team',         label: 'Team' },
-  { path: '/blacksmith',   label: 'Blacksmith',  locked: true },
+  { path: '/blacksmith',   label: 'Blacksmith' },
   { path: '/world',        label: 'World',        locked: true },
   { path: '/arena',        label: 'Arena' },
   { path: '/championship', label: 'Championship', locked: true },
@@ -59,10 +59,26 @@ const XP_STRIP_CSS = `
     0%, 100% { filter: brightness(1); }
     50%       { filter: brightness(1.35); }
   }
-  @keyframes empty-pulse {
-    0%, 100% { border-color: rgba(233,69,96,0.45); box-shadow: inset 0 0 14px rgba(233,69,96,0.08), 0 0 8px rgba(233,69,96,0.1); }
-    50%       { border-color: rgba(233,69,96,0.85); box-shadow: inset 0 0 20px rgba(233,69,96,0.18), 0 0 18px rgba(233,69,96,0.22); }
+  @keyframes empty-pulse-commoner {
+    0%, 100% { border-color: rgba(107,114,128,0.45); box-shadow: inset 0 0 14px rgba(107,114,128,0.08), 0 0 8px rgba(107,114,128,0.1); }
+    50%       { border-color: rgba(107,114,128,0.85); box-shadow: inset 0 0 20px rgba(107,114,128,0.18), 0 0 18px rgba(107,114,128,0.22); }
   }
+  @keyframes empty-pulse-elite {
+    0%, 100% { border-color: rgba(167,139,250,0.45); box-shadow: inset 0 0 14px rgba(167,139,250,0.1), 0 0 8px rgba(167,139,250,0.12); }
+    50%       { border-color: rgba(167,139,250,0.9);  box-shadow: inset 0 0 22px rgba(167,139,250,0.2), 0 0 20px rgba(167,139,250,0.28); }
+  }
+  @keyframes empty-pulse-legendary {
+    0%, 100% { border-color: rgba(249,115,22,0.45); box-shadow: inset 0 0 14px rgba(249,115,22,0.1), 0 0 8px rgba(249,115,22,0.12); }
+    50%       { border-color: rgba(249,115,22,0.9);  box-shadow: inset 0 0 22px rgba(249,115,22,0.22), 0 0 22px rgba(249,115,22,0.32); }
+  }
+  @keyframes empty-pulse-summon {
+    0%, 100% { border-color: rgba(96,165,250,0.45); box-shadow: inset 0 0 14px rgba(96,165,250,0.08), 0 0 8px rgba(96,165,250,0.1); }
+    50%       { border-color: rgba(96,165,250,0.85); box-shadow: inset 0 0 20px rgba(96,165,250,0.18), 0 0 18px rgba(96,165,250,0.22); }
+  }
+  .empty-commoner  { animation: empty-pulse-commoner  2.8s ease-in-out infinite; }
+  .empty-elite     { animation: empty-pulse-elite     2.4s ease-in-out infinite; }
+  .empty-legendary { animation: empty-pulse-legendary 2.0s ease-in-out infinite; }
+  .empty-summon    { animation: empty-pulse-summon    2.8s ease-in-out infinite; }
   .slot-bracket {
     position: relative;
   }
@@ -264,11 +280,51 @@ export default function Navbar() {
           let slotEl: React.ReactElement | null = null;
 
           if (isEmpty) {
+            const isSummonSlot = slot.type === 'summon';
+            const tier = slot.slotTier;
+            const emptyColor =
+              isSummonSlot             ? '#60a5fa' :
+              tier === 'LEGENDARY'     ? '#f97316' :
+              tier === 'ELITE'         ? '#a78bfa' :
+                                         '#6b7280';
+            const emptyBg =
+              isSummonSlot             ? 'rgba(96,165,250,0.06)'  :
+              tier === 'LEGENDARY'     ? 'rgba(249,115,22,0.07)'  :
+              tier === 'ELITE'         ? 'rgba(167,139,250,0.07)' :
+                                         'rgba(107,114,128,0.05)';
+            const emptyPattern =
+              isSummonSlot             ? 'repeating-linear-gradient(135deg, rgba(96,165,250,0.05) 0px, rgba(96,165,250,0.05) 2px, transparent 2px, transparent 10px)'  :
+              tier === 'LEGENDARY'     ? 'repeating-linear-gradient(135deg, rgba(249,115,22,0.05) 0px, rgba(249,115,22,0.05) 2px, transparent 2px, transparent 10px)'  :
+              tier === 'ELITE'         ? 'repeating-linear-gradient(135deg, rgba(167,139,250,0.05) 0px, rgba(167,139,250,0.05) 2px, transparent 2px, transparent 10px)' :
+                                         'repeating-linear-gradient(135deg, rgba(107,114,128,0.04) 0px, rgba(107,114,128,0.04) 2px, transparent 2px, transparent 10px)';
+            const animClass =
+              isSummonSlot         ? 'empty-summon'    :
+              tier === 'LEGENDARY' ? 'empty-legendary' :
+              tier === 'ELITE'     ? 'empty-elite'     :
+                                     'empty-commoner';
+            const tierLabel =
+              isSummonSlot         ? 'SUMMON'    :
+              tier === 'LEGENDARY' ? 'LEGENDARY' :
+              tier === 'ELITE'     ? 'ELITE'     :
+                                     'COMMONER';
             slotEl = (
-              <div key={slot.slotNumber} style={styles.slot} onClick={() => navigate('/team')} title="Add hero to team">
-                <div style={styles.emptyBox}>
-                  <span style={styles.emptyPlus}>+</span>
-                  <span style={styles.emptyLabel}>EMPTY</span>
+              <div key={slot.slotNumber} style={styles.slot} onClick={() => navigate('/team')} title={`Empty ${tierLabel.toLowerCase()} slot`}>
+                <div
+                  className={animClass}
+                  style={{
+                    ...styles.emptyBox,
+                    border: `2px dashed ${emptyColor}80`,
+                    backgroundColor: emptyBg,
+                    backgroundImage: emptyPattern,
+                  }}
+                >
+                  {/* Corner accents */}
+                  <div style={{ position: 'absolute', top: 3, left: 3, width: 8, height: 8, borderTop: `2px solid ${emptyColor}`, borderLeft: `2px solid ${emptyColor}`, borderRadius: '2px 0 0 0' }} />
+                  <div style={{ position: 'absolute', top: 3, right: 3, width: 8, height: 8, borderTop: `2px solid ${emptyColor}`, borderRight: `2px solid ${emptyColor}`, borderRadius: '0 2px 0 0' }} />
+                  <div style={{ position: 'absolute', bottom: 3, left: 3, width: 8, height: 8, borderBottom: `2px solid ${emptyColor}`, borderLeft: `2px solid ${emptyColor}`, borderRadius: '0 0 0 2px' }} />
+                  <div style={{ position: 'absolute', bottom: 3, right: 3, width: 8, height: 8, borderBottom: `2px solid ${emptyColor}`, borderRight: `2px solid ${emptyColor}`, borderRadius: '0 0 2px 0' }} />
+                  <span style={{ ...styles.emptyPlus, color: emptyColor, textShadow: `0 0 8px ${emptyColor}88` }}>+</span>
+                  <span style={{ ...styles.emptyLabel, color: `${emptyColor}cc` }}>{tierLabel}</span>
                 </div>
               </div>
             );
@@ -423,19 +479,16 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   emptyBox: {
+    position: 'relative',
     width: PORTRAIT,
     height: PORTRAIT_H,
     borderRadius: 6,
-    border: '2px dashed rgba(233,69,96,0.55)',
-    backgroundColor: 'rgba(233,69,96,0.07)',
-    backgroundImage: 'repeating-linear-gradient(135deg, rgba(233,69,96,0.04) 0px, rgba(233,69,96,0.04) 2px, transparent 2px, transparent 10px)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
     cursor: 'pointer',
-    animation: 'empty-pulse 2.8s ease-in-out infinite',
   },
   emptyPlus: {
     color: 'rgba(233,69,96,0.75)',

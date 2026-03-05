@@ -22,4 +22,12 @@ public class PlayerResponse {
     private String profileImagePath;
     private String teamName;
     private boolean chatSoundEnabled;
+    private boolean extraLineupGoldPurchased;
+    private boolean extraLineupDiamondsPurchased;
+    private boolean energyPlusPurchased;
+    private boolean heroPlusCapacityPurchased;
+    private int capacityPlusCount;
+    private int lineupSlots;
+    private int heroRosterMax;
+    private int teamCapacityMax;
 }

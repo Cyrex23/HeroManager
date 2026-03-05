@@ -107,6 +107,12 @@ public class ShopService {
             throw new ShopException("ALREADY_OWNED", "You already own " + template.getDisplayName() + ".");
         }
 
+        int heroRosterMax = player.isHeroPlusCapacityPurchased() ? 40 : 20;
+        if (heroRepository.findByPlayerId(playerId).size() >= heroRosterMax) {
+            throw new ShopException("ROSTER_FULL",
+                    "Hero roster is full (" + heroRosterMax + "/" + heroRosterMax + "). Purchase Hero Capacity Plus to expand.");
+        }
+
         if (player.getGold() < template.getCost()) {
             throw new ShopException("INSUFFICIENT_GOLD",
                     "You need " + template.getCost() + " gold but only have " + player.getGold() + ".");

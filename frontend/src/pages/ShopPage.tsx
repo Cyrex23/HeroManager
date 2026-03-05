@@ -4,6 +4,10 @@ import {
   listItems, buyItem,
   listAbilities, buyAbility,
 } from '../api/shopApi';
+import {
+  buyExtraLineupGold, buyExtraLineupDiamonds,
+  buyEnergyPlus, buyHeroPlusCapacity, buyCapacityPlus,
+} from '../api/upgradeApi';
 import { getHeroes } from '../api/playerApi';
 import { usePlayer } from '../context/PlayerContext';
 import type {
@@ -13,19 +17,21 @@ import type {
 } from '../types';
 import ShopHeroCard from '../components/Shop/ShopHeroCard';
 import ShopSummonCard from '../components/Shop/ShopSummonCard';
-import ShopItemCard from '../components/Shop/ShopItemCard';
-import EquipmentTooltip from '../components/Equipment/EquipmentTooltip';
+import ShopItemCard, { getItemTier } from '../components/Shop/ShopItemCard';
+import ShopAbilityCard from '../components/Shop/ShopAbilityCard';
+import UpgradeCard from '../components/Shop/UpgradeCard';
+import HeroPortrait from '../components/Hero/HeroPortrait';
 import { AxiosError } from 'axios';
 import { Coins } from 'lucide-react';
 
-type Tab = 'heroes' | 'items' | 'abilities';
+type Tab = 'heroes' | 'items' | 'abilities' | 'upgrades';
 type TierFilter = 'COMMONER' | 'ELITE' | 'LEGENDARY' | 'SUMMONS';
 type StatFilter = 'PA' | 'MP' | 'DEX';
 
 const STAT_FILTER_CONFIG: { key: StatFilter; label: string; color: string }[] = [
-  { key: 'PA',  label: '⚔ PA',  color: '#f97316' },
+  { key: 'PA',  label: '✊ PA',  color: '#f97316' },
   { key: 'MP',  label: '✦ MP',  color: '#60a5fa' },
-  { key: 'DEX', label: '◈ DEX', color: '#4ade80' },
+  { key: 'DEX', label: '🗡 DEX', color: '#4ade80' },
 ];
 
 function growthValue(h: ShopHeroResponse, stat: StatFilter): number {
@@ -35,7 +41,15 @@ function growthValue(h: ShopHeroResponse, stat: StatFilter): number {
 }
 
 const TIER_COLOR: Record<string, string> = {
-  COMMONER: '#6b7280', ELITE: '#a78bfa', LEGENDARY: '#f97316', SUMMONS: '#a78bfa',
+  COMMONER: '#94a3b8', ELITE: '#a78bfa', LEGENDARY: '#f97316', SUMMONS: '#22d3ee',
+};
+
+const TIER_ICON: Record<string, string> = {
+  COMMONER: '👤', ELITE: '🔱', LEGENDARY: '✨', SUMMONS: '🐉',
+};
+
+const TIER_LABEL: Record<string, string> = {
+  COMMONER: 'Commoners', ELITE: 'Elites', LEGENDARY: 'Legendarys', SUMMONS: 'Summons',
 };
 
 const ALL_FILTERS: TierFilter[] = ['COMMONER', 'ELITE', 'LEGENDARY', 'SUMMONS'];
@@ -54,8 +68,23 @@ export default function ShopPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [visibleTiers, setVisibleTiers] = useState<Set<TierFilter>>(new Set(ALL_FILTERS));
   const [statFilter, setStatFilter] = useState<StatFilter | null>(null);
+  const [pendingBuy, setPendingBuy] = useState<{
+    label: string; cost: number; currency: 'gold' | 'diamonds';
+    action: () => Promise<void>;
+  } | null>(null);
   const { player, fetchPlayer } = usePlayer();
   const abilityReqId = useRef(0);
+
+  function requestConfirm(label: string, cost: number, currency: 'gold' | 'diamonds', action: () => Promise<void>) {
+    setPendingBuy({ label, cost, currency, action });
+  }
+
+  async function confirmBuy() {
+    if (!pendingBuy) return;
+    const action = pendingBuy.action;
+    setPendingBuy(null);
+    await action();
+  }
 
   function toggleTier(tier: TierFilter) {
     setVisibleTiers((prev) => {
@@ -155,10 +184,73 @@ export default function ShopPage() {
     }
   }
 
+  async function handleUpgrade(fn: () => Promise<{ message: string }>) {
+    setError(''); setSuccessMsg('');
+    try {
+      const result = await fn();
+      setSuccessMsg(result.message);
+      await fetchPlayer();
+    } catch (err) {
+      setError((err as AxiosError<ErrorResponse>).response?.data?.message || 'Purchase failed.');
+    }
+  }
+
   if (loading) return <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}><span className="spinner" style={{ width: 18, height: 18 }} />Loading shop...</div>;
 
   return (
     <div>
+      {/* ── Confirmation Modal ──────────────────────────────────────── */}
+      {pendingBuy && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setPendingBuy(null)}>
+          <div style={{
+            background: 'linear-gradient(160deg, #1a1a2e, #12121e)',
+            border: '1px solid rgba(233,69,96,0.3)',
+            borderTop: '2px solid #e94560',
+            borderRadius: 10,
+            padding: '28px 32px',
+            minWidth: 300, maxWidth: 400,
+            boxShadow: '0 0 40px rgba(233,69,96,0.15), 0 20px 60px rgba(0,0,0,0.6)',
+            textAlign: 'center',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 13, color: '#a0a0b0', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
+              Confirm Purchase
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#e0e0e0', marginBottom: 6 }}>
+              {pendingBuy.label}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 22 }}>
+              <span style={{ color: '#fbbf24', fontWeight: 800, fontSize: 18 }}>{pendingBuy.cost.toLocaleString()}</span>
+              {pendingBuy.currency === 'gold'
+                ? <Coins size={16} style={{ color: '#fbbf24' }} />
+                : <span style={{ fontSize: 14 }}>💎</span>}
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button onClick={() => setPendingBuy(null)} style={{
+                padding: '8px 22px', borderRadius: 6, border: '1px solid #3a3a5a',
+                background: 'transparent', color: '#6a6a8a', fontWeight: 700, fontSize: 13,
+                cursor: 'pointer', letterSpacing: 0.5,
+              }}>
+                Cancel
+              </button>
+              <button onClick={confirmBuy} style={{
+                padding: '8px 22px', borderRadius: 6,
+                border: '1px solid rgba(233,69,96,0.5)',
+                background: 'linear-gradient(135deg, rgba(233,69,96,0.2), rgba(180,30,60,0.15))',
+                color: '#e94560', fontWeight: 800, fontSize: 13,
+                cursor: 'pointer', letterSpacing: 0.5,
+                boxShadow: '0 0 12px rgba(233,69,96,0.2)',
+              }}>
+                ✓ Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={styles.header}>
         <h2 style={styles.title} className="gradient-title">Shop</h2>
         <div style={styles.goldBadge}>
@@ -173,7 +265,7 @@ export default function ShopPage() {
       </div>
 
       <div style={styles.tabs}>
-        {(['heroes', 'items', 'abilities'] as Tab[]).map((t) => (
+        {(['heroes', 'items', 'abilities', 'upgrades'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -203,12 +295,20 @@ export default function ShopPage() {
                   onClick={() => toggleTier(tier)}
                   style={{
                     ...styles.filterBtn,
-                    borderColor: color,
-                    color: active ? '#0f0f23' : color,
-                    backgroundColor: active ? color : 'transparent',
+                    borderColor: active ? color : `${color}55`,
+                    color: active ? '#0f0f1a' : color,
+                    background: active
+                      ? `linear-gradient(135deg, ${color}ee, ${color}bb)`
+                      : `linear-gradient(135deg, ${color}12, ${color}06)`,
+                    boxShadow: active ? `0 0 14px ${color}88, 0 2px 8px ${color}44, inset 0 1px 0 ${color}55` : `0 0 0 1px ${color}22`,
+                    textShadow: active ? `0 0 8px rgba(0,0,0,0.6)` : 'none',
+                    transform: active ? 'translateY(-1px)' : 'none',
                   }}
+                  onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 10px ${color}55`; (e.currentTarget as HTMLButtonElement).style.borderColor = `${color}99`; } }}
+                  onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 0 1px ${color}22`; (e.currentTarget as HTMLButtonElement).style.borderColor = `${color}55`; } }}
                 >
-                  {tier.charAt(0) + tier.slice(1).toLowerCase()}s
+                  <span style={{ marginRight: 5, fontSize: 13 }}>{TIER_ICON[tier]}</span>
+                  {TIER_LABEL[tier]}
                 </button>
               );
             })}
@@ -253,7 +353,7 @@ export default function ShopPage() {
                       key={hero.templateId}
                       hero={hero}
                       playerGold={player?.gold ?? 0}
-                      onBuy={() => handleBuyHero(hero.templateId)}
+                      onBuy={() => requestConfirm(hero.name, hero.cost, 'gold', () => handleBuyHero(hero.templateId))}
                     />
                   ))}
                 </div>
@@ -271,7 +371,7 @@ export default function ShopPage() {
                 key={summon.templateId}
                 summon={summon}
                 playerGold={player?.gold ?? 0}
-                onBuy={() => handleBuySummon(summon.templateId)}
+                onBuy={() => requestConfirm(summon.name, summon.cost, 'gold', () => handleBuySummon(summon.templateId))}
               />
             ))}
           </div>
@@ -284,82 +384,144 @@ export default function ShopPage() {
           <p style={styles.inventoryHint}>
             Items go to your team inventory — equip them to heroes from the <strong>Team</strong> page.
           </p>
-          <div style={styles.itemGrid}>
-            {items.map((item) => (
-              <ShopItemCard
-                key={item.templateId}
-                item={item}
-                playerGold={player?.gold ?? 0}
-                onBuy={() => handleBuyItem(item.templateId)}
-              />
-            ))}
-          </div>
+          {(['COMMON', 'RARE', 'LEGENDARY'] as const).map((tier) => {
+            const tierItems = items.filter((item) => getItemTier(item.cost) === tier);
+            if (tierItems.length === 0) return null;
+            const tierColor = { COMMON: '#9ca3af', RARE: '#a78bfa', LEGENDARY: '#f97316' }[tier];
+            const tierLabel = { COMMON: 'Common', RARE: 'Rare', LEGENDARY: 'Legendary' }[tier];
+            return (
+              <div key={tier}>
+                <div style={{ ...styles.tierHeader, borderLeftColor: tierColor }}>
+                  <span style={{ color: tierColor }}>{tierLabel}</span>
+                  <span style={{ color: tierColor + '66', fontSize: 12, fontWeight: 500, textTransform: 'none' as const, letterSpacing: 0 }}>
+                    — {tierItems.length} item{tierItems.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div style={styles.itemGrid}>
+                  {tierItems.map((item) => (
+                    <ShopItemCard
+                      key={item.templateId}
+                      item={item}
+                      playerGold={player?.gold ?? 0}
+                      onBuy={() => requestConfirm(item.name, item.cost, 'gold', () => handleBuyItem(item.templateId))}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </>
       )}
 
       {tab === 'abilities' && (
         <>
-          <h3 style={styles.subtitle}>Select Hero</h3>
-          <select
-            value={selectedHeroId ?? ''}
-            onChange={(e) => {
-              setSelectedHeroId(e.target.value ? Number(e.target.value) : null);
-              setHeroAbilities([]);
-              setHeroAbilityName('');
-            }}
-            style={styles.select}
-          >
-            <option value="">Select hero...</option>
-            {ownedHeroes.map((h) => (
-              <option key={h.id} value={h.id}>{h.name} (Lv.{h.level})</option>
-            ))}
-          </select>
+          {/* ── Hero picker ─────────────────────────────────────────────── */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{
+              color: '#4a4a6a', fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              marginBottom: 10,
+            }}>
+              Choose a hero to view their abilities
+            </div>
+            {ownedHeroes.length === 0 ? (
+              <p style={styles.muted}>You have no heroes yet.</p>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {ownedHeroes.map((h) => {
+                  const isSelected = selectedHeroId === h.id;
+                  const tc = TIER_COLOR[h.tier ?? 'COMMONER'];
+                  return (
+                    <button
+                      key={h.id}
+                      onClick={() => {
+                        setSelectedHeroId(isSelected ? null : h.id);
+                        setHeroAbilities([]);
+                        setHeroAbilityName('');
+                      }}
+                      style={{
+                        display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', gap: 4,
+                        padding: '8px 10px',
+                        background: isSelected
+                          ? `linear-gradient(160deg, ${tc}1a, rgba(26,26,46,0.9))`
+                          : 'rgba(22,22,40,0.7)',
+                        border: `1px solid ${isSelected ? tc + '70' : '#252540'}`,
+                        borderRadius: 10, cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        boxShadow: isSelected ? `0 0 18px ${tc}30` : 'none',
+                      }}
+                    >
+                      <div style={{ position: 'relative' as const }}>
+                        <HeroPortrait imagePath={h.imagePath} name={h.name} size={58} tier={h.tier} />
+                      </div>
+                      <span style={{
+                        color: isSelected ? '#e0e0e0' : '#666',
+                        fontSize: 11, fontWeight: 700,
+                        whiteSpace: 'nowrap' as const,
+                        transition: 'color 0.15s',
+                      }}>
+                        {h.name}
+                      </span>
+                      <span style={{
+                        color: isSelected ? tc : '#3a3a5a',
+                        fontSize: 9, fontWeight: 700, letterSpacing: '0.05em',
+                        transition: 'color 0.15s',
+                      }}>
+                        Lv.{h.level}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
+          {/* ── Abilities by tier ────────────────────────────────────────── */}
           {selectedHeroId && heroAbilities.length > 0 && (
             <>
-              <h3 style={styles.subtitle}>{heroAbilityName} — Abilities</h3>
-              <p style={styles.inventoryHint}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                marginBottom: 6, paddingLeft: 10,
+                borderLeft: '3px solid #a78bfa',
+                fontSize: 15, fontWeight: 700, letterSpacing: 0.5,
+                textTransform: 'uppercase', marginTop: 4,
+              }}>
+                <span style={{ color: '#a78bfa' }}>{heroAbilityName}</span>
+                <span style={{ color: '#a78bfa55', fontSize: 11, fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>
+                  — abilities
+                </span>
+              </div>
+              <p style={{ ...styles.inventoryHint, marginTop: 8 }}>
                 Abilities go to this hero's inventory — slot them from the <strong>Team</strong> page.
               </p>
-              <div style={styles.abilityList}>
-                {heroAbilities.map((ab) => {
-                  const bonusEntries = Object.entries(ab.bonuses).filter(([, v]) => v !== 0);
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 420px))', gap: 16 }}>
+                {[1, 2, 3, 4].map((tier) => {
+                  const tierAbilities = heroAbilities.filter((ab) => ab.tier === tier);
+                  if (tierAbilities.length === 0) return null;
+                  const ATIER_COLORS: Record<number, string> = { 1: '#9ca3af', 2: '#38bdf8', 3: '#a78bfa', 4: '#fb923c' };
+                  const ATIER_LABELS: Record<number, string> = { 1: 'Tier I', 2: 'Tier II', 3: 'Tier III', 4: 'Tier IV' };
+                  const tc = ATIER_COLORS[tier];
                   return (
-                    <EquipmentTooltip
-                      key={ab.templateId}
-                      name={ab.name}
-                      type="ability"
-                      bonuses={ab.bonuses}
-                      tier={ab.tier}
-                      spell={ab.spell ?? null}
-                    >
-                      <div style={styles.abilityRow}>
-                        <div style={styles.abilityInfo}>
-                          <span style={styles.abilityName}>{ab.name}</span>
-                          <span style={styles.abilityTier}>Tier {ab.tier}</span>
-                          <span style={styles.abilityCost}>{ab.cost}g</span>
-                        </div>
-                        <div style={styles.abilityBonuses}>
-                          {bonusEntries.map(([stat, val]) => (
-                            <span key={stat} style={styles.abilityBonus}>+{val} {formatStat(stat)}</span>
-                          ))}
-                        </div>
-                        {ab.owned ? (
-                          <span style={styles.ownedTag}>Owned</span>
-                        ) : (
-                          <button
-                            onClick={() => handleBuyAbility(ab.templateId)}
-                            disabled={(player?.gold ?? 0) < ab.cost}
-                            style={{
-                              ...styles.smallBuyBtn,
-                              opacity: (player?.gold ?? 0) >= ab.cost ? 1 : 0.5,
-                            }}
-                          >
-                            Buy
-                          </button>
-                        )}
+                    <div key={tier}>
+                      <div style={{ ...styles.tierHeader, borderLeftColor: tc }}>
+                        <span style={{ color: tc }}>{ATIER_LABELS[tier]}</span>
+                        <span style={{ color: tc + '66', fontSize: 12, fontWeight: 500, textTransform: 'none' as const, letterSpacing: 0 }}>
+                          — {tierAbilities.length} ability{tierAbilities.length !== 1 ? 'abilities' : ''}
+                        </span>
                       </div>
-                    </EquipmentTooltip>
+                      <div style={styles.abilityGrid}>
+                        {tierAbilities.map((ab) => (
+                          <ShopAbilityCard
+                            key={ab.templateId}
+                            ability={ab}
+                            canAfford={(player?.gold ?? 0) >= ab.cost}
+                            onBuy={() => requestConfirm(ab.name, ab.cost, 'gold', () => handleBuyAbility(ab.templateId))}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -371,17 +533,71 @@ export default function ShopPage() {
           )}
         </>
       )}
+
+      {tab === 'upgrades' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 680 }}>
+          <p style={{ ...styles.muted, marginBottom: 4 }}>
+            Permanent upgrades for your account. Gold and diamond purchases are independent.
+          </p>
+
+          <div style={styles.upgradeSection}>TEAM SETUPS</div>
+          <UpgradeCard
+            icon="📋"
+            name="Extra Team Setup"
+            description="Unlock a 3rd team setup slot. Save and switch between 3 different team configurations."
+            cost={2000} currency="gold"
+            purchased={player?.extraLineupGoldPurchased ?? false}
+            canAfford={(player?.gold ?? 0) >= 2000}
+            onBuy={() => handleUpgrade(buyExtraLineupGold)}
+          />
+          <UpgradeCard
+            icon="📋"
+            name="Extra Team Setup"
+            description="Unlock a 4th team setup slot. Save and switch between 4 different team configurations."
+            cost={100} currency="diamonds"
+            purchased={player?.extraLineupDiamondsPurchased ?? false}
+            canAfford={(player?.diamonds ?? 0) >= 100}
+            onBuy={() => handleUpgrade(buyExtraLineupDiamonds)}
+          />
+
+          <div style={styles.upgradeSection}>ENERGY</div>
+          <UpgradeCard
+            icon="⚡"
+            name="Energy Plus"
+            description="Permanently increase your max World and Arena Energy limit by 20. Adds a bonus 40 energy refill now, and on each reset!"
+            cost={40} currency="diamonds"
+            purchased={player?.energyPlusPurchased ?? false}
+            canAfford={(player?.diamonds ?? 0) >= 40}
+            onBuy={() => handleUpgrade(buyEnergyPlus)}
+          />
+
+          <div style={styles.upgradeSection}>ROSTER</div>
+          <UpgradeCard
+            icon="👥"
+            name="Hero Capacity Plus"
+            description="Expand your hero roster from 20 to 40 heroes. More heroes, more possibilities."
+            cost={4000} currency="gold"
+            purchased={player?.heroPlusCapacityPurchased ?? false}
+            canAfford={(player?.gold ?? 0) >= 4000}
+            onBuy={() => handleUpgrade(buyHeroPlusCapacity)}
+          />
+
+          <div style={styles.upgradeSection}>CAPACITY</div>
+          <UpgradeCard
+            icon="🛡"
+            name="Capacity Plus"
+            description={`Increase your team's capacity limit by 10. Currently ${player?.teamCapacityMax ?? 100}.`}
+            cost={8000} currency="gold"
+            purchased={(player?.capacityPlusCount ?? 0) >= 1}
+            canAfford={(player?.gold ?? 0) >= 8000}
+            onBuy={() => handleUpgrade(buyCapacityPlus)}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
-function formatStat(key: string): string {
-  const map: Record<string, string> = {
-    physicalAttack: 'PA', magicPower: 'MP', dexterity: 'Dex',
-    element: 'Elem', mana: 'Mana', stamina: 'Stam',
-  };
-  return map[key] || key;
-}
 
 const styles: Record<string, React.CSSProperties> = {
   header: {
@@ -469,15 +685,17 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap' as const,
   },
   filterBtn: {
-    padding: '5px 16px',
+    padding: '7px 18px',
     border: '1px solid',
-    borderRadius: 20,
+    borderRadius: 6,
     fontSize: 12,
-    fontWeight: 700,
+    fontWeight: 800,
     cursor: 'pointer',
-    letterSpacing: 0.5,
+    letterSpacing: 1.2,
     textTransform: 'uppercase' as const,
-    transition: 'all 0.15s',
+    transition: 'all 0.18s ease',
+    display: 'flex',
+    alignItems: 'center',
   },
   statFilterRow: {
     display: 'flex',
@@ -533,8 +751,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   itemGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-    gap: 12,
+    gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
+    gap: 14,
+    marginBottom: 8,
   },
   buyBtn: {
     padding: '8px 16px',
@@ -572,61 +791,24 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     fontWeight: 600,
   },
-  select: {
-    padding: '6px 12px',
-    backgroundColor: '#16213e',
-    color: '#e0e0e0',
-    border: '1px solid #333',
-    borderRadius: 4,
-    fontSize: 13,
-  },
-  abilityList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-  },
-  abilityRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '10px 14px',
-    backgroundColor: '#1a1a2e',
-    borderRadius: 6,
-    border: '1px solid #16213e',
-    gap: 12,
-  },
-  abilityInfo: {
-    display: 'flex',
-    gap: 8,
-    alignItems: 'center',
-  },
-  abilityName: {
-    color: '#e0e0e0',
-    fontWeight: 600,
-    fontSize: 13,
-  },
-  abilityTier: {
-    color: '#60a5fa',
-    fontSize: 11,
-    padding: '1px 6px',
-    backgroundColor: 'rgba(96, 165, 250, 0.1)',
-    borderRadius: 8,
-  },
-  abilityCost: {
-    color: '#fbbf24',
-    fontSize: 12,
-  },
-  abilityBonuses: {
-    display: 'flex',
-    gap: 6,
-    flex: 1,
-  },
-  abilityBonus: {
-    color: '#4ade80',
-    fontSize: 11,
+  abilityGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
+    gap: 14,
+    marginBottom: 8,
   },
   muted: {
     color: '#666',
     fontSize: 13,
+  },
+  upgradeSection: {
+    color: '#6b5a2a',
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase' as const,
+    marginTop: 6,
+    borderBottom: '1px solid #2a1f08',
+    paddingBottom: 4,
   },
 };

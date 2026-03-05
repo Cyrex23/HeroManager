@@ -25,48 +25,53 @@ export default function ShopHeroCard({ hero, playerGold, onBuy }: Props) {
 
   return (
     <div style={{ ...styles.card, opacity: hero.owned ? 0.6 : 1 }} className="card-hover">
-      <HeroPortrait imagePath={hero.imagePath} name={hero.displayName} size={100} tier={hero.tier} />
-      <div style={styles.info}>
-        <div style={styles.nameRow}>
-          <div style={styles.name}>{hero.displayName}</div>
-          {hero.element && (
-            <span style={{ color: ELEMENT_COLOR[hero.element] ?? '#a0a0b0', fontSize: 15 }}>
-              {ELEMENT_SYMBOL[hero.element] ?? hero.element}
-            </span>
-          )}
-          {hero.tier && (
-            <span style={{ color: TIER_COLOR[hero.tier] ?? '#a0a0b0', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              {hero.tier.charAt(0) + hero.tier.slice(1).toLowerCase()}
-            </span>
-          )}
+      {/* Top row: portrait + info */}
+      <div style={styles.topRow}>
+        <HeroPortrait imagePath={hero.imagePath} name={hero.displayName} size={100} tier={hero.tier} />
+        <div style={styles.info}>
+          <div style={styles.nameRow}>
+            <div style={styles.name}>{hero.displayName}</div>
+            {hero.element && (
+              <span style={{ color: ELEMENT_COLOR[hero.element] ?? '#a0a0b0', fontSize: 15 }}>
+                {ELEMENT_SYMBOL[hero.element] ?? hero.element}
+              </span>
+            )}
+            {hero.tier && (
+              <span style={{ color: TIER_COLOR[hero.tier] ?? '#a0a0b0', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {hero.tier.charAt(0) + hero.tier.slice(1).toLowerCase()}
+              </span>
+            )}
+          </div>
+          <div style={styles.costRow}>
+            <span style={styles.gold}>{hero.cost}g</span>
+            <CapBadge value={hero.capacity} />
+          </div>
+          <HexStatDiagram
+            stats={hero.baseStats}
+            growthStats={hero.growthStats}
+            size={180}
+          />
         </div>
-        <div style={styles.costRow}>
-          <span style={styles.gold}>{hero.cost}g</span>
-          <CapBadge value={hero.capacity} />
-        </div>
-        <HexStatDiagram
-          stats={hero.baseStats}
-          growthStats={hero.growthStats}
-          size={180}
-        />
-        {hero.owned ? (
-          <div style={styles.ownedBadge}>Owned</div>
-        ) : (
-          <button
-            onClick={onBuy}
-            disabled={!canBuy}
-            className={canBuy ? 'btn-shimmer' : ''}
-            style={{
-              ...styles.buyBtn,
-              background: canBuy ? 'linear-gradient(135deg, #e94560 0%, #c73652 100%)' : '#2a1a20',
-              opacity: canBuy ? 1 : 0.5,
-              cursor: canBuy ? 'pointer' : 'not-allowed',
-            }}
-          >
-            {playerGold < hero.cost ? 'Not enough gold' : 'Buy'}
-          </button>
-        )}
       </div>
+
+      {/* Full-width button at bottom */}
+      {hero.owned ? (
+        <div style={styles.ownedBadge}>Owned</div>
+      ) : (
+        <button
+          onClick={onBuy}
+          disabled={!canBuy}
+          className={canBuy ? 'btn-shimmer' : ''}
+          style={{
+            ...styles.buyBtn,
+            background: canBuy ? 'linear-gradient(135deg, #e94560 0%, #c73652 100%)' : '#2a1a20',
+            opacity: canBuy ? 1 : 0.5,
+            cursor: canBuy ? 'pointer' : 'not-allowed',
+          }}
+        >
+          {playerGold < hero.cost ? 'Not enough gold' : 'Buy'}
+        </button>
+      )}
     </div>
   );
 }
@@ -74,11 +79,16 @@ export default function ShopHeroCard({ hero, playerGold, onBuy }: Props) {
 const styles: Record<string, React.CSSProperties> = {
   card: {
     display: 'flex',
-    gap: 16,
+    flexDirection: 'column',
+    gap: 12,
     padding: 16,
     backgroundColor: '#1a1a2e',
     borderRadius: 8,
     border: '1px solid #16213e',
+  },
+  topRow: {
+    display: 'flex',
+    gap: 16,
   },
   info: {
     flex: 1,
@@ -106,23 +116,23 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
   buyBtn: {
-    padding: '8px 16px',
+    padding: '8px 32px',
     backgroundColor: '#e94560',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
     fontSize: 13,
     fontWeight: 600,
-    marginTop: 'auto',
+    alignSelf: 'center',
   },
   ownedBadge: {
-    padding: '8px 16px',
+    padding: '8px 32px',
     backgroundColor: '#16213e',
     color: '#4ade80',
     borderRadius: 4,
     fontSize: 13,
     fontWeight: 600,
     textAlign: 'center',
-    marginTop: 'auto',
+    alignSelf: 'center',
   },
 };

@@ -7,7 +7,7 @@ interface Props {
 
 const sizeMap = {
   sm: { icon: 26, heroText: 13, managerText: 10 },
-  md: { icon: 34, heroText: 17, managerText: 12 },
+  md: { icon: 42, heroText: 18, managerText: 13 },
   lg: { icon: 64, heroText: 30, managerText: 20 },
 };
 

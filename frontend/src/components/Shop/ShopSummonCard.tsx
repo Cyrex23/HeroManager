@@ -18,53 +18,56 @@ export default function ShopSummonCard({ summon, playerGold, onBuy }: Props) {
 
   return (
     <div style={{ ...styles.card, opacity: summon.owned ? 0.6 : 1 }} className="card-hover">
-      <HeroPortrait imagePath={summon.imagePath} name={summon.name} size={100} />
+      {/* Top row: portrait + info */}
+      <div style={styles.topRow}>
+        <HeroPortrait imagePath={summon.imagePath} name={summon.name} size={100} />
 
-      <div style={styles.info}>
-        {/* Name + cost row */}
-        <div style={styles.nameRow}>
-          <div style={styles.name}>{summon.name}</div>
-          <CapBadge value={summon.capacity} />
-        </div>
-        <div style={styles.costRow}>
-          <span style={styles.gold}>{summon.cost}g</span>
-        </div>
-
-        {/* Attributes table */}
-        <div style={styles.statTable}>
-          <div style={styles.statHeader}>
-            <span style={styles.statHeaderAttr}>Attribute</span>
-            <span style={styles.statHeaderNum}>Base</span>
-            <span style={styles.statHeaderNum}>Growth</span>
+        <div style={styles.info}>
+          {/* Name + cost row */}
+          <div style={styles.nameRow}>
+            <div style={styles.name}>{summon.name}</div>
+            <CapBadge value={summon.capacity} />
           </div>
-          {STAT_ROWS.map(({ key, label }) => (
-            <div key={key} style={styles.statRow}>
-              <span style={styles.statLabel}>{label}</span>
-              <span style={styles.statBase}>{summon.baseStats[key]}</span>
-              <span style={styles.statGrowth}>+{summon.growthStats[key]}</span>
-            </div>
-          ))}
-        </div>
+          <div style={styles.costRow}>
+            <span style={styles.gold}>{summon.cost}g</span>
+          </div>
 
-        {/* Buy / Owned */}
-        {summon.owned ? (
-          <div style={styles.ownedBadge}>Owned</div>
-        ) : (
-          <button
-            onClick={onBuy}
-            disabled={!canBuy}
-            className={canBuy ? 'btn-shimmer' : ''}
-            style={{
-              ...styles.buyBtn,
-              background: canBuy ? 'linear-gradient(135deg, #e94560 0%, #c73652 100%)' : '#2a1a20',
-              opacity: canBuy ? 1 : 0.5,
-              cursor: canBuy ? 'pointer' : 'not-allowed',
-            }}
-          >
-            {playerGold < summon.cost ? 'Not enough gold' : 'Buy'}
-          </button>
-        )}
+          {/* Attributes table */}
+          <div style={styles.statTable}>
+            <div style={styles.statHeader}>
+              <span style={styles.statHeaderAttr}>Attribute</span>
+              <span style={styles.statHeaderNum}>Base</span>
+              <span style={styles.statHeaderNum}>Growth</span>
+            </div>
+            {STAT_ROWS.map(({ key, label }) => (
+              <div key={key} style={styles.statRow}>
+                <span style={styles.statLabel}>{label}</span>
+                <span style={styles.statBase}>{summon.baseStats[key]}</span>
+                <span style={styles.statGrowth}>+{summon.growthStats[key]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* Full-width button at bottom */}
+      {summon.owned ? (
+        <div style={styles.ownedBadge}>Owned</div>
+      ) : (
+        <button
+          onClick={onBuy}
+          disabled={!canBuy}
+          className={canBuy ? 'btn-shimmer' : ''}
+          style={{
+            ...styles.buyBtn,
+            background: canBuy ? 'linear-gradient(135deg, #e94560 0%, #c73652 100%)' : '#2a1a20',
+            opacity: canBuy ? 1 : 0.5,
+            cursor: canBuy ? 'pointer' : 'not-allowed',
+          }}
+        >
+          {playerGold < summon.cost ? 'Not enough gold' : 'Buy'}
+        </button>
+      )}
     </div>
   );
 }
@@ -72,11 +75,16 @@ export default function ShopSummonCard({ summon, playerGold, onBuy }: Props) {
 const styles: Record<string, React.CSSProperties> = {
   card: {
     display: 'flex',
-    gap: 16,
+    flexDirection: 'column',
+    gap: 12,
     padding: 16,
     backgroundColor: '#1a1a2e',
     borderRadius: 8,
     border: '1px solid #16213e',
+  },
+  topRow: {
+    display: 'flex',
+    gap: 16,
   },
   info: {
     flex: 1,
@@ -169,22 +177,22 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   buyBtn: {
-    padding: '8px 16px',
+    padding: '8px 32px',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
     fontSize: 13,
     fontWeight: 600,
-    marginTop: 'auto',
+    alignSelf: 'center',
   },
   ownedBadge: {
-    padding: '8px 16px',
+    padding: '8px 32px',
     backgroundColor: '#16213e',
     color: '#4ade80',
     borderRadius: 4,
     fontSize: 13,
     fontWeight: 600,
     textAlign: 'center' as const,
-    marginTop: 'auto',
+    alignSelf: 'center',
   },
 };

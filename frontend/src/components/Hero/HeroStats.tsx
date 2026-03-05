@@ -9,6 +9,7 @@ const STAT_LABELS: Record<string, string> = {
   stamina: 'Stam',
 };
 
+
 interface Props {
   stats: StatsType;
   bonusStats?: StatsType;

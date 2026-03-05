@@ -55,6 +55,7 @@ export default function RegisterPage() {
 
   return (
     <div style={styles.page}>
+      <div style={styles.bgOverlay} />
       <ParticleBackground />
       <div style={styles.ambientGlow} />
 
@@ -268,6 +269,15 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    backgroundImage: 'url(/background.png)',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center bottom',
+    backgroundRepeat: 'no-repeat',
+  },
+  bgOverlay: {
+    position: 'absolute', inset: 0,
+    background: 'rgba(4, 4, 16, 0.62)',
+    zIndex: 0,
   },
   ambientGlow: {
     position: 'absolute',

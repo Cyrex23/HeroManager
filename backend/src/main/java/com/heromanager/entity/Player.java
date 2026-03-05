@@ -65,6 +65,26 @@ public class Player {
     @Column(nullable = false)
     private boolean chatSoundEnabled = true;
 
+    // ── Upgrades ──────────────────────────────────────────────────────────────
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean extraLineupGoldPurchased = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean extraLineupDiamondsPurchased = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean energyPlusPurchased = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean heroPlusCapacityPurchased = false;
+
+    @Column(nullable = false, columnDefinition = "int default 0")
+    private int capacityPlusCount = 0;
+
+    private java.time.LocalDateTime lastBlacksmithSpin;
+    private Long pendingSpinMaterialId;
+    private int pendingSpinQty;
+
     @ElementCollection
     @CollectionTable(name = "player_unlocked_avatars", joinColumns = @JoinColumn(name = "player_id"))
     @Column(name = "image_path")

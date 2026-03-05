@@ -1,6 +1,40 @@
 import type { TeamResponse } from '../../types';
 import HeroPortrait from '../Hero/HeroPortrait';
 import EquipmentTooltip from '../Equipment/EquipmentTooltip';
+import AbilityTierIcon from '../Equipment/AbilityTierIcon';
+
+const ITEM_ICON: Record<string, string> = {
+  'Training Weights': '🏋️',
+  'Iron Kunai':       '🗡️',
+  'Chakra Scroll':    '📜',
+  'Mana Crystal':     '💎',
+  'Swift Boots':      '👟',
+  'Warrior Armor':    '🛡️',
+  'Mystic Tome':      '📖',
+  'Shadow Cloak':     '🌑',
+  'Legendary Blade':  '⚔️',
+  'Sage Staff':       '📿',
+};
+
+// Item color by cost tier: 100=COMMON(gray), 300=RARE(purple), 600=LEGENDARY(orange)
+const ITEM_TIER_COLOR: Record<string, string> = {
+  COMMON:    '#9ca3af',
+  RARE:      '#a78bfa',
+  LEGENDARY: '#f97316',
+};
+function itemColor(cost: number | null | undefined): string {
+  if (!cost || cost < 300) return ITEM_TIER_COLOR.COMMON;
+  if (cost < 600) return ITEM_TIER_COLOR.RARE;
+  return ITEM_TIER_COLOR.LEGENDARY;
+}
+
+// Ability color by tier (matches AbilityTierIcon)
+const ABILITY_TIER_COLOR: Record<number, string> = {
+  1: '#9ca3af', 2: '#38bdf8', 3: '#a78bfa', 4: '#fb923c', 5: '#fbbf24',
+};
+function abilityColor(tier: number | null | undefined): string {
+  return ABILITY_TIER_COLOR[tier ?? 1] ?? '#9ca3af';
+}
 
 const ELEMENT_SYMBOL: Record<string, string> = {
   FIRE: '🔥', WATER: '🌊', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
@@ -157,18 +191,32 @@ export default function TeamInspectBody({ team }: Props) {
                         tier={gs.type === 'ability' ? (gs.tier ?? null) : null}
                         copies={gs.copies ?? undefined}
                       >
+                        {(() => {
+                          const c = gs.type === 'ability' ? abilityColor(gs.tier) : itemColor(gs.cost);
+                          return (
                         <div style={{
                           ...styles.gearSlot,
-                          borderColor: gs.type === 'ability' ? '#5b3fa8' : '#1e4a8a',
-                          backgroundColor: gs.type === 'ability' ? 'rgba(91,63,168,0.15)' : 'rgba(30,74,138,0.15)',
+                          border: `1px solid ${c}52`,
+                          background: `linear-gradient(90deg, ${c}30 0%, ${c}09 100%)`,
+                          boxShadow: `inset 2px 0 0 ${c}c0`,
                         }}>
-                          <span style={{ color: gs.type === 'ability' ? '#a78bfa' : '#60a5fa', fontWeight: 900, fontSize: 8, flexShrink: 0 }}>
-                            {gs.type === 'ability' ? 'A' : 'I'}
-                          </span>
-                          <span style={styles.gearSlotName}>
+                          {gs.type === 'ability' ? (
+                            <AbilityTierIcon tier={gs.tier ?? 1} size={16} />
+                          ) : (
+                            <span style={{ fontSize: 12, lineHeight: 1, flexShrink: 0 }}>
+                              {ITEM_ICON[gs.name ?? ''] ?? '🎒'}
+                            </span>
+                          )}
+                          <span style={{
+                            ...styles.gearSlotName,
+                            color: c,
+                            fontWeight: 600,
+                          }}>
                             {gs.name && gs.name.length > 11 ? gs.name.slice(0, 11) + '…' : (gs.name ?? '')}
                           </span>
                         </div>
+                          );
+                        })()}
                       </EquipmentTooltip>
                     ) : (
                       <div key={gs.slotNumber} style={styles.gearSlotEmpty} />

@@ -68,6 +68,18 @@ export default function ChatPanel() {
   collapsedRef.current = collapsed;
   tabRef.current = tab;
 
+  // ── Open whisper from external trigger (e.g. friend list) ─
+  useEffect(() => {
+    function handleOpenWhisper(e: Event) {
+      const partner = (e as CustomEvent<ChatPartner>).detail;
+      setCollapsed(false);
+      setTab('whispers');
+      setSelectedPartner(partner);
+    }
+    window.addEventListener('openWhisper', handleOpenWhisper);
+    return () => window.removeEventListener('openWhisper', handleOpenWhisper);
+  }, []);
+
   // ── Initial general load ──────────────────────────────────
   useEffect(() => {
     getGeneralMessages(0).then((msgs) => {

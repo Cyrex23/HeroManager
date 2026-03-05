@@ -208,7 +208,7 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '0 0 4px',
   },
   subtitle: {
-    color: '#2e2e50',
+    color: '#6b6b90',
     fontSize: 12,
     margin: 0,
     fontFamily: 'Inter, sans-serif',

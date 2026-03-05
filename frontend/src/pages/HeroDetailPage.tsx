@@ -3,22 +3,20 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Swords, Skull, Zap, ShieldAlert, TrendingUp, TrendingDown, ChevronLeft } from 'lucide-react';
 import { getHero, sellHero, halveCapacity, buyStats } from '../api/playerApi';
 import { getHeroEquipment, unequipItemFromSlot, sellInventoryItem, unequipAbilityFromSlot, equipItemToSlot, equipAbilityToSlot } from '../api/equipmentApi';
-import { listAbilities, buyAbility } from '../api/shopApi';
+import { getTeamSetups, switchTeamSetup, renameTeamSetup } from '../api/teamApi';
 import { usePlayer } from '../context/PlayerContext';
 import type {
   HeroResponse,
   HeroStats as StatsType,
   HeroEquipmentResponse,
-  ShopAbilityResponse,
-  InventoryItem,
   HeroAbilityEntry,
+  TeamSetupResponse,
 } from '../types';
 import HeroPortrait from '../components/Hero/HeroPortrait';
 import CapBadge from '../components/Hero/CapBadge';
 import HexStatDiagram from '../components/Hero/HexStatDiagram';
 import ItemSlot from '../components/Equipment/ItemSlot';
 import AbilitySlot from '../components/Equipment/AbilitySlot';
-import AbilityTierIcon from '../components/Equipment/AbilityTierIcon';
 import EquipmentTooltip from '../components/Equipment/EquipmentTooltip';
 
 // Inject XP shimmer keyframe once
@@ -56,6 +54,11 @@ if (typeof document !== 'undefined') {
           drop-shadow(0  2px 6px rgba(0,0,0,0.75));
         animation: inspectLvlFlow 2.4s ease-in-out infinite;
       }
+      @keyframes setupTabPulse {
+        0%, 100% { box-shadow: 0 0 0px rgba(233,69,96,0); }
+        50%       { box-shadow: 0 0 10px rgba(233,69,96,0.35); }
+      }
+      .hd-setup-tab-active { animation: setupTabPulse 2.8s ease-in-out infinite; }
     `;
     document.head.appendChild(el);
   }
@@ -91,6 +94,34 @@ const STAT_COLORS: Record<string, string> = {
   stamina:        '#fb7185',
 };
 
+const INV_STAT_CFG: Record<string, { label: string; color: string; icon: string }> = {
+  physicalAttack: { label: 'PA',   color: '#f97316', icon: '⚔'  },
+  magicPower:     { label: 'MP',   color: '#60a5fa', icon: '✦'  },
+  dexterity:      { label: 'Dex',  color: '#4ade80', icon: '◈'  },
+  mana:           { label: 'Mana', color: '#818cf8', icon: '◆'  },
+  stamina:        { label: 'Stam', color: '#fb923c', icon: '◉'  },
+  element:        { label: 'Elem', color: '#facc15', icon: '⚡' },
+};
+
+type InvItemTier = 'COMMON' | 'RARE' | 'LEGENDARY';
+const INV_TIER_CFG: Record<InvItemTier, { label: string; color: string; glow: string; bg: string }> = {
+  COMMON:    { label: 'Common',    color: '#9ca3af', glow: 'rgba(156,163,175,0.18)', bg: 'linear-gradient(160deg, rgba(156,163,175,0.07) 0%, rgba(26,26,46,0.9) 100%)' },
+  RARE:      { label: 'Rare',      color: '#a78bfa', glow: 'rgba(167,139,250,0.28)', bg: 'linear-gradient(160deg, rgba(167,139,250,0.1) 0%, rgba(26,26,46,0.9) 100%)'  },
+  LEGENDARY: { label: 'Legendary', color: '#f97316', glow: 'rgba(249,115,22,0.32)',  bg: 'linear-gradient(160deg, rgba(249,115,22,0.12) 0%, rgba(26,26,46,0.9) 100%)' },
+};
+
+const INV_ITEM_ICON: Record<string, string> = {
+  'Training Weights': '🏋️', 'Iron Kunai': '🗡️', 'Chakra Scroll': '📜',
+  'Mana Crystal': '💎', 'Swift Boots': '👟', 'Warrior Armor': '🛡️',
+  'Mystic Tome': '📖', 'Shadow Cloak': '🌑', 'Legendary Blade': '⚔️', 'Sage Staff': '📿',
+};
+
+function getInvItemTier(sellPrice: number): InvItemTier {
+  if (sellPrice >= 300) return 'LEGENDARY';
+  if (sellPrice >= 150) return 'RARE';
+  return 'COMMON';
+}
+
 const SUB_STATS: { key: string; label: string; color: string }[] = [
   { key: 'attack',           label: 'Attack',            color: '#f97316' },
   { key: 'magicProficiency', label: 'Magic Proficiency', color: '#60a5fa' },
@@ -115,17 +146,22 @@ export default function HeroDetailPage() {
   const { fetchPlayer } = usePlayer();
   const [hero, setHero] = useState<HeroResponse | null>(null);
   const [equipment, setEquipment] = useState<HeroEquipmentResponse | null>(null);
-  const [availableAbilities, setAvailableAbilities] = useState<ShopAbilityResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [activePicker, setActivePicker] = useState<number | null>(null);
+  const [activeItemPicker, setActiveItemPicker] = useState<number | null>(null);
   const [confirmHeroSell, setConfirmHeroSell] = useState(false);
   const [confirmHalve, setConfirmHalve] = useState(false);
   const [showBuyStats, setShowBuyStats] = useState(false);
   const [statAlloc, setStatAlloc] = useState<Record<string, number>>({
     physicalAttack: 0, magicPower: 0, dexterity: 0, element: 0, mana: 0, stamina: 0,
   });
+  const [setups, setSetups] = useState<TeamSetupResponse[]>([]);
+  const [hoveredSetupIdx, setHoveredSetupIdx] = useState<number | null>(null);
+  const [setupSwitching, setSetupSwitching] = useState(false);
+  const [renamingIdx, setRenamingIdx] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   const heroId = Number(id);
 
@@ -142,12 +178,6 @@ export default function HeroDetailPage() {
           setEquipment(null);
         }
 
-        try {
-          const abData = await listAbilities(heroId);
-          setAvailableAbilities(abData.abilities);
-        } catch {
-          // non-fatal
-        }
       }
     } catch {
       setError('Failed to load hero data.');
@@ -159,6 +189,33 @@ export default function HeroDetailPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    getTeamSetups().then(setSetups).catch(console.error);
+  }, []);
+
+  async function handleSwitchSetup(idx: number) {
+    if (setupSwitching) return;
+    setSetupSwitching(true);
+    try {
+      await switchTeamSetup(idx);
+      window.location.reload();
+    } catch {
+      setSetupSwitching(false);
+    }
+  }
+
+  async function handleRenameSetup(idx: number) {
+    const name = renameValue.trim();
+    setRenamingIdx(null);
+    if (!name) return;
+    try {
+      await renameTeamSetup(idx, name);
+      setSetups((prev) => prev.map((s) => s.setupIndex === idx ? { ...s, name } : s));
+    } catch {
+      console.error('Failed to rename setup');
+    }
+  }
 
   async function handleUnequipItem(slotNumber: number) {
     setError(''); setMessage('');
@@ -204,17 +261,6 @@ export default function HeroDetailPage() {
       await refresh();
     } catch {
       setError('Failed to equip.');
-    }
-  }
-
-  async function handleBuyAbility(abilityTemplateId: number) {
-    setError(''); setMessage('');
-    try {
-      const res = await buyAbility({ abilityTemplateId, heroId });
-      setMessage(res.message);
-      await Promise.all([refresh(), fetchPlayer()]);
-    } catch {
-      setError('Failed to buy ability.');
     }
   }
 
@@ -268,11 +314,10 @@ export default function HeroDetailPage() {
 
   const totalBattles = hero.clashesWon + hero.clashesLost;
   const winRate = totalBattles > 0 ? Math.round((hero.clashesWon / totalBattles) * 100) : 0;
-
-  const unboughtAbilities = availableAbilities.filter((a) => !a.owned);
+  const power = Object.values(hero.stats).reduce((sum: number, v: number) => sum + v, 0);
 
   return (
-    <div onClick={() => setActivePicker(null)}>
+    <div onClick={() => { setActivePicker(null); setActiveItemPicker(null); }}>
       {confirmHeroSell && (
         <div style={styles.confirmOverlay}>
           <div style={styles.confirmCard}>
@@ -352,10 +397,80 @@ export default function HeroDetailPage() {
         );
       })()}
 
-      <Link to="/team" style={styles.backLink}>
-        <ChevronLeft size={14} style={{ flexShrink: 0 }} />
-        Back to Team
-      </Link>
+      <div style={{ marginBottom: 20 }}>
+        <Link to="/team" style={{ ...styles.backLink, marginBottom: setups.length > 0 ? 14 : 0 }}>
+          <ChevronLeft size={14} style={{ flexShrink: 0 }} />
+          Back to Team
+        </Link>
+
+        {/* ── Team Setup Tabs ── */}
+        {setups.length > 0 && (
+          <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid rgba(233,69,96,0.18)', paddingBottom: 0 }}>
+            {setups.map((setup) => {
+              const isActive = setup.isActive;
+              const isHovered = hoveredSetupIdx === setup.setupIndex;
+              const isRenaming = renamingIdx === setup.setupIndex;
+              return (
+                <div
+                  key={setup.setupIndex}
+                  className={isActive ? 'hd-setup-tab-active' : undefined}
+                  style={{
+                    position: 'relative',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '8px 18px',
+                    background: isActive
+                      ? 'linear-gradient(135deg, rgba(233,69,96,0.18) 0%, rgba(180,30,60,0.12) 100%)'
+                      : isHovered ? 'rgba(255,255,255,0.045)' : 'rgba(255,255,255,0.02)',
+                    border: isActive
+                      ? '1px solid rgba(233,69,96,0.5)'
+                      : isHovered ? '1px solid rgba(255,255,255,0.13)' : '1px solid rgba(255,255,255,0.06)',
+                    borderBottom: isActive ? '2px solid #e94560' : isHovered ? '2px solid rgba(233,69,96,0.2)' : '2px solid transparent',
+                    color: isActive ? '#ffffff' : isHovered ? '#8888cc' : '#5050a0',
+                    fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif', letterSpacing: '0.03em',
+                    marginBottom: -2, borderRadius: '7px 7px 0 0',
+                    transition: 'all 0.18s ease', userSelect: 'none' as const,
+                    opacity: setupSwitching && !isActive ? 0.5 : 1,
+                    pointerEvents: setupSwitching && !isActive ? 'none' : 'auto',
+                  }}
+                  onMouseEnter={() => setHoveredSetupIdx(setup.setupIndex)}
+                  onMouseLeave={() => setHoveredSetupIdx(null)}
+                  onClick={(e) => { e.stopPropagation(); if (!isActive && !isRenaming) handleSwitchSetup(setup.setupIndex); }}
+                  onDoubleClick={(e) => { e.stopPropagation(); setRenamingIdx(setup.setupIndex); setRenameValue(setup.name); }}
+                >
+                  {isRenaming ? (
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={() => handleRenameSetup(setup.setupIndex)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRenameSetup(setup.setupIndex);
+                        if (e.key === 'Escape') setRenamingIdx(null);
+                        e.stopPropagation();
+                      }}
+                      style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(233,69,96,0.6)', borderRadius: 4, color: '#fff', fontSize: 13, padding: '2px 6px', outline: 'none', width: 110 }}
+                      maxLength={30}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <>
+                      <span>{setup.name}</span>
+                      {(isActive || isHovered) && (
+                        <span
+                          style={{ fontSize: 12, color: 'rgba(233,69,96,0.55)', cursor: 'pointer', lineHeight: 1, marginLeft: 2 }}
+                          title="Double-click to rename"
+                          onClick={(e) => { e.stopPropagation(); setRenamingIdx(setup.setupIndex); setRenameValue(setup.name); }}
+                        >✎</span>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {message && <div style={styles.success}>{message}</div>}
       {error && <div style={styles.error}>{error}</div>}
@@ -366,17 +481,22 @@ export default function HeroDetailPage() {
 
         {/* Portrait + hero info — kept together */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <div style={{ position: 'relative', flexShrink: 0 }}>
-            <HeroPortrait imagePath={hero.imagePath} name={hero.name} size={160} tier={hero.tier} />
-            <span className="hero-detail-lvl" style={styles.portraitLvlBadge}>{hero.level}</span>
-            {/* XP bar overlay at portrait bottom */}
-            <div style={styles.xpBarBg}>
-              <div style={{ ...styles.xpBarFill, width: `${xpPct}%` }}>
-                {xpPct > 5 && <div style={styles.xpShimmerDiv} />}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <div style={{ position: 'relative' }}>
+              <HeroPortrait imagePath={hero.imagePath} name={hero.name} size={160} tier={hero.tier} />
+              <span className="hero-detail-lvl" style={styles.portraitLvlBadge}>{hero.level}</span>
+              {/* XP bar overlay at portrait bottom */}
+              <div style={styles.xpBarBg}>
+                <div style={{ ...styles.xpBarFill, width: `${xpPct}%` }}>
+                  {xpPct > 5 && <div style={styles.xpShimmerDiv} />}
+                </div>
+                <div style={styles.xpBarCenter}>
+                  <span style={styles.xpBarCenterText}>{Math.round(xpPct)}%</span>
+                </div>
               </div>
-              <div style={styles.xpBarCenter}>
-                <span style={styles.xpBarCenterText}>{Math.round(xpPct)}%</span>
-              </div>
+            </div>
+            <div style={{ color: '#e94560', fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em', lineHeight: 1, filter: 'drop-shadow(0 0 6px rgba(233,69,96,0.5))' }}>
+              ⚔ {Math.round(power)}
             </div>
           </div>
           <div style={styles.headerInfo}>
@@ -546,7 +666,7 @@ export default function HeroDetailPage() {
       {equipment && (
         <>
           <h3 style={styles.subtitle}>Equipment Slots (3)</h3>
-          <div style={styles.equipList}>
+          <div style={styles.slotsGrid}>
             {equipment.slots.map((slot) => {
               if (slot.type) {
                 return (
@@ -559,25 +679,24 @@ export default function HeroDetailPage() {
                 );
               }
               // Empty slot — show equip picker
-              const pickerItems = (equipment.inventoryItems as InventoryItem[]).map((item) => ({
-                type: 'item' as const, id: item.equippedItemId, label: item.name,
-              }));
               const pickerAbilities = (equipment.heroAbilities as HeroAbilityEntry[])
                 .filter((ab) => ab.slotNumber === null)
                 .map((ab) => ({ type: 'ability' as const, id: ab.equippedAbilityId, label: ab.name }));
-              const options = [...pickerItems, ...pickerAbilities];
+              const options = pickerAbilities;
               const isOpen = activePicker === slot.slotNumber;
               return (
-                <div key={slot.slotNumber} style={styles.emptySlotWrap} onClick={(e) => e.stopPropagation()}>
-                  <span style={styles.emptySlotLabel}>Slot {slot.slotNumber} — Empty</span>
+                <div key={slot.slotNumber} style={styles.emptySlotCard} onClick={(e) => e.stopPropagation()}>
+                  <span style={styles.emptySlotNum}>#{slot.slotNumber}</span>
+                  <span style={styles.emptySlotText}>Empty Slot</span>
+                  <div style={{ flex: 1 }} />
                   <div style={{ position: 'relative' }}>
                     <button
                       style={options.length === 0 ? styles.emptySlotBtnDisabled : styles.emptySlotBtn}
                       disabled={options.length === 0}
                       onClick={(e) => { e.stopPropagation(); setActivePicker(isOpen ? null : slot.slotNumber); }}
-                      title={options.length === 0 ? 'No items or abilities in inventory' : 'Equip to this slot'}
+                      title={options.length === 0 ? 'No abilities in inventory' : 'Equip ability to this slot'}
                     >
-                      {options.length === 0 ? 'Empty' : '+ Equip'}
+                      {options.length === 0 ? 'No Abilities' : '+ Equip'}
                     </button>
                     {isOpen && (
                       <div style={styles.pickerDropdown} onClick={(e) => e.stopPropagation()}>
@@ -587,9 +706,7 @@ export default function HeroDetailPage() {
                             style={styles.pickerOption}
                             onClick={() => handleEquipToSlot(slot.slotNumber, opt)}
                           >
-                            <span style={{ color: opt.type === 'ability' ? '#a78bfa' : '#60a5fa', marginRight: 5, fontWeight: 700 }}>
-                              {opt.type === 'ability' ? 'A' : 'I'}
-                            </span>
+                            <span style={{ color: '#a78bfa', marginRight: 5, fontWeight: 700 }}>A</span>
                             {opt.label}
                           </button>
                         ))}
@@ -601,14 +718,112 @@ export default function HeroDetailPage() {
             })}
           </div>
 
+          {/* ── Inventory Items ── */}
+          {equipment.inventoryItems.length > 0 && (
+            <>
+              <h3 style={styles.subtitle}>Inventory Items</h3>
+              <div style={styles.abilityCardGrid}>
+                {equipment.inventoryItems.map((item) => {
+                  const tier = getInvItemTier(item.sellPrice);
+                  const tc = INV_TIER_CFG[tier];
+                  const icon = INV_ITEM_ICON[item.name] ?? '📦';
+                  const bonusEntries = Object.entries(item.bonuses).filter(([, v]) => v !== 0);
+                  const emptySlots = equipment.slots.filter((s) => !s.type);
+                  const pickerOpen = activeItemPicker === item.equippedItemId;
+                  return (
+                    <div key={item.equippedItemId} style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+                      <EquipmentTooltip name={item.name} type="item" bonuses={item.bonuses} sellPrice={item.sellPrice} copies={item.copies}>
+                      <div style={{
+                        position: 'relative', padding: '14px 14px 12px', borderRadius: 10,
+                        border: `1px solid ${tc.color}38`, background: tc.bg,
+                        boxShadow: `0 4px 20px ${tc.glow}, inset 0 0 0 1px ${tc.color}14`,
+                        display: 'flex', flexDirection: 'column', gap: 8,
+                        overflow: 'hidden', cursor: 'default', height: '100%', boxSizing: 'border-box',
+                      }}>
+                        {/* Top bar */}
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: tc.color, boxShadow: `0 0 8px ${tc.color}` }} />
+                        {/* Tier badge */}
+                        <div style={{ position: 'absolute', top: 8, right: 8, fontSize: 8, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const, padding: '2px 6px', borderRadius: 6, background: tc.color + '22', border: `1px solid ${tc.color}55`, color: tc.color }}>
+                          {tc.label}
+                        </div>
+                        {/* Icon + Name */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: tc.color + '16', border: `2px solid ${tc.color}44`, flexShrink: 0 }}>
+                            <span style={{ fontSize: 17, lineHeight: 1 }}>{icon}</span>
+                          </div>
+                          <span style={{ color: '#e8e8f0', fontWeight: 700, fontSize: 13, lineHeight: 1.25 }}>{item.name}</span>
+                        </div>
+                        {/* Stat chips */}
+                        {bonusEntries.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
+                            {bonusEntries.map(([stat, val]) => {
+                              const sc = INV_STAT_CFG[stat] ?? { label: stat, color: '#9ca3af', icon: '·' };
+                              return (
+                                <div key={stat} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 7px', borderRadius: 6, background: sc.color + '14', border: `1px solid ${sc.color}45` }}>
+                                  <span style={{ color: sc.color, fontSize: 9, lineHeight: 1 }}>{sc.icon}</span>
+                                  <span style={{ color: sc.color, fontWeight: 800, fontSize: 11, lineHeight: 1 }}>+{val}</span>
+                                  <span style={{ color: sc.color + 'aa', fontSize: 9, lineHeight: 1 }}>{sc.label}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <div style={{ flex: 1 }} />
+                        {/* Equip button */}
+                        <button
+                          disabled={emptySlots.length === 0}
+                          onClick={() => setActiveItemPicker(pickerOpen ? null : item.equippedItemId)}
+                          style={{
+                            padding: '5px 12px', alignSelf: 'flex-start',
+                            background: emptySlots.length > 0 ? `linear-gradient(135deg, ${tc.color}dd, ${tc.color}99)` : '#1e1e30',
+                            border: `1px solid ${emptySlots.length > 0 ? tc.color + '80' : '#333'}`,
+                            borderRadius: 5, color: emptySlots.length > 0 ? '#fff' : '#4a4a6a',
+                            fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
+                            textTransform: 'uppercase' as const,
+                            cursor: emptySlots.length > 0 ? 'pointer' : 'not-allowed',
+                            boxShadow: emptySlots.length > 0 ? `0 2px 10px ${tc.glow}` : 'none',
+                          }}
+                        >
+                          {emptySlots.length === 0 ? 'No Empty Slots' : '+ Equip'}
+                        </button>
+                      </div>
+                      </EquipmentTooltip>
+                      {/* Slot picker dropdown */}
+                      {pickerOpen && emptySlots.length > 0 && (
+                        <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 50, backgroundColor: '#0e0e1e', border: '1px solid #2a2a4e', borderRadius: 7, padding: '4px', boxShadow: '0 4px 16px rgba(0,0,0,0.8)', minWidth: 130 }} onClick={(e) => e.stopPropagation()}>
+                          <div style={{ color: '#44446a', fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, padding: '3px 8px 5px', borderBottom: '1px solid #1a1a35' }}>
+                            Choose slot
+                          </div>
+                          {emptySlots.map((s) => (
+                            <button
+                              key={s.slotNumber}
+                              onClick={() => { handleEquipToSlot(s.slotNumber, { type: 'item', id: item.equippedItemId }); setActiveItemPicker(null); }}
+                              style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '6px 10px', background: 'transparent', border: 'none', color: '#c0c0d8', fontSize: 12, fontWeight: 600, cursor: 'pointer', borderRadius: 4 }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ffffff10'; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
+                            >
+                              Slot {s.slotNumber}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
           <h3 style={styles.subtitle}>Abilities</h3>
           {equipment.heroAbilities.length > 0 ? (
-            <div style={styles.equipList}>
+            <div style={styles.abilityCardGrid}>
               {equipment.heroAbilities.map((ab) => (
                 <AbilitySlot
                   key={ab.equippedAbilityId}
                   ability={ab}
                   onUnequip={handleUnequipAbility}
+                  emptySlots={equipment.slots.filter((s) => !s.type)}
+                  onEquip={(slotNumber) => handleEquipToSlot(slotNumber, { type: 'ability', id: ab.equippedAbilityId })}
                 />
               ))}
             </div>
@@ -616,44 +831,6 @@ export default function HeroDetailPage() {
             <p style={styles.muted}>No abilities owned.</p>
           )}
 
-          {unboughtAbilities.length > 0 && (
-            <>
-              <h4 style={styles.subtitleSmall}>Available Abilities</h4>
-              <div style={styles.equipList}>
-                {unboughtAbilities.map((ab) => {
-                  const bonusEntries = Object.entries(ab.bonuses).filter(([, v]) => v !== 0);
-                  return (
-                    <EquipmentTooltip
-                      key={ab.templateId}
-                      name={ab.name}
-                      type="ability"
-                      bonuses={ab.bonuses}
-                      tier={ab.tier}
-                      spell={ab.spell ?? null}
-                    >
-                      <div style={styles.abilityShopRow}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <AbilityTierIcon tier={ab.tier} />
-                          <div>
-                            <span style={styles.abilityName}>{ab.name}</span>
-                            <span style={styles.abilityCost}> — {ab.cost}g</span>
-                          </div>
-                        </div>
-                        <div style={styles.abilityBonuses}>
-                          {bonusEntries.map(([stat, val]) => (
-                            <span key={stat} style={styles.abilityBonus}>+{val} {formatStat(stat)}</span>
-                          ))}
-                        </div>
-                        <button onClick={() => handleBuyAbility(ab.templateId)} style={styles.buyBtn}>
-                          Buy
-                        </button>
-                      </div>
-                    </EquipmentTooltip>
-                  );
-                })}
-              </div>
-            </>
-          )}
         </>
       )}
 
@@ -691,13 +868,6 @@ export default function HeroDetailPage() {
   );
 }
 
-function formatStat(key: string): string {
-  const map: Record<string, string> = {
-    physicalAttack: 'PA', magicPower: 'MP', dexterity: 'Dex',
-    element: 'Elem', mana: 'Mana', stamina: 'Stam',
-  };
-  return map[key] || key;
-}
 
 const styles: Record<string, React.CSSProperties> = {
   backLink: {
@@ -1004,47 +1174,43 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 5,
   },
+  slotsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: 10,
+    marginBottom: 8,
+  },
+  emptySlotCard: {
+    padding: '14px 14px 12px',
+    borderRadius: 10,
+    border: '1px dashed rgba(255,255,255,0.07)',
+    background: 'rgba(255,255,255,0.02)',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+    cursor: 'default',
+    position: 'relative' as const,
+  },
+  emptySlotNum: {
+    color: '#303050',
+    fontSize: 11,
+    fontWeight: 700,
+    fontVariantNumeric: 'tabular-nums' as const,
+  },
+  emptySlotText: {
+    color: '#3a3a5a',
+    fontSize: 12,
+    fontStyle: 'italic' as const,
+  },
   muted: {
     color: '#666',
     fontSize: 13,
   },
-  abilityShopRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '8px 12px',
-    backgroundColor: '#16213e',
-    borderRadius: 4,
-    border: '1px solid #1a1a2e',
-    fontSize: 13,
+  abilityCardGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(175px, 1fr))',
     gap: 12,
-  },
-  abilityName: {
-    color: '#e0e0e0',
-    fontWeight: 500,
-  },
-  abilityCost: {
-    color: '#fbbf24',
-    fontSize: 12,
-  },
-  abilityBonuses: {
-    display: 'flex',
-    gap: 6,
-    flex: 1,
-  },
-  abilityBonus: {
-    color: '#4ade80',
-    fontSize: 11,
-  },
-  buyBtn: {
-    padding: '4px 12px',
-    backgroundColor: '#e94560',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 3,
-    fontSize: 11,
-    fontWeight: 600,
-    cursor: 'pointer',
+    marginBottom: 4,
   },
   emptySlotWrap: {
     display: 'flex',

@@ -89,12 +89,22 @@ export default function OpponentRow({ opponent, onChallenge, disabled, isSelf }:
       {/* Info block */}
       <div style={styles.info}>
         <div style={styles.nameRow}>
-          <span style={styles.name}>
+          <span
+            style={{ ...styles.name, cursor: 'default' }}
+            onMouseEnter={() => { if (inspectCloseTimer.current) clearTimeout(inspectCloseTimer.current); handleInspectEnter(); }}
+            onMouseLeave={() => { inspectCloseTimer.current = setTimeout(() => setShowInspect(false), 150); }}
+          >
             {opponent.username}
             {isSelf && <span style={styles.youBadge}> (You)</span>}
           </span>
           {opponent.teamName && opponent.teamName !== opponent.username && (
-            <span style={styles.teamName}>{opponent.teamName}</span>
+            <span
+              style={styles.teamName}
+              onMouseEnter={() => { if (inspectCloseTimer.current) clearTimeout(inspectCloseTimer.current); handleInspectEnter(); }}
+              onMouseLeave={() => { inspectCloseTimer.current = setTimeout(() => setShowInspect(false), 150); }}
+            >
+              {opponent.teamName}
+            </span>
           )}
         </div>
         <div style={styles.meta}>

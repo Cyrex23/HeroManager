@@ -57,15 +57,23 @@ public class PlayerService {
                 .gold(player.getGold())
                 .diamonds(player.getDiamonds())
                 .arenaEnergy(player.getArenaEnergy())
-                .arenaEnergyMax(120)
+                .arenaEnergyMax(player.isEnergyPlusPurchased() ? 140 : 120)
                 .worldEnergy(player.getWorldEnergy())
-                .worldEnergyMax(120)
+                .worldEnergyMax(player.isEnergyPlusPurchased() ? 140 : 120)
                 .nextEnergyTickSeconds(energyService.getNextTickSeconds(player))
                 .isOnline(isOnline)
                 .onlineMinutesRemaining(onlineMinutes)
                 .profileImagePath(player.getProfileImagePath())
                 .teamName(player.getTeamName() != null ? player.getTeamName() : player.getUsername())
                 .chatSoundEnabled(player.isChatSoundEnabled())
+                .extraLineupGoldPurchased(player.isExtraLineupGoldPurchased())
+                .extraLineupDiamondsPurchased(player.isExtraLineupDiamondsPurchased())
+                .energyPlusPurchased(player.isEnergyPlusPurchased())
+                .heroPlusCapacityPurchased(player.isHeroPlusCapacityPurchased())
+                .capacityPlusCount(player.getCapacityPlusCount())
+                .lineupSlots(6 + (player.isExtraLineupGoldPurchased() ? 1 : 0) + (player.isExtraLineupDiamondsPurchased() ? 1 : 0))
+                .heroRosterMax(player.isHeroPlusCapacityPurchased() ? 40 : 20)
+                .teamCapacityMax(100 + player.getCapacityPlusCount() * 10)
                 .build();
     }
 
@@ -258,7 +266,7 @@ public class PlayerService {
         return result;
     }
 
-    private Map<String, Double> buildEquipmentBonuses(Long heroId) {
+    public Map<String, Double> buildEquipmentBonuses(Long heroId) {
         Map<String, Double> bonuses = new HashMap<>();
         // Include purchased stat bonuses from the hero itself
         Hero hero = heroRepository.findById(heroId).orElse(null);

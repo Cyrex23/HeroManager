@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @Service
 public class EnergyService {
 
-    private static final int MAX_ENERGY = 120;
     private static final int REGEN_INTERVAL_MINUTES = 10;
 
     private final PlayerRepository playerRepository;
@@ -19,20 +18,25 @@ public class EnergyService {
         this.playerRepository = playerRepository;
     }
 
+    private int maxEnergy(Player player) {
+        return player.isEnergyPlusPurchased() ? 140 : 120;
+    }
+
     public int calculateCurrentEnergy(int storedEnergy, LocalDateTime lastUpdate) {
         long minutesPassed = Duration.between(lastUpdate, LocalDateTime.now()).toMinutes();
         long regenTicks = minutesPassed / REGEN_INTERVAL_MINUTES;
-        return (int) Math.min(MAX_ENERGY, storedEnergy + regenTicks);
+        return (int) Math.min(120, storedEnergy + regenTicks);
     }
 
     public void refreshEnergy(Player player) {
         LocalDateTime now = LocalDateTime.now();
         long minutesPassed = Duration.between(player.getLastEnergyUpdate(), now).toMinutes();
         long regenTicks = minutesPassed / REGEN_INTERVAL_MINUTES;
+        int max = maxEnergy(player);
 
         if (regenTicks > 0) {
-            int newArena = (int) Math.min(MAX_ENERGY, player.getArenaEnergy() + regenTicks);
-            int newWorld = (int) Math.min(MAX_ENERGY, player.getWorldEnergy() + regenTicks);
+            int newArena = (int) Math.min(max, player.getArenaEnergy() + regenTicks);
+            int newWorld = (int) Math.min(max, player.getWorldEnergy() + regenTicks);
             player.setArenaEnergy(newArena);
             player.setWorldEnergy(newWorld);
             // Advance lastEnergyUpdate by the ticks consumed (not to now, to preserve partial tick)
@@ -63,7 +67,8 @@ public class EnergyService {
     }
 
     public Long getNextTickSeconds(Player player) {
-        if (player.getArenaEnergy() >= MAX_ENERGY && player.getWorldEnergy() >= MAX_ENERGY) {
+        int max = maxEnergy(player);
+        if (player.getArenaEnergy() >= max && player.getWorldEnergy() >= max) {
             return null;
         }
         Duration sinceLast = Duration.between(player.getLastEnergyUpdate(), LocalDateTime.now());

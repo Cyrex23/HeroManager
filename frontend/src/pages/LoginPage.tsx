@@ -73,6 +73,7 @@ export default function LoginPage() {
 
   return (
     <div style={styles.page}>
+      <div style={styles.bgOverlay} />
       <ParticleBackground />
       <div style={styles.ambientGlow} />
 
@@ -227,6 +228,15 @@ const styles: Record<string, React.CSSProperties> = {
   page: {
     position: 'relative', width: '100%', height: '100%',
     display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+    backgroundImage: 'url(/background.png)',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center bottom',
+    backgroundRepeat: 'no-repeat',
+  },
+  bgOverlay: {
+    position: 'absolute', inset: 0,
+    background: 'rgba(4, 4, 16, 0.62)',
+    zIndex: 0,
   },
   ambientGlow: {
     position: 'absolute', width: 700, height: 700, borderRadius: '50%',

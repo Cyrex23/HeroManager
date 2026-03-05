@@ -18,6 +18,8 @@ public interface EquippedAbilityRepository extends JpaRepository<EquippedAbility
 
     Optional<EquippedAbility> findByHeroIdAndAbilityTemplateId(Long heroId, Long abilityTemplateId);
 
+    Optional<EquippedAbility> findFirstByHeroIdAndAbilityTemplateIdAndSlotNumberIsNull(Long heroId, Long abilityTemplateId);
+
     Optional<EquippedAbility> findByHeroIdAndSlotNumber(Long heroId, Integer slotNumber);
 
     List<EquippedAbility> findByHeroIdAndSlotNumberIsNotNull(Long heroId);

@@ -21,6 +21,8 @@ public interface EquippedItemRepository extends JpaRepository<EquippedItem, Long
 
     Optional<EquippedItem> findByHeroIdAndItemTemplateId(Long heroId, Long itemTemplateId);
 
+    Optional<EquippedItem> findFirstByPlayerIdAndHeroIdIsNullAndItemTemplateId(Long playerId, Long itemTemplateId);
+
     @Query("SELECT COUNT(e) FROM EquippedItem e WHERE e.heroId IN " +
            "(SELECT h.id FROM Hero h WHERE h.playerId = :playerId) " +
            "AND e.itemTemplateId = :itemTemplateId")

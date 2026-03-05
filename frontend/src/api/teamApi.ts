@@ -11,7 +11,9 @@ import type {
 } from '../types';
 
 export async function getTeam(): Promise<TeamResponse> {
-  const res = await apiClient.get<TeamResponse>('/team');
+  // Cache-bust every call so the browser never serves a stale GET response
+  // after a POST mutation (switch setup, equip, unequip, etc.)
+  const res = await apiClient.get<TeamResponse>('/team', { params: { _t: Date.now() } });
   return res.data;
 }
 
