@@ -71,6 +71,18 @@ public class Hero {
     @Column(columnDefinition = "double default 0")
     private double bonusStam = 0;
 
+    @Column(columnDefinition = "int default 0")
+    private int unallocatedStatPoints = 0;
+
+    @Column(columnDefinition = "int default 0")
+    private int statResetCount = 0;
+
+    @Column(columnDefinition = "int default 0")
+    private int seal = 0;
+
+    @Column(columnDefinition = "int default 0")
+    private int sealChanges = 0;
+
     // null = use template capacity; set = player has overridden it
     private Integer capacityOverride;
 

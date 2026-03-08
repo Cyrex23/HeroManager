@@ -81,6 +81,12 @@ public class Player {
     @Column(nullable = false, columnDefinition = "int default 0")
     private int capacityPlusCount = 0;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean statResetUnlocked = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean extraCraftingSlotPurchased = false;
+
     private java.time.LocalDateTime lastBlacksmithSpin;
     private Long pendingSpinMaterialId;
     private int pendingSpinQty;

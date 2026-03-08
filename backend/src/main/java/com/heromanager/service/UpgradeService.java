@@ -16,6 +16,8 @@ public class UpgradeService {
     private static final int HERO_CAPACITY_GOLD_COST    = 4000;
     private static final int CAPACITY_PLUS_GOLD_COST    = 8000;
     private static final int CAPACITY_PLUS_MAX          = 1;
+    private static final int STAT_RESET_UNLOCK_COST       = 15000;
+    private static final int EXTRA_CRAFTING_SLOT_GOLD_COST = 4000;
 
     private final PlayerRepository playerRepository;
 
@@ -95,6 +97,34 @@ public class UpgradeService {
         playerRepository.save(player);
         int newMax = 100 + player.getCapacityPlusCount() * 10;
         return Map.of("message", "Team capacity increased to " + newMax + "!", "goldRemaining", player.getGold());
+    }
+
+    @Transactional
+    public Map<String, Object> buyStatReset(Long playerId) {
+        Player player = get(playerId);
+        if (player.isStatResetUnlocked())
+            throw new UpgradeException("ALREADY_PURCHASED", "Stat Reset already unlocked.");
+        if (player.getGold() < STAT_RESET_UNLOCK_COST)
+            throw new UpgradeException("INSUFFICIENT_GOLD",
+                    "Need " + STAT_RESET_UNLOCK_COST + " gold, you have " + player.getGold() + ".");
+        player.setGold(player.getGold() - STAT_RESET_UNLOCK_COST);
+        player.setStatResetUnlocked(true);
+        playerRepository.save(player);
+        return Map.of("message", "Stat Reset unlocked! You can now reset hero stat allocations.", "goldRemaining", player.getGold());
+    }
+
+    @Transactional
+    public Map<String, Object> buyExtraCraftingSlot(Long playerId) {
+        Player player = get(playerId);
+        if (player.isExtraCraftingSlotPurchased())
+            throw new UpgradeException("ALREADY_PURCHASED", "Extra Crafting Slot already purchased.");
+        if (player.getGold() < EXTRA_CRAFTING_SLOT_GOLD_COST)
+            throw new UpgradeException("INSUFFICIENT_GOLD",
+                    "Need " + EXTRA_CRAFTING_SLOT_GOLD_COST + " gold, you have " + player.getGold() + ".");
+        player.setGold(player.getGold() - EXTRA_CRAFTING_SLOT_GOLD_COST);
+        player.setExtraCraftingSlotPurchased(true);
+        playerRepository.save(player);
+        return Map.of("message", "Extra Crafting Slot unlocked! You can now have 2 active crafting jobs.", "goldRemaining", player.getGold());
     }
 
     private Player get(Long playerId) {

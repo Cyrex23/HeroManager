@@ -46,4 +46,16 @@ public class UpgradeController {
         Long playerId = (Long) auth.getPrincipal();
         return ResponseEntity.ok(upgradeService.buyCapacityPlus(playerId));
     }
+
+    @PostMapping("/stat-reset")
+    public ResponseEntity<Map<String, Object>> buyStatReset(Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(upgradeService.buyStatReset(playerId));
+    }
+
+    @PostMapping("/extra-crafting-slot")
+    public ResponseEntity<Map<String, Object>> buyExtraCraftingSlot(Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(upgradeService.buyExtraCraftingSlot(playerId));
+    }
 }

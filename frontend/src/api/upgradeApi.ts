@@ -11,3 +11,5 @@ export const buyExtraLineupDiamonds   = (): Promise<UpgradeResult> => apiClient.
 export const buyEnergyPlus            = (): Promise<UpgradeResult> => apiClient.post('/upgrades/energy-plus').then(r => r.data);
 export const buyHeroPlusCapacity      = (): Promise<UpgradeResult> => apiClient.post('/upgrades/hero-capacity-plus').then(r => r.data);
 export const buyCapacityPlus          = (): Promise<UpgradeResult> => apiClient.post('/upgrades/capacity-plus').then(r => r.data);
+export const buyStatReset             = (): Promise<UpgradeResult> => apiClient.post('/upgrades/stat-reset').then(r => r.data);
+export const buyExtraCraftingSlot     = (): Promise<UpgradeResult> => apiClient.post('/upgrades/extra-crafting-slot').then(r => r.data);

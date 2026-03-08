@@ -88,8 +88,23 @@ export async function halveCapacity(heroId: number): Promise<{ message: string; 
   return res.data;
 }
 
-export async function buyStats(heroId: number, allocation: Record<string, number>): Promise<{ message: string; goldSpent: number; goldTotal: number }> {
-  const res = await apiClient.post(`/player/hero/${heroId}/buy-stats`, allocation);
+export async function buyStats(heroId: number): Promise<{ message: string; goldSpent: number; goldTotal: number; unallocatedStatPoints: number }> {
+  const res = await apiClient.post(`/player/hero/${heroId}/buy-stats`);
+  return res.data;
+}
+
+export async function resetHeroStats(heroId: number): Promise<{ message: string; goldSpent: number; goldTotal: number; unallocatedStatPoints: number }> {
+  const res = await apiClient.post(`/player/hero/${heroId}/reset-stats`);
+  return res.data;
+}
+
+export async function allocateStats(heroId: number, allocation: Record<string, number>): Promise<{ message: string; pointsAllocated: number; unallocatedStatPoints: number }> {
+  const res = await apiClient.post(`/player/hero/${heroId}/allocate-stats`, allocation);
+  return res.data;
+}
+
+export async function changeSeal(heroId: number, direction: 'up' | 'down'): Promise<{ message: string; seal: number; sealPoints: number }> {
+  const res = await apiClient.post(`/player/hero/${heroId}/change-seal`, { direction });
   return res.data;
 }
 

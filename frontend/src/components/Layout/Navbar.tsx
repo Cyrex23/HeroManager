@@ -246,7 +246,7 @@ export default function Navbar() {
     <nav style={styles.nav}>
       <style>{XP_STRIP_CSS}</style>
       {/* Left: Brand + online pill */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 50, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <HeroManagerLogo size="md" linkTo="/team" />
         {onlineCount !== null && (
           <div style={styles.onlinePill}>
@@ -442,8 +442,9 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 10,
     flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
-    overflowX: 'hidden',
+    overflowX: 'auto',
     border: '1px solid rgba(255,255,255,0.09)',
     borderRadius: 10,
     padding: '4px 14px',
@@ -546,7 +547,6 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 6,
     width: 220,
     flexShrink: 0,
-    marginLeft: 56,
     border: '1px solid rgba(255,255,255,0.10)',
     borderRadius: 8,
     padding: '7px 10px',

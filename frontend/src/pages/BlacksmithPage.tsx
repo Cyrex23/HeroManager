@@ -347,15 +347,24 @@ function RefinePopup({ r, canRefine, onRefine, onClose }: { r: MaterialRecipe; c
 }
 
 // ─── Crafting In Progress ─────────────────────────────────────────────────────
-function CraftingProgress({ queue, tick, diamonds, onFinish, onFinishNow }: {
-  queue: CraftQueueEntry[]; tick: number; diamonds: number;
+function CraftingProgress({ queue, tick, diamonds, maxSlots, onFinish, onFinishNow }: {
+  queue: CraftQueueEntry[]; tick: number; diamonds: number; maxSlots: number;
   onFinish: (id: string) => void;
   onFinishNow: (entry: CraftQueueEntry) => void;
 }) {
   return (
     <div style={{ marginTop: 32, borderTop: '1px solid #1a1a2a', paddingTop: 24, marginBottom: 36 }}>
-      <div style={{ marginBottom: 4 }}>
+      <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 12 }}>
         <span style={{ fontSize: 20, fontWeight: 900, color: '#e0e0f0' }}>Crafting In Progress</span>
+        <span style={{
+          fontSize: 11, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+          color: queue.length >= maxSlots ? '#ef4444' : '#6b7280',
+          background: queue.length >= maxSlots ? 'rgba(239,68,68,0.1)' : 'rgba(107,114,128,0.1)',
+          border: `1px solid ${queue.length >= maxSlots ? 'rgba(239,68,68,0.3)' : 'rgba(107,114,128,0.2)'}`,
+          borderRadius: 6, padding: '2px 8px',
+        }}>
+          {queue.length} / {maxSlots} slots
+        </span>
       </div>
       <p style={{ color: '#6b7280', fontSize: 12, margin: '0 0 16px' }}>
         {queue.length === 0 ? 'No active crafting jobs. Start forging a weapon or refining materials!' : 'These recipes are currently being crafted. The time can be reduced by finishing now.'}
@@ -783,12 +792,16 @@ export default function BlacksmithPage() {
   })();
   const filteredRefine = refineTierF ? materialRecipes.filter(r => r.outputTier === refineTierF) : materialRecipes;
 
+  const maxCraftSlots = player?.extraCraftingSlotPurchased ? 2 : 1;
+  const craftQueueFull = craftQueue.length >= maxCraftSlots;
+
   const canForge = (r: WeaponRecipe) => r.ingredients.every(i => i.have >= i.required);
   const canRefine = (r: MaterialRecipe) => r.ingredients.every(i => i.have >= i.required);
 
   const doForge = async (r: WeaponRecipe) => {
     setConfirmWeapon(null);
     setSelectedWeapon(null);
+    if (craftQueueFull) { showFlash(`Crafting queue is full (${maxCraftSlots}/${maxCraftSlots} slots).`, false); return; }
     try {
       await craftWeapon(r.itemTemplateId);
       const entry: CraftQueueEntry = {
@@ -811,6 +824,7 @@ export default function BlacksmithPage() {
   const doRefine = async (r: MaterialRecipe) => {
     setConfirmRefine(null);
     setSelectedRefine(null);
+    if (craftQueueFull) { showFlash(`Crafting queue is full (${maxCraftSlots}/${maxCraftSlots} slots).`, false); return; }
     try {
       await craftMaterial(r.recipeId);
       const entry: CraftQueueEntry = {
@@ -886,7 +900,7 @@ export default function BlacksmithPage() {
       {materials.length > 0 && <DailyWheel materials={materials} onSpun={load} />}
 
       {/* Crafting In Progress */}
-      <CraftingProgress queue={craftQueue} tick={tick} diamonds={player?.diamonds ?? 0} onFinish={finishCraft} onFinishNow={handleFinishNow} />
+      <CraftingProgress queue={craftQueue} tick={tick} diamonds={player?.diamonds ?? 0} maxSlots={player?.extraCraftingSlotPurchased ? 2 : 1} onFinish={finishCraft} onFinishNow={handleFinishNow} />
 
       {/* Two-column layout */}
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>

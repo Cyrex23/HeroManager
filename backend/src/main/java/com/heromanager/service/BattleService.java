@@ -543,6 +543,11 @@ public class BattleService {
     private Map<String, Double> buildBattleStats(Hero hero, int slotNumber, double summonMpBonus) {
         Map<String, Double> stats = new HashMap<>(PlayerService.buildHeroStats(hero.getTemplate(), hero.getLevel()));
 
+        // ── Base sub-stat defaults (all heroes, before equipment) ─────────────
+        stats.put("dexPosture", 0.20);  // 20% of DEX contribution immune to stamina penalty
+        stats.put("critDamage", 0.25);  // 0.25 bonus crit multiplier (total: 1.5 + 0.25 = 1.75×)
+        // dexProficiency base (0.33) is hardcoded in BattleCalculator
+
         // ── Equipment bonuses (items) ─────────────────────────────────────────
         for (EquippedItem ei : equippedItemRepository.findByHeroIdAndSlotNumberIsNotNull(hero.getId())) {
             ItemTemplate t = ei.getItemTemplate();

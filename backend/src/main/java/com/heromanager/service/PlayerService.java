@@ -71,6 +71,8 @@ public class PlayerService {
                 .energyPlusPurchased(player.isEnergyPlusPurchased())
                 .heroPlusCapacityPurchased(player.isHeroPlusCapacityPurchased())
                 .capacityPlusCount(player.getCapacityPlusCount())
+                .statResetUnlocked(player.isStatResetUnlocked())
+                .extraCraftingSlotPurchased(player.isExtraCraftingSlotPurchased())
                 .lineupSlots(6 + (player.isExtraLineupGoldPurchased() ? 1 : 0) + (player.isExtraLineupDiamondsPurchased() ? 1 : 0))
                 .heroRosterMax(player.isHeroPlusCapacityPurchased() ? 40 : 20)
                 .teamCapacityMax(100 + player.getCapacityPlusCount() * 10)
@@ -136,6 +138,11 @@ public class PlayerService {
                 .sellPrice((int) Math.floor(t.getCost() * 0.5))
                 .statPurchaseCount(hero.getStatPurchaseCount())
                 .nextStatCost(computeNextStatCost(t, hero.getStatPurchaseCount()))
+                .unallocatedStatPoints(hero.getUnallocatedStatPoints())
+                .statResetCount(hero.getStatResetCount())
+                .nextResetCost(computeNextResetCost(hero.getStatResetCount()))
+                .seal(hero.getSeal())
+                .sealPoints(computeSealPoints(hero.getLevel(), hero.getSealChanges()))
                 .capacityHalved(hero.getCapacityOverride() != null)
                 .purchasedStats(Map.of(
                         "physicalAttack", hero.getBonusPa(),
@@ -213,6 +220,8 @@ public class PlayerService {
                     .sellPrice((int) Math.floor(t.getCost() * 0.5))
                     .statPurchaseCount(hero.getStatPurchaseCount())
                     .nextStatCost(computeNextStatCost(t, hero.getStatPurchaseCount()))
+                    .seal(hero.getSeal())
+                    .sealPoints(computeSealPoints(hero.getLevel(), hero.getSealChanges()))
                     .capacityHalved(hero.getCapacityOverride() != null)
                     .purchasedStats(Map.of(
                             "physicalAttack", hero.getBonusPa(),
@@ -268,6 +277,12 @@ public class PlayerService {
 
     public Map<String, Double> buildEquipmentBonuses(Long heroId) {
         Map<String, Double> bonuses = new HashMap<>();
+
+        // ── Base sub-stat defaults (shown in UI for all heroes) ───────────────
+        bonuses.put("dexProficiency", 0.33);  // all heroes start at 33% DEX proficiency
+        bonuses.put("dexPosture",     0.20);  // all heroes start at 20% DEX stamina immunity
+        bonuses.put("critDamage",     0.25);  // all heroes start at +25% bonus crit multiplier
+
         // Include purchased stat bonuses from the hero itself
         Hero hero = heroRepository.findById(heroId).orElse(null);
         if (hero != null) {
@@ -281,24 +296,60 @@ public class PlayerService {
         for (EquippedItem ei : equippedItemRepository.findByHeroIdAndSlotNumberIsNotNull(heroId)) {
             ItemTemplate t = ei.getItemTemplate();
             if (t == null) continue;
-            bonuses.merge("physicalAttack", t.getBonusPa(), Double::sum);
-            bonuses.merge("magicPower", t.getBonusMp(), Double::sum);
-            bonuses.merge("dexterity", t.getBonusDex(), Double::sum);
-            bonuses.merge("element", t.getBonusElem(), Double::sum);
-            bonuses.merge("mana", t.getBonusMana(), Double::sum);
-            bonuses.merge("stamina", t.getBonusStam(), Double::sum);
+            bonuses.merge("physicalAttack",  t.getBonusPa(),               Double::sum);
+            bonuses.merge("magicPower",      t.getBonusMp(),               Double::sum);
+            bonuses.merge("dexterity",       t.getBonusDex(),              Double::sum);
+            bonuses.merge("element",         t.getBonusElem(),             Double::sum);
+            bonuses.merge("mana",            t.getBonusMana(),             Double::sum);
+            bonuses.merge("stamina",         t.getBonusStam(),             Double::sum);
+            bonuses.merge("attack",          t.getBonusAttack(),           Double::sum);
+            bonuses.merge("magicProficiency",t.getBonusMagicProficiency(), Double::sum);
+            bonuses.merge("spellMastery",    t.getBonusSpellMastery(),     Double::sum);
+            bonuses.merge("spellActivation", t.getBonusSpellActivation(),  Double::sum);
+            bonuses.merge("dexProficiency",  t.getBonusDexProficiency(),   Double::sum);
+            bonuses.merge("dexPosture",      t.getBonusDexPosture(),       Double::sum);
+            bonuses.merge("critChance",      t.getBonusCritChance(),       Double::sum);
+            bonuses.merge("critDamage",      t.getBonusCritDamage(),       Double::sum);
+            bonuses.merge("expBonus",        t.getBonusExpBonus(),         Double::sum);
+            bonuses.merge("goldBonus",       t.getBonusGoldBonus(),        Double::sum);
+            bonuses.merge("itemDiscovery",   t.getBonusItemDiscovery(),    Double::sum);
+            bonuses.merge("physicalImmunity",t.getBonusPhysicalImmunity(), Double::sum);
+            bonuses.merge("magicImmunity",   t.getBonusMagicImmunity(),    Double::sum);
+            bonuses.merge("dexEvasiveness",  t.getBonusDexEvasiveness(),   Double::sum);
         }
         for (EquippedAbility ea : equippedAbilityRepository.findByHeroIdAndSlotNumberIsNotNull(heroId)) {
             AbilityTemplate at = ea.getAbilityTemplate();
             if (at == null) continue;
-            bonuses.merge("physicalAttack", at.getBonusPa(), Double::sum);
-            bonuses.merge("magicPower", at.getBonusMp(), Double::sum);
-            bonuses.merge("dexterity", at.getBonusDex(), Double::sum);
-            bonuses.merge("element", at.getBonusElem(), Double::sum);
-            bonuses.merge("mana", at.getBonusMana(), Double::sum);
-            bonuses.merge("stamina", at.getBonusStam(), Double::sum);
+            bonuses.merge("physicalAttack",  at.getBonusPa(),               Double::sum);
+            bonuses.merge("magicPower",      at.getBonusMp(),               Double::sum);
+            bonuses.merge("dexterity",       at.getBonusDex(),              Double::sum);
+            bonuses.merge("element",         at.getBonusElem(),             Double::sum);
+            bonuses.merge("mana",            at.getBonusMana(),             Double::sum);
+            bonuses.merge("stamina",         at.getBonusStam(),             Double::sum);
+            bonuses.merge("attack",          at.getBonusAttack(),           Double::sum);
+            bonuses.merge("magicProficiency",at.getBonusMagicProficiency(), Double::sum);
+            bonuses.merge("spellMastery",    at.getBonusSpellMastery(),     Double::sum);
+            bonuses.merge("spellActivation", at.getBonusSpellActivation(),  Double::sum);
+            bonuses.merge("dexProficiency",  at.getBonusDexProficiency(),   Double::sum);
+            bonuses.merge("dexPosture",      at.getBonusDexPosture(),       Double::sum);
+            bonuses.merge("critChance",      at.getBonusCritChance(),       Double::sum);
+            bonuses.merge("critDamage",      at.getBonusCritDamage(),       Double::sum);
+            bonuses.merge("expBonus",        at.getBonusExpBonus(),         Double::sum);
+            bonuses.merge("goldBonus",       at.getBonusGoldBonus(),        Double::sum);
+            bonuses.merge("itemDiscovery",   at.getBonusItemDiscovery(),    Double::sum);
+            bonuses.merge("physicalImmunity",at.getBonusPhysicalImmunity(), Double::sum);
+            bonuses.merge("magicImmunity",   at.getBonusMagicImmunity(),    Double::sum);
+            bonuses.merge("dexEvasiveness",  at.getBonusDexEvasiveness(),   Double::sum);
         }
         return bonuses;
+    }
+
+    private static int computeNextResetCost(int statResetCount) {
+        return 1000 * (1 << statResetCount);  // 1000, 2000, 4000, 8000, …
+    }
+
+    private static int computeSealPoints(int level, int sealChanges) {
+        return Math.max(0, level / 4 - sealChanges);
     }
 
     private static int computeNextStatCost(HeroTemplate t, int statPurchaseCount) {
@@ -311,6 +362,57 @@ public class PlayerService {
             }
         }
         return base * (1 << statPurchaseCount);
+    }
+
+    // Seal level → [magicProficiency%, criticalChance%, spellActivation%]
+    private static final int[][] SEAL_STATS = {
+        // index 0 = seal -10, index 10 = seal 0, index 20 = seal +10
+        {35, 25,  1}, {33, 24,  1}, {32, 23,  2}, {30, 21,  2}, {28, 20,  3},
+        {26, 19,  4}, {25, 18,  5}, {23, 16,  5}, {21, 15,  6}, {19, 14,  7},
+        {18, 13,  7}, {16, 11,  8}, {14, 10,  8}, {12,  8,  9}, {11,  8, 10},
+        { 9,  7, 11}, { 7,  6, 11}, { 5,  5, 12}, { 4,  4, 13}, { 2,  3, 14},
+        { 2,  1, 15}
+    };
+
+    public static int[] getSealStats(int seal) {
+        int idx = seal + 10;  // -10→0, 0→10, +10→20
+        return SEAL_STATS[Math.max(0, Math.min(20, idx))];
+    }
+
+    @Transactional
+    public Map<String, Object> changeSeal(Long playerId, Long heroId, String direction) {
+        Hero hero = heroRepository.findByIdAndPlayerId(heroId, playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Hero not found."));
+
+        int available = computeSealPoints(hero.getLevel(), hero.getSealChanges());
+        if (available <= 0)
+            throw new IllegalArgumentException("No seal points available.");
+
+        int currentSeal = hero.getSeal();
+        if ("up".equals(direction)) {
+            if (currentSeal >= 10)
+                throw new IllegalArgumentException("Seal is already at maximum (+10).");
+            hero.setSeal(currentSeal + 1);
+        } else if ("down".equals(direction)) {
+            if (currentSeal <= -10)
+                throw new IllegalArgumentException("Seal is already at minimum (-10).");
+            hero.setSeal(currentSeal - 1);
+        } else {
+            throw new IllegalArgumentException("Invalid direction. Use 'up' or 'down'.");
+        }
+
+        hero.setSealChanges(hero.getSealChanges() + 1);
+        heroRepository.save(hero);
+
+        int[] stats = getSealStats(hero.getSeal());
+        return Map.of(
+                "message", "Seal changed to " + hero.getSeal() + ".",
+                "seal", hero.getSeal(),
+                "sealPoints", computeSealPoints(hero.getLevel(), hero.getSealChanges()),
+                "magicProficiency", stats[0],
+                "criticalChance", stats[1],
+                "spellActivation", stats[2]
+        );
     }
 
     @Transactional
@@ -346,15 +448,11 @@ public class PlayerService {
     }
 
     @Transactional
-    public Map<String, Object> buyStats(Long playerId, Long heroId, Map<String, Integer> allocation) {
+    public Map<String, Object> buyStats(Long playerId, Long heroId) {
         Hero hero = heroRepository.findByIdAndPlayerId(heroId, playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Hero not found."));
         HeroTemplate t = hero.getTemplate();
         if (t == null) throw new IllegalArgumentException("Hero template not found.");
-
-        int total = allocation.values().stream().mapToInt(Integer::intValue).sum();
-        if (total != 6) throw new IllegalArgumentException("Allocation must total exactly 6 points.");
-        if (allocation.values().stream().anyMatch(v -> v < 0)) throw new IllegalArgumentException("No negative values allowed.");
 
         int cost = computeNextStatCost(t, hero.getStatPurchaseCount());
         Player player = playerRepository.findById(playerId)
@@ -364,19 +462,82 @@ public class PlayerService {
         player.setGold(player.getGold() - cost);
         playerRepository.save(player);
 
-        hero.setBonusPa(hero.getBonusPa()   + allocation.getOrDefault("physicalAttack", 0));
-        hero.setBonusMp(hero.getBonusMp()   + allocation.getOrDefault("magicPower", 0));
-        hero.setBonusDex(hero.getBonusDex() + allocation.getOrDefault("dexterity", 0));
-        hero.setBonusElem(hero.getBonusElem() + allocation.getOrDefault("element", 0));
-        hero.setBonusMana(hero.getBonusMana() + allocation.getOrDefault("mana", 0));
-        hero.setBonusStam(hero.getBonusStam() + allocation.getOrDefault("stamina", 0));
         hero.setStatPurchaseCount(hero.getStatPurchaseCount() + 1);
+        hero.setUnallocatedStatPoints(hero.getUnallocatedStatPoints() + 6);
         heroRepository.save(hero);
 
         return Map.of(
-                "message", "Stats upgraded for " + t.getDisplayName() + "!",
+                "message", "6 stat points added for " + t.getDisplayName() + "!",
                 "goldSpent", cost,
-                "goldTotal", player.getGold()
+                "goldTotal", player.getGold(),
+                "unallocatedStatPoints", hero.getUnallocatedStatPoints()
+        );
+    }
+
+    @Transactional
+    public Map<String, Object> allocateStats(Long playerId, Long heroId, Map<String, Integer> allocation) {
+        Hero hero = heroRepository.findByIdAndPlayerId(heroId, playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Hero not found."));
+        HeroTemplate t = hero.getTemplate();
+        if (t == null) throw new IllegalArgumentException("Hero template not found.");
+
+        if (allocation.values().stream().anyMatch(v -> v < 0))
+            throw new IllegalArgumentException("No negative values allowed.");
+
+        int total = allocation.values().stream().mapToInt(Integer::intValue).sum();
+        if (total == 0) throw new IllegalArgumentException("Must allocate at least 1 point.");
+        if (total > hero.getUnallocatedStatPoints())
+            throw new IllegalArgumentException("Not enough unallocated points.");
+
+        hero.setBonusPa(hero.getBonusPa()     + allocation.getOrDefault("physicalAttack", 0));
+        hero.setBonusMp(hero.getBonusMp()     + allocation.getOrDefault("magicPower", 0));
+        hero.setBonusDex(hero.getBonusDex()   + allocation.getOrDefault("dexterity", 0));
+        hero.setBonusElem(hero.getBonusElem() + allocation.getOrDefault("element", 0));
+        hero.setBonusMana(hero.getBonusMana() + allocation.getOrDefault("mana", 0));
+        hero.setBonusStam(hero.getBonusStam() + allocation.getOrDefault("stamina", 0));
+        hero.setUnallocatedStatPoints(hero.getUnallocatedStatPoints() - total);
+        heroRepository.save(hero);
+
+        return Map.of(
+                "message", total + " points allocated for " + t.getDisplayName() + "!",
+                "pointsAllocated", total,
+                "unallocatedStatPoints", hero.getUnallocatedStatPoints()
+        );
+    }
+
+    @Transactional
+    public Map<String, Object> resetHeroStats(Long playerId, Long heroId) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Player not found."));
+        if (!player.isStatResetUnlocked())
+            throw new IllegalArgumentException("Stat Reset is not unlocked. Purchase it in the Shop.");
+
+        Hero hero = heroRepository.findByIdAndPlayerId(heroId, playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Hero not found."));
+        HeroTemplate t = hero.getTemplate();
+        if (t == null) throw new IllegalArgumentException("Hero template not found.");
+
+        int cost = computeNextResetCost(hero.getStatResetCount());
+        if (player.getGold() < cost)
+            throw new IllegalArgumentException("Not enough gold. Reset costs " + cost + "g.");
+
+        int totalBonusPoints = (int)(hero.getBonusPa() + hero.getBonusMp() + hero.getBonusDex()
+                + hero.getBonusElem() + hero.getBonusMana() + hero.getBonusStam());
+
+        player.setGold(player.getGold() - cost);
+        playerRepository.save(player);
+
+        hero.setBonusPa(0); hero.setBonusMp(0); hero.setBonusDex(0);
+        hero.setBonusElem(0); hero.setBonusMana(0); hero.setBonusStam(0);
+        hero.setUnallocatedStatPoints(hero.getUnallocatedStatPoints() + totalBonusPoints);
+        hero.setStatResetCount(hero.getStatResetCount() + 1);
+        heroRepository.save(hero);
+
+        return Map.of(
+                "message", "Stats reset for " + t.getDisplayName() + "! " + totalBonusPoints + " points returned to pool.",
+                "goldSpent", cost,
+                "goldTotal", player.getGold(),
+                "unallocatedStatPoints", hero.getUnallocatedStatPoints()
         );
     }
 

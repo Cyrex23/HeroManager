@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Swords, Skull, Zap, ShieldAlert, TrendingUp, TrendingDown, ChevronLeft } from 'lucide-react';
-import { getHero, sellHero, halveCapacity, buyStats } from '../api/playerApi';
+import { getHero, sellHero, halveCapacity, buyStats, allocateStats, resetHeroStats, changeSeal } from '../api/playerApi';
 import { getHeroEquipment, unequipItemFromSlot, sellInventoryItem, unequipAbilityFromSlot, equipItemToSlot, equipAbilityToSlot } from '../api/equipmentApi';
 import { getTeamSetups, switchTeamSetup, renameTeamSetup } from '../api/teamApi';
 import { usePlayer } from '../context/PlayerContext';
@@ -122,6 +122,15 @@ function getInvItemTier(sellPrice: number): InvItemTier {
   return 'COMMON';
 }
 
+const SEAL_STATS_TABLE: Record<number, [number, number, number]> = {
+  [-10]: [35, 25,  1], [-9]: [33, 24,  1], [-8]: [32, 23,  2], [-7]: [30, 21,  2],
+  [-6]:  [28, 20,  3], [-5]: [26, 19,  4], [-4]: [25, 18,  5], [-3]: [23, 16,  5],
+  [-2]:  [21, 15,  6], [-1]: [19, 14,  7],  [0]: [18, 13,  7],  [1]: [16, 11,  8],
+   [2]:  [14, 10,  8],  [3]: [12,  8,  9],  [4]: [11,  8, 10],  [5]: [ 9,  7, 11],
+   [6]:  [ 7,  6, 11],  [7]: [ 5,  5, 12],  [8]: [ 4,  4, 13],  [9]: [ 2,  3, 14],
+  [10]:  [ 2,  1, 15],
+};
+
 const SUB_STATS: { key: string; label: string; color: string }[] = [
   { key: 'attack',           label: 'Attack',            color: '#f97316' },
   { key: 'magicProficiency', label: 'Magic Proficiency', color: '#60a5fa' },
@@ -130,7 +139,7 @@ const SUB_STATS: { key: string; label: string; color: string }[] = [
   { key: 'dexProficiency',   label: 'Dex Proficiency',   color: '#4ade80' },
   { key: 'dexPosture',       label: 'Dex Posture',       color: '#34d399' },
   { key: 'criticalChance',   label: 'Critical Chance',   color: '#fb923c' },
-  { key: 'criticalDamage',   label: 'Critical Damage',   color: '#fbbf24' },
+  { key: 'critDamage',       label: 'Critical Damage',   color: '#fbbf24' },
   { key: 'expBonus',         label: 'Exp Bonus',         color: '#a78bfa' },
   { key: 'goldBonus',        label: 'Gold Bonus',        color: '#fde68a' },
   { key: 'itemDiscovery',    label: 'Item Discovery',    color: '#22d3ee' },
@@ -143,7 +152,7 @@ const SUB_STATS: { key: string; label: string; color: string }[] = [
 export default function HeroDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { fetchPlayer } = usePlayer();
+  const { player, fetchPlayer } = usePlayer();
   const [hero, setHero] = useState<HeroResponse | null>(null);
   const [equipment, setEquipment] = useState<HeroEquipmentResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -153,7 +162,12 @@ export default function HeroDetailPage() {
   const [activeItemPicker, setActiveItemPicker] = useState<number | null>(null);
   const [confirmHeroSell, setConfirmHeroSell] = useState(false);
   const [confirmHalve, setConfirmHalve] = useState(false);
-  const [showBuyStats, setShowBuyStats] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmSeal, setConfirmSeal] = useState<'up' | 'down' | null>(null);
+  const [sealPanelOpen, setSealPanelOpen] = useState(false);
+  const [hoveredSeal, setHoveredSeal] = useState<number | null>(null);
+  const [sealBtnHovered, setSealBtnHovered] = useState(false);
+  const [showAllocate, setShowAllocate] = useState(false);
   const [statAlloc, setStatAlloc] = useState<Record<string, number>>({
     physicalAttack: 0, magicPower: 0, dexterity: 0, element: 0, mana: 0, stamina: 0,
   });
@@ -292,17 +306,53 @@ export default function HeroDetailPage() {
   }
 
   async function handleBuyStats() {
-    const total = Object.values(statAlloc).reduce((a, b) => a + b, 0);
-    if (total !== 6) { setError('You must allocate exactly 6 points.'); return; }
     setError(''); setMessage('');
     try {
-      const res = await buyStats(heroId, statAlloc);
+      const res = await buyStats(heroId);
       setMessage(res.message);
-      setStatAlloc({ physicalAttack: 0, magicPower: 0, dexterity: 0, element: 0, mana: 0, stamina: 0 });
-      setShowBuyStats(false);
       await Promise.all([refresh(), fetchPlayer()]);
     } catch {
       setError('Failed to buy stats.');
+    }
+  }
+
+  async function handleAllocateStats() {
+    const total = Object.values(statAlloc).reduce((a, b) => a + b, 0);
+    if (total === 0) { setError('Allocate at least 1 point.'); return; }
+    setError(''); setMessage('');
+    try {
+      const res = await allocateStats(heroId, statAlloc);
+      setMessage(res.message);
+      setStatAlloc({ physicalAttack: 0, magicPower: 0, dexterity: 0, element: 0, mana: 0, stamina: 0 });
+      setShowAllocate(false);
+      await Promise.all([refresh(), fetchPlayer()]);
+    } catch {
+      setError('Failed to allocate stats.');
+    }
+  }
+
+  async function handleResetStats() {
+    setError(''); setMessage('');
+    try {
+      const res = await resetHeroStats(heroId);
+      setMessage(res.message);
+      setConfirmReset(false);
+      await Promise.all([refresh(), fetchPlayer()]);
+    } catch {
+      setError('Failed to reset stats.');
+      setConfirmReset(false);
+    }
+  }
+
+  async function handleChangeSeal(direction: 'up' | 'down') {
+    setError(''); setMessage('');
+    try {
+      const res = await changeSeal(heroId, direction);
+      setMessage(res.message);
+      await refresh();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to change seal.';
+      setError(msg);
     }
   }
 
@@ -332,6 +382,56 @@ export default function HeroDetailPage() {
         </div>
       )}
 
+      {confirmReset && (
+        <div style={styles.confirmOverlay}>
+          <div style={styles.confirmCard}>
+            <div style={styles.confirmTitle}>Reset Stats?</div>
+            <div style={styles.confirmHeroName}>{hero.name}</div>
+            <div style={styles.confirmSub}>
+              All allocated stat points will be returned to the unallocated pool.
+              <br />Costs <strong style={{ color: '#fbbf24' }}>{hero.nextResetCost}g</strong>
+              {hero.statResetCount > 0 && <> · next reset: <strong style={{ color: '#fbbf24' }}>{hero.nextResetCost * 2}g</strong></>}.
+            </div>
+            <div style={styles.confirmBtns}>
+              <button style={styles.confirmYes} onClick={handleResetStats}>Reset</button>
+              <button style={styles.confirmNo} onClick={() => setConfirmReset(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmSeal && hero && (() => {
+        const nextSeal = confirmSeal === 'up' ? hero.seal + 1 : hero.seal - 1;
+        const [mp, cc, sa] = SEAL_STATS_TABLE[nextSeal] ?? [18, 13, 7];
+        const sealColor = nextSeal > 0 ? '#4ade80' : nextSeal < 0 ? '#e94560' : '#a0a0b0';
+        return (
+          <div style={styles.confirmOverlay}>
+            <div style={styles.confirmCard}>
+              <div style={styles.confirmTitle}>Change Seal?</div>
+              <div style={styles.confirmHeroName}>{hero.name}</div>
+              <div style={styles.confirmSub}>
+                Seal will change from <strong style={{ color: hero.seal > 0 ? '#4ade80' : hero.seal < 0 ? '#e94560' : '#a0a0b0' }}>{hero.seal > 0 ? `+${hero.seal}` : hero.seal}</strong>
+                {' → '}
+                <strong style={{ color: sealColor }}>{nextSeal > 0 ? `+${nextSeal}` : nextSeal}</strong>
+                <br />
+                <span style={{ color: '#60a5fa' }}>Magic Prof.</span>: {mp}% &nbsp;·&nbsp;
+                <span style={{ color: '#fb923c' }}>Crit</span>: {cc}% &nbsp;·&nbsp;
+                <span style={{ color: '#e879f9' }}>Spell Act.</span>: {sa}%
+                <br />
+                <span style={{ color: '#f97316', fontSize: 11 }}>This uses 1 seal point and cannot be undone for free.</span>
+              </div>
+              <div style={styles.confirmBtns}>
+                <button style={{ ...styles.confirmYes, backgroundColor: '#1a3a20', color: '#4ade80', border: '1px solid #4ade8044' }}
+                  onClick={() => { setConfirmSeal(null); handleChangeSeal(confirmSeal); }}>
+                  Confirm
+                </button>
+                <button style={styles.confirmNo} onClick={() => setConfirmSeal(null)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {confirmHalve && (
         <div style={styles.confirmOverlay}>
           <div style={styles.confirmCard}>
@@ -349,7 +449,7 @@ export default function HeroDetailPage() {
         </div>
       )}
 
-      {showBuyStats && (() => {
+      {showAllocate && (() => {
         const STAT_ROWS: { key: string; label: string; color: string }[] = [
           { key: 'physicalAttack', label: 'PA',   color: '#f97316' },
           { key: 'magicPower',     label: 'MP',   color: '#60a5fa' },
@@ -358,15 +458,16 @@ export default function HeroDetailPage() {
           { key: 'mana',           label: 'MANA', color: '#a78bfa' },
           { key: 'stamina',        label: 'STAM', color: '#fb7185' },
         ];
+        const pool = hero.unallocatedStatPoints;
         const spent = Object.values(statAlloc).reduce((a, b) => a + b, 0);
-        const remaining = 6 - spent;
+        const remaining = pool - spent;
         return (
-          <div style={styles.confirmOverlay} onClick={() => setShowBuyStats(false)}>
+          <div style={styles.confirmOverlay} onClick={() => setShowAllocate(false)}>
             <div style={{ ...styles.confirmCard, maxWidth: 380 }} onClick={(e) => e.stopPropagation()}>
-              <div style={styles.confirmTitle}>Buy Stats</div>
+              <div style={styles.confirmTitle}>Allocate Points</div>
               <div style={{ color: '#a0a0b0', fontSize: 12, marginBottom: 4 }}>
-                Cost: <strong style={{ color: '#fbbf24' }}>{hero.nextStatCost}g</strong>
-                &nbsp;·&nbsp; Allocate <strong style={{ color: '#4ade80' }}>{remaining}</strong> more point{remaining !== 1 ? 's' : ''}
+                <strong style={{ color: '#4ade80' }}>{pool}</strong> unallocated point{pool !== 1 ? 's' : ''}
+                &nbsp;·&nbsp; <strong style={{ color: remaining > 0 ? '#fbbf24' : '#4ade80' }}>{remaining}</strong> remaining
               </div>
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
                 {STAT_ROWS.map(({ key, label, color }) => (
@@ -389,8 +490,8 @@ export default function HeroDetailPage() {
                 ))}
               </div>
               <div style={styles.confirmBtns}>
-                <button style={{ ...styles.confirmYes, opacity: remaining === 0 ? 1 : 0.4 }} onClick={handleBuyStats} disabled={remaining !== 0}>Buy</button>
-                <button style={styles.confirmNo} onClick={() => { setShowBuyStats(false); setStatAlloc({ physicalAttack: 0, magicPower: 0, dexterity: 0, element: 0, mana: 0, stamina: 0 }); }}>Cancel</button>
+                <button style={{ ...styles.confirmYes, opacity: spent > 0 ? 1 : 0.4 }} onClick={handleAllocateStats} disabled={spent === 0}>Allocate</button>
+                <button style={styles.confirmNo} onClick={() => { setShowAllocate(false); setStatAlloc({ physicalAttack: 0, magicPower: 0, dexterity: 0, element: 0, mana: 0, stamina: 0 }); }}>Cancel</button>
               </div>
             </div>
           </div>
@@ -533,6 +634,134 @@ export default function HeroDetailPage() {
                 </div>
               </div>
             </div>
+            {/* ── Seal (slide-down) ── */}
+            {(() => {
+              const seal = hero.seal ?? 0;
+              const pts = hero.sealPoints ?? 0;
+              const previewSeal = hoveredSeal ?? seal;
+              const [mp, cc, sa] = SEAL_STATS_TABLE[previewSeal] ?? [18, 13, 7];
+              const sealColor = seal > 0 ? '#4ade80' : seal < 0 ? '#e94560' : '#a0a0b0';
+              const canUp = pts > 0 && seal < 10;
+              const canDown = pts > 0 && seal > -10;
+              // Damage range
+              const heroPa = hero.stats.physicalAttack ?? 0;
+              const heroDex = hero.stats.dexterity ?? 0;
+              const heroMp = hero.stats.magicPower ?? 0;
+              const rFactor = (10 - previewSeal) / 20; // 1.0 at seal -10 → 0.0 at seal +10
+              const taijutsu = heroPa / 2;
+              const bukijutsu = heroDex * 0.33;
+              const mpRangeMin = heroMp * 0.5 * (1 - rFactor);
+              const mpRangeMax = heroMp * 0.5 * (1 + rFactor);
+              const dmgMin = Math.round(taijutsu + bukijutsu + mpRangeMin);
+              const dmgMax = Math.round(taijutsu + bukijutsu + mpRangeMax);
+              return (
+                <div style={{ marginTop: 8 }}>
+                  {/* Toggle button */}
+                  <button
+                    onClick={() => setSealPanelOpen(p => !p)}
+                    onMouseEnter={() => setSealBtnHovered(true)}
+                    onMouseLeave={() => setSealBtnHovered(false)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '5px 14px', borderRadius: 6,
+                      background: sealPanelOpen
+                        ? 'linear-gradient(135deg, rgba(74,222,128,0.12), rgba(74,222,128,0.06))'
+                        : sealBtnHovered
+                          ? 'linear-gradient(135deg, rgba(160,120,255,0.14), rgba(96,165,250,0.08))'
+                          : 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+                      border: `1px solid ${sealPanelOpen ? 'rgba(74,222,128,0.35)' : sealBtnHovered ? 'rgba(160,120,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                      cursor: 'pointer', transition: 'all 0.2s ease',
+                      boxShadow: sealBtnHovered && !sealPanelOpen ? '0 0 12px rgba(160,120,255,0.25), inset 0 0 8px rgba(96,165,250,0.08)' : 'none',
+                      transform: sealBtnHovered ? 'translateY(-1px)' : 'none',
+                    }}
+                  >
+                    <span style={{ fontSize: 13, color: sealColor, fontWeight: 900, fontFamily: 'Inter, sans-serif', minWidth: 24, textAlign: 'center' as const }}>
+                      {seal > 0 ? `+${seal}` : seal}
+                    </span>
+                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: sealBtnHovered ? '#d0c0ff' : '#c0c0d8', fontFamily: 'Inter, sans-serif', transition: 'color 0.2s' }}>
+                      Change Seal
+                    </span>
+                    {pts > 0 && (
+                      <span style={{
+                        fontSize: 13, fontWeight: 900, color: '#fbbf24',
+                        textShadow: '0 0 8px rgba(251,191,36,0.9), 0 0 16px rgba(251,191,36,0.5)',
+                        filter: 'drop-shadow(0 0 4px rgba(251,191,36,0.7))',
+                        fontFamily: 'Inter, sans-serif', lineHeight: 1,
+                      }}>
+                        {pts}
+                      </span>
+                    )}
+                  </button>
+                  {/* Slide-down panel */}
+                  <div style={{ maxHeight: sealPanelOpen ? '260px' : '0', overflow: 'hidden', transition: 'max-height 0.35s cubic-bezier(0.22,1,0.36,1)' }}>
+                    <div style={{ paddingTop: 10, paddingBottom: 4, display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+                      {/* Seal level picker */}
+                      <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' as const }}>
+                        {Array.from({ length: 21 }, (_, i) => i - 10).map(s => {
+                          const sc = s > 0 ? '#4ade80' : s < 0 ? '#e94560' : '#a0a0b0';
+                          const isCurrent = s === seal;
+                          const isAdjacent = (s === seal + 1 && canUp) || (s === seal - 1 && canDown);
+                          const isHov = s === hoveredSeal;
+                          return (
+                            <button
+                              key={s}
+                              onMouseEnter={() => setHoveredSeal(s)}
+                              onMouseLeave={() => setHoveredSeal(null)}
+                              onClick={() => isAdjacent && setConfirmSeal(s > seal ? 'up' : 'down')}
+                              style={{
+                                padding: '3px 7px', borderRadius: 4, fontSize: 11, fontWeight: 700,
+                                border: isCurrent ? `1px solid ${sc}88` : isHov ? `1px solid ${sc}44` : '1px solid rgba(255,255,255,0.06)',
+                                background: isCurrent ? `${sc}18` : isHov && isAdjacent ? `${sc}10` : 'rgba(255,255,255,0.02)',
+                                color: isCurrent ? sc : isAdjacent ? '#7070a0' : '#2a2a4a',
+                                cursor: isAdjacent ? 'pointer' : 'default',
+                                boxShadow: isCurrent ? `0 0 6px ${sc}33` : 'none',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              {s > 0 ? `+${s}` : s}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {/* Stat preview + Damage range */}
+                      <div style={{ display: 'flex', gap: 0, alignItems: 'stretch' }}>
+                        {/* Sub stat chips */}
+                        <div style={{ display: 'flex', gap: 14, alignItems: 'center', flex: 1 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
+                            <span style={{ color: '#60a5fa', fontSize: 15, fontWeight: 900, lineHeight: 1 }}>{mp}%</span>
+                            <span style={{ color: '#60a5fa77', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', marginTop: 2 }}>MAGIC PROF</span>
+                          </div>
+                          <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.07)' }} />
+                          <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
+                            <span style={{ color: '#fb923c', fontSize: 15, fontWeight: 900, lineHeight: 1 }}>{cc}%</span>
+                            <span style={{ color: '#fb923c77', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', marginTop: 2 }}>CRIT CHANCE</span>
+                          </div>
+                          <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.07)' }} />
+                          <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
+                            <span style={{ color: '#e879f9', fontSize: 15, fontWeight: 900, lineHeight: 1 }}>{sa}%</span>
+                            <span style={{ color: '#e879f977', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', marginTop: 2 }}>SPELL ACT.</span>
+                          </div>
+                        </div>
+                        {/* Damage range */}
+                        <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-end', gap: 3 }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: '#44446a', textTransform: 'uppercase' as const }}>Damage Range</span>
+                          <span style={{ fontSize: 16, fontWeight: 900, color: '#f97316', lineHeight: 1, fontFamily: 'Inter, sans-serif', fontVariantNumeric: 'tabular-nums' as const }}>
+                            {dmgMin === dmgMax ? dmgMin : `${dmgMin} – ${dmgMax}`}
+                          </span>
+                          <div style={{ display: 'flex', gap: 7, fontSize: 11, alignItems: 'center' }}>
+                            <span style={{ color: '#6a6a8a' }}>PA <span style={{ color: '#f97316cc', fontWeight: 700 }}>{Math.round(taijutsu)}</span></span>
+                            <span style={{ color: '#33334a' }}>·</span>
+                            <span style={{ color: '#6a6a8a' }}>DEX <span style={{ color: '#4ade80cc', fontWeight: 700 }}>{Math.round(bukijutsu)}</span></span>
+                            <span style={{ color: '#33334a' }}>·</span>
+                            <span style={{ color: '#6a6a8a' }}>MP <span style={{ color: '#60a5facc', fontWeight: 700 }}>{Math.round(mpRangeMin)}–{Math.round(mpRangeMax)}</span></span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -644,15 +873,29 @@ export default function HeroDetailPage() {
 
           <div style={styles.subStatsGrid}>
             {SUB_STATS.map(({ key, label, color }) => {
+              const sealRow = SEAL_STATS_TABLE[hero.seal ?? 0] ?? [18, 13, 7];
               let value = '—';
-              if (key === 'staminaEffectiveness' && hero) {
+              if (key === 'staminaEffectiveness') {
                 value = `${Math.min(100, (hero.stats.stamina / (60 + hero.level * 2.5)) * 100).toFixed(1)}%`;
+              } else if (key === 'magicProficiency') {
+                value = `${sealRow[0]}%`;
+              } else if (key === 'criticalChance') {
+                value = `${sealRow[1]}%`;
+              } else if (key === 'spellActivation') {
+                value = `${sealRow[2]}%`;
+              } else if (key === 'dexProficiency' && hero.stats.dexProficiency !== undefined) {
+                value = `${(hero.stats.dexProficiency * 100).toFixed(0)}%`;
+              } else if (key === 'dexPosture' && hero.stats.dexPosture !== undefined) {
+                value = `${(hero.stats.dexPosture * 100).toFixed(0)}%`;
+              } else if (key === 'critDamage' && hero.stats.critDamage !== undefined) {
+                value = `${(hero.stats.critDamage * 100).toFixed(0)}%`;
               }
+              const hasValue = value !== '—';
               return (
                 <div key={key} style={styles.subStatRow}>
                   <span style={{ ...styles.subStatDot, backgroundColor: color, boxShadow: `0 0 4px ${color}55` }} />
                   <span style={styles.subStatLabel}>{label}</span>
-                  <span style={styles.subStatValue}>{value}</span>
+                  <span style={{ ...styles.subStatValue, color: hasValue ? color : '#28283e' }}>{value}</span>
                 </div>
               );
             })}
@@ -852,10 +1095,38 @@ export default function HeroDetailPage() {
 
         <div style={styles.sellHeroSep} />
 
-        <button style={styles.buyStatsBtn} onClick={() => setShowBuyStats(true)}>
+        <button style={styles.buyStatsBtn} onClick={handleBuyStats}>
           Buy Stats
         </button>
         <span style={styles.buyStatsPrice}>💰 {hero.nextStatCost}g</span>
+
+        {hero.unallocatedStatPoints > 0 && (
+          <>
+            <div style={styles.sellHeroSep} />
+            <button style={{ ...styles.buyStatsBtn, borderColor: 'rgba(74,222,128,0.5)', color: '#4ade80' }} onClick={() => setShowAllocate(true)}>
+              Allocate
+            </button>
+            <span style={{ ...styles.buyStatsPrice, color: '#4ade80' }}>🟢 {hero.unallocatedStatPoints} pts</span>
+          </>
+        )}
+
+        {player?.statResetUnlocked && (() => {
+          const hasAllocated = Object.values(hero.purchasedStats).some(v => v > 0);
+          return (
+            <>
+              <div style={styles.sellHeroSep} />
+              <button
+                style={{ ...styles.buyStatsBtn, borderColor: 'rgba(251,191,36,0.5)', color: hasAllocated ? '#fbbf24' : '#5a4a20', cursor: hasAllocated ? 'pointer' : 'not-allowed' }}
+                onClick={() => hasAllocated && setConfirmReset(true)}
+                disabled={!hasAllocated}
+                title={!hasAllocated ? 'No stats allocated to reset' : undefined}
+              >
+                Reset Stats
+              </button>
+              <span style={{ ...styles.buyStatsPrice, color: hasAllocated ? '#fbbf24' : '#5a4a20' }}>💰 {hero.nextResetCost}g</span>
+            </>
+          );
+        })()}
 
         <div style={styles.sellHeroSep} />
 

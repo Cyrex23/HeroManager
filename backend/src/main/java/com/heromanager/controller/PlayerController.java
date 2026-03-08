@@ -103,12 +103,45 @@ public class PlayerController {
     }
 
     @PostMapping("/hero/{heroId}/buy-stats")
-    public ResponseEntity<?> buyStats(@PathVariable Long heroId,
-                                      @RequestBody Map<String, Integer> allocation,
-                                      Authentication auth) {
+    public ResponseEntity<?> buyStats(@PathVariable Long heroId, Authentication auth) {
         Long playerId = (Long) auth.getPrincipal();
         try {
-            return ResponseEntity.ok(playerService.buyStats(playerId, heroId, allocation));
+            return ResponseEntity.ok(playerService.buyStats(playerId, heroId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/hero/{heroId}/reset-stats")
+    public ResponseEntity<?> resetHeroStats(@PathVariable Long heroId, Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        try {
+            return ResponseEntity.ok(playerService.resetHeroStats(playerId, heroId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/hero/{heroId}/allocate-stats")
+    public ResponseEntity<?> allocateStats(@PathVariable Long heroId,
+                                           @RequestBody Map<String, Integer> allocation,
+                                           Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        try {
+            return ResponseEntity.ok(playerService.allocateStats(playerId, heroId, allocation));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/hero/{heroId}/change-seal")
+    public ResponseEntity<?> changeSeal(@PathVariable Long heroId,
+                                        @RequestBody Map<String, String> body,
+                                        Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        String direction = body.get("direction");
+        try {
+            return ResponseEntity.ok(playerService.changeSeal(playerId, heroId, direction));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

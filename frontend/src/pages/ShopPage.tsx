@@ -6,7 +6,7 @@ import {
 } from '../api/shopApi';
 import {
   buyExtraLineupGold, buyExtraLineupDiamonds,
-  buyEnergyPlus, buyHeroPlusCapacity, buyCapacityPlus,
+  buyEnergyPlus, buyHeroPlusCapacity, buyCapacityPlus, buyStatReset, buyExtraCraftingSlot,
 } from '../api/upgradeApi';
 import { getHeroes } from '../api/playerApi';
 import { usePlayer } from '../context/PlayerContext';
@@ -591,6 +591,28 @@ export default function ShopPage() {
             purchased={(player?.capacityPlusCount ?? 0) >= 1}
             canAfford={(player?.gold ?? 0) >= 8000}
             onBuy={() => handleUpgrade(buyCapacityPlus)}
+          />
+
+          <div style={styles.upgradeSection}>HEROES</div>
+          <UpgradeCard
+            icon="🔄"
+            name="Stat Reset"
+            description="Unlock the ability to reset a hero's allocated stat points back into their unallocated pool. First reset costs 1,000g per hero, doubling each time."
+            cost={15000} currency="gold"
+            purchased={player?.statResetUnlocked ?? false}
+            canAfford={(player?.gold ?? 0) >= 15000}
+            onBuy={() => handleUpgrade(buyStatReset)}
+          />
+
+          <div style={styles.upgradeSection}>BLACKSMITH</div>
+          <UpgradeCard
+            icon="⚒️"
+            name="Extra Crafting Slot"
+            description="Increase your active crafting limit from 1 to 2. Run two forge or refinement jobs at the same time."
+            cost={4000} currency="gold"
+            purchased={player?.extraCraftingSlotPurchased ?? false}
+            canAfford={(player?.gold ?? 0) >= 4000}
+            onBuy={() => handleUpgrade(buyExtraCraftingSlot)}
           />
         </div>
       )}

@@ -38,6 +38,11 @@ public class HeroResponse {
     private int sellPrice;
     private int statPurchaseCount;
     private int nextStatCost;
+    private int unallocatedStatPoints;
+    private int statResetCount;
+    private int nextResetCost;
+    private int seal;
+    private int sealPoints;
     @JsonProperty("capacityHalved")
     private boolean capacityHalved;
     private Map<String, Double> purchasedStats;

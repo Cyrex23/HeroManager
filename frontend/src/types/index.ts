@@ -61,6 +61,8 @@ export interface PlayerResponse {
   energyPlusPurchased: boolean;
   heroPlusCapacityPurchased: boolean;
   capacityPlusCount: number;
+  statResetUnlocked: boolean;
+  extraCraftingSlotPurchased: boolean;
   lineupSlots: number;
   heroRosterMax: number;
   teamCapacityMax: number;
@@ -77,6 +79,21 @@ export interface HeroStats {
   element: number;
   mana: number;
   stamina: number;
+  // Sub-stats (base values + equipment bonuses)
+  dexProficiency?: number;
+  dexPosture?: number;
+  critDamage?: number;
+  critChance?: number;
+  attack?: number;
+  magicProficiency?: number;
+  spellMastery?: number;
+  spellActivation?: number;
+  expBonus?: number;
+  goldBonus?: number;
+  itemDiscovery?: number;
+  physicalImmunity?: number;
+  magicImmunity?: number;
+  dexEvasiveness?: number;
 }
 
 export interface SummonStats {
@@ -139,6 +156,11 @@ export interface HeroResponse {
   sellPrice: number;
   statPurchaseCount: number;
   nextStatCost: number;
+  unallocatedStatPoints: number;
+  statResetCount: number;
+  nextResetCost: number;
+  seal: number;
+  sealPoints: number;
   capacityHalved: boolean;
   purchasedStats: HeroStats;
 }

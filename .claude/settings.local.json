@@ -55,7 +55,10 @@
       "Bash(file *.png)",
       "Bash(python:*)",
       "Bash(/c/Python310/python:*)",
-      "Bash(sort -t: -k2 -n)"
+      "Bash(sort -t: -k2 -n)",
+      "Bash(xargs grep -l \"craftQueue\\\\|CraftingJob\\\\|CraftJob\")",
+      "Bash(xargs grep -l \"craft\\\\|Craft\")",
+      "Bash(xargs grep -l \"CraftQueueEntry\\\\|CraftQueue\")"
     ]
   }
 }

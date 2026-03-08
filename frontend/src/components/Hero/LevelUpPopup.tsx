@@ -46,10 +46,9 @@ interface Props {
   onClose: () => void;
 }
 
-const STAT_KEYS: (keyof HeroStats)[] = [
-  'physicalAttack', 'magicPower', 'dexterity', 'element', 'mana', 'stamina',
-];
-const STAT_LABELS: Record<keyof HeroStats, string> = {
+const STAT_KEYS = ['physicalAttack', 'magicPower', 'dexterity', 'element', 'mana', 'stamina'] as const;
+type CoreStatKey = typeof STAT_KEYS[number];
+const STAT_LABELS: Record<CoreStatKey, string> = {
   physicalAttack: 'Phys. Atk',
   magicPower:     'Magic Pwr',
   dexterity:      'Dexterity',

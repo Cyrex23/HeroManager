@@ -27,6 +27,8 @@ public class PlayerResponse {
     private boolean energyPlusPurchased;
     private boolean heroPlusCapacityPurchased;
     private int capacityPlusCount;
+    private boolean statResetUnlocked;
+    private boolean extraCraftingSlotPurchased;
     private int lineupSlots;
     private int heroRosterMax;
     private int teamCapacityMax;
