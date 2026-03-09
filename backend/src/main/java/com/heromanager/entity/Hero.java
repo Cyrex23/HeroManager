@@ -86,6 +86,10 @@ public class Hero {
     // null = use template capacity; set = player has overridden it
     private Integer capacityOverride;
 
+    // null = use template element; set = player has overridden it
+    @Column(nullable = true)
+    private String elementOverride;
+
     @Column(nullable = false)
     private LocalDateTime acquiredAt;
 

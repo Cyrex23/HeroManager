@@ -21,6 +21,7 @@ const ANIM_CSS = `
 @keyframes baWP  { 0%,100%{filter:brightness(1) drop-shadow(0 0 0px transparent)} 45%{filter:brightness(1.3) drop-shadow(0 0 20px #4ade80) drop-shadow(0 0 48px rgba(74,222,128,.35))} }
 @keyframes baSL  { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-13px)} 40%{transform:translateX(13px)} 60%{transform:translateX(-9px)} 80%{transform:translateX(9px)} }
 @keyframes baSR  { 0%,100%{transform:translateX(0)} 20%{transform:translateX(13px)} 40%{transform:translateX(-13px)} 60%{transform:translateX(9px)} 80%{transform:translateX(-9px)} }
+@keyframes baBadgePop { 0%{transform:scale(0) rotate(-15deg);opacity:0} 65%{transform:scale(1.2) rotate(4deg);opacity:1} 100%{transform:scale(1) rotate(0deg);opacity:1} }
 @keyframes baIB  { 0%{transform:scale(.08);opacity:1} 38%{transform:scale(1.7);opacity:.9} 70%{transform:scale(1.4);opacity:.4} 100%{transform:scale(2);opacity:0} }
 @keyframes baDF  { 0%{opacity:1;transform:translateY(0) scale(1.8)} 25%{opacity:1;transform:translateY(-30px) scale(1.35)} 60%{opacity:1;transform:translateY(-58px) scale(1.1)} 100%{opacity:1;transform:translateY(-78px) scale(1)} }
 @keyframes baEL  { 0%{filter:brightness(1) grayscale(0);opacity:1;transform:scale(1)} 28%{filter:brightness(3) grayscale(.2);transform:scale(1.06)} 100%{filter:brightness(.25) grayscale(1);opacity:.35;transform:scale(.88)} }
@@ -143,8 +144,8 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
   const [rAnim, setRAnim] = useState<AnimSlot>(IDLE);
   const [showImpact, setShowImpact] = useState(false);
   const [impactKey, setImpactKey] = useState(0);
-  const [dmgL, setDmgL] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number } | null>(null);
-  const [dmgR, setDmgR] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number } | null>(null);
+  const [dmgL, setDmgL] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number; crit?: boolean; magicProf?: boolean } | null>(null);
+  const [dmgR, setDmgR] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number; crit?: boolean; magicProf?: boolean } | null>(null);
   const [roundRes, setRoundRes] = useState<'attacker' | 'defender' | null>(null);
   const [hitInd, setHitInd] = useState<{ type: HitType; side: 'left' | 'right'; k: number } | null>(null);
   const [cSpellNotif, setCSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number }>; k: number } | null>(null);
@@ -250,12 +251,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     if (leftGoesFirst) {
       // Left hits right → indicator + damage on right; right flashes
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
-      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction });
+      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf });
       bump(setRAnim, 'baHF', 700 / speed);
     } else {
       // Right hits left → indicator + damage on left; left flashes
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
-      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction });
+      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf });
       bump(setLAnim, 'baHF', 700 / speed);
     }
     await sleep(IMPACT_MS);
@@ -274,12 +275,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     if (leftGoesFirst) {
       // Right hits left → indicator + damage on left; left flashes
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
-      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction });
+      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf });
       bump(setLAnim, 'baHF', 700 / speed);
     } else {
       // Left hits right → indicator + damage on right; right flashes
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
-      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction });
+      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf });
       bump(setRAnim, 'baHF', 700 / speed);
     }
     await sleep(IMPACT_MS);
@@ -538,7 +539,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     );
   };
 
-  const renderBloodSplatter = (sp: number, label: string, elemBonus?: number, elem?: string, rawAttack?: number, staminaLost?: number) => {
+  const renderBloodSplatter = (sp: number, label: string, elemBonus?: number, elem?: string, rawAttack?: number, staminaLost?: number, crit?: boolean, magicProf?: boolean, isLeft?: boolean) => {
     const poolDur = `${900 / sp}ms`;
     const hasStamina = staminaLost != null && staminaLost > 0;
     // Droplets scattered just outside the pool edges (pool is ~144×58)
@@ -566,6 +567,8 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
           </span>
         )}
 
+        {/* Blood pool + proc icons row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexDirection: isLeft ? 'row' : 'row-reverse' }}>
         {/* Blood pool + real damage number */}
         <div style={{ position: 'relative', width: 148, height: 62, flexShrink: 0 }}>
           {/* Main blood pool — centered, grows from nothing */}
@@ -624,6 +627,73 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
             </div>
           )}
         </div>
+
+        {/* Proc icons — crit (runner) and magic proficiency (dice) */}
+        {(crit || magicProf) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'center' }}>
+            {crit && (
+              <div title="Critical Hit" style={{
+                width: 30, height: 30,
+                background: 'linear-gradient(135deg, rgba(251,146,60,0.18), rgba(251,191,36,0.10))',
+                border: '1.5px solid rgba(251,146,60,0.7)',
+                borderRadius: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 10px rgba(251,146,60,0.5)',
+                animationName: 'baBadgePop', animationDuration: '0.3s',
+                animationFillMode: 'both', animationTimingFunction: 'ease-out',
+              }}>
+                {/* Kick SVG */}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  {/* Head */}
+                  <circle cx="7" cy="3.2" r="2.3" fill="#fb923c"/>
+                  {/* Torso leaning forward */}
+                  <line x1="7" y1="5.5" x2="10" y2="13" stroke="#fb923c" strokeWidth="1.8" strokeLinecap="round"/>
+                  {/* Kicking leg extended right */}
+                  <line x1="10" y1="13" x2="22" y2="9.5" stroke="#fb923c" strokeWidth="1.8" strokeLinecap="round"/>
+                  {/* Kick foot */}
+                  <circle cx="22" cy="9.5" r="1.3" fill="#fb923c"/>
+                  {/* Standing leg bent back */}
+                  <path d="M10 13 L8.5 18.5 L5.5 22" stroke="#fb923c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                  {/* Front arm reaching forward */}
+                  <line x1="8" y1="8.5" x2="14.5" y2="5.5" stroke="#fb923c" strokeWidth="1.4" strokeLinecap="round"/>
+                  {/* Back arm swinging back */}
+                  <line x1="8" y1="8.5" x2="3.5" y2="12" stroke="#fb923c" strokeWidth="1.4" strokeLinecap="round"/>
+                </svg>
+              </div>
+            )}
+            {magicProf && (
+              <div title="Magic Proficiency" style={{
+                width: 30, height: 30,
+                background: 'linear-gradient(135deg, rgba(124,58,237,0.28), rgba(88,28,135,0.18))',
+                border: '1.5px solid rgba(167,139,250,0.85)',
+                borderRadius: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 14px rgba(139,92,246,0.7), 0 0 28px rgba(109,40,217,0.35)',
+                animationName: 'baBadgePop', animationDuration: '0.3s',
+                animationFillMode: 'both', animationTimingFunction: 'ease-out',
+                animationDelay: crit ? '0.08s' : '0s',
+              }}>
+                {/* Isometric d6 — arcane purple */}
+                <svg width="19" height="19" viewBox="0 0 20 20" fill="none">
+                  {/* Left face */}
+                  <polygon points="2,5.5 10,10 10,19 2,14.5" fill="#3b0764" stroke="#7c3aed" strokeWidth="0.6"/>
+                  {/* Right face */}
+                  <polygon points="18,5.5 18,14.5 10,19 10,10" fill="#4c1d95" stroke="#6d28d9" strokeWidth="0.6"/>
+                  {/* Top face */}
+                  <polygon points="10,1 18,5.5 10,10 2,5.5" fill="#7c3aed" stroke="#c4b5fd" strokeWidth="0.8"/>
+                  {/* Top-face edge highlight */}
+                  <line x1="10" y1="1" x2="18" y2="5.5" stroke="#ede9fe" strokeWidth="0.7" opacity="0.75"/>
+                  <line x1="10" y1="1" x2="2"  y2="5.5" stroke="#ede9fe" strokeWidth="0.7" opacity="0.75"/>
+                  {/* Pip dots on top face */}
+                  <circle cx="8"    cy="7.2"  r="1.15" fill="white" opacity="0.95"/>
+                  <circle cx="10"   cy="5.3"  r="1.15" fill="white" opacity="0.95"/>
+                  <circle cx="12"   cy="3.5"  r="1.15" fill="white" opacity="0.95"/>
+                </svg>
+              </div>
+            )}
+          </div>
+        )}
+        </div>{/* end pool+icons row */}
 
         {/* Stamina reduction — shown below when applicable */}
         {hasStamina && (
@@ -691,7 +761,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
             animationTimingFunction: 'ease-out',
             pointerEvents: 'none',
           }}>
-            {renderBloodSplatter(speed, dmg.v.toFixed(1), dmg.elemBonus, dmg.elem, dmg.rawAttack, dmg.staminaLost)}
+            {renderBloodSplatter(speed, dmg.v.toFixed(1), dmg.elemBonus, dmg.elem, dmg.rawAttack, dmg.staminaLost, dmg.crit, dmg.magicProf, isLeft)}
           </div>
         )}
 

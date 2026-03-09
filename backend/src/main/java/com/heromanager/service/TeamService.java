@@ -61,17 +61,14 @@ public class TeamService {
     public TeamResponse getTeamLineup(Long playerId) {
         List<TeamSlot> slots = teamSlotRepository.findByPlayerId(playerId);
 
-        // Find equipped summon for MP + Mana bonuses
-        double summonMpBonus = 0;
-        double summonManaBonus = 0;
+        // Find equipped summon bonuses
+        Map<String, Double> summonBonuses = new LinkedHashMap<>();
         Summon equippedSummon = null;
         for (TeamSlot slot : slots) {
             if (slot.getSummonId() != null) {
                 equippedSummon = summonRepository.findById(slot.getSummonId()).orElse(null);
                 if (equippedSummon != null && equippedSummon.getTemplate() != null) {
-                    SummonTemplate st = equippedSummon.getTemplate();
-                    summonMpBonus   = st.getBaseMp()   + st.getGrowthMp()   * (equippedSummon.getLevel() - 1);
-                    summonManaBonus = st.getBaseMana() + st.getGrowthMana() * (equippedSummon.getLevel() - 1);
+                    summonBonuses = PlayerService.buildSummonStats(equippedSummon.getTemplate(), equippedSummon.getLevel());
                 }
             }
         }
@@ -96,12 +93,11 @@ public class TeamService {
                     playerService.buildEquipmentBonuses(hero.getId())
                             .forEach((k, v) -> totalStats.merge(k, v, Double::sum));
 
-                    // Add summon MP + Mana bonuses
-                    if (summonMpBonus > 0 || summonManaBonus > 0) {
-                        if (summonMpBonus > 0)
-                            totalStats.put("magicPower", totalStats.getOrDefault("magicPower", 0.0) + summonMpBonus);
-                        if (summonManaBonus > 0)
-                            totalStats.put("mana", totalStats.getOrDefault("mana", 0.0) + summonManaBonus);
+                    // Add additive summon bonuses to hero display stats
+                    for (String key : new String[]{"magicPower", "mana", "dexterity", "physicalAttack", "stamina", "attack"}) {
+                        if (summonBonuses.containsKey(key) && summonBonuses.get(key) != 0) {
+                            totalStats.merge(key, summonBonuses.get(key), Double::sum);
+                        }
                     }
 
                     double statSum = totalStats.values().stream().mapToDouble(Double::doubleValue).sum();
@@ -167,7 +163,7 @@ public class TeamService {
                             .currentXp(hero.getCurrentXp())
                             .xpToNextLevel(hero.getLevel() * hero.getLevel() * 10)
                             .tier(t.getTier() != null ? t.getTier().name() : null)
-                            .element(t.getElement() != null ? t.getElement().name() : null)
+                            .element(hero.getElementOverride() != null ? hero.getElementOverride() : (t.getElement() != null ? t.getElement().name() : null))
                             .equippedSlots(eqSlots)
                             .build();
                 }
@@ -187,15 +183,16 @@ public class TeamService {
         if (equippedSummon != null && equippedSummon.getTemplate() != null) {
             SummonTemplate st = equippedSummon.getTemplate();
             capacityUsed += st.getCapacity();
+            Map<String, Double> summonStats = new LinkedHashMap<>(summonBonuses);
+
             summonInfo = TeamResponse.SummonSlotInfo.builder()
                     .id(equippedSummon.getId())
                     .name(st.getDisplayName())
                     .imagePath(st.getImagePath())
                     .level(equippedSummon.getLevel())
                     .capacity(st.getCapacity())
-                    .teamBonus(buildSummonBonusString(summonMpBonus, summonManaBonus))
-                    .magicPower(summonMpBonus)
-                    .mana(summonManaBonus)
+                    .teamBonus(PlayerService.buildSummonTeamBonusString(summonStats))
+                    .stats(summonStats)
                     .currentXp(equippedSummon.getCurrentXp())
                     .xpToNextLevel(equippedSummon.getLevel() * equippedSummon.getLevel() * 10)
                     .build();
@@ -391,13 +388,6 @@ public class TeamService {
         if (mana != 0) bonuses.put("mana",            mana);
         if (stam != 0) bonuses.put("stamina",         stam);
         return bonuses;
-    }
-
-    private static String buildSummonBonusString(double mp, double mana) {
-        List<String> parts = new ArrayList<>();
-        if (mp   > 0) parts.add("+" + (int) mp   + " Magic Power");
-        if (mana > 0) parts.add("+" + (int) mana + " Mana");
-        return String.join(", ", parts);
     }
 
     public static String getSlotTier(int slotNumber) {

@@ -1,0 +1,151 @@
+SESSION SUMMARY - 2026-03-08
+============================
+
+## 1. Header Lineup Responsiveness (~14:56)
+Fixed the top navigation header not being responsive when switching between PCs.
+The hero lineup in the center was overflowing. Made the HeroManager logo smaller
+to give the lineup display priority.
+- Files: frontend/src/components/Layout/Navbar.tsx (or similar layout file)
+
+## 2. Stat Allocation Redesign (~15:12)
+Changed the "Buy Stats" system so that purchasing stats no longer forces
+immediate allocation. Stats now go into an unallocated points pool that the
+player can distribute to specific stats (PA, MP, DEX, Elem, Mana, Stam)
+whenever they want — partially or all at once.
+- Example: Buy 6 points, allocate 2 today, 4 remain for later.
+- Files: backend/.../service/PlayerService.java,
+         backend/.../controller/PlayerController.java (or HeroController),
+         frontend/src/pages/HeroDetailPage.tsx
+
+## 3. Team Upgrade — Reset Allocated Stats (~15:41)
+Added a new purchasable team upgrade to the Shop:
+- Upgrade cost: 15,000 gold (one-time unlock)
+- Unlocks the ability to reset all allocated stat points on a hero
+- Each reset costs: 1,000 gold (doubles each time: 1k → 2k → 4k → 8k...)
+- Files: backend (Player entity, PlayerService, ShopService or UpgradeService),
+         frontend/src/components/Shop/UpgradeCard.tsx or ShopPage.tsx,
+         frontend/src/pages/HeroDetailPage.tsx (reset button)
+
+## 4. Bug Fix — Reset Stats Button (~16:07)
+Reset stats button on hero page was always clickable.
+Fixed: button is now disabled/grayed out if the hero has zero purchased stats.
+- Files: frontend/src/pages/HeroDetailPage.tsx
+
+## 5. Team Upgrade — Extra Crafting Slot (~16:45)
+Added a new purchasable team upgrade to the Shop:
+- Upgrade cost: 4,000 gold (one-time unlock)
+- Without upgrade: only 1 active crafting job allowed at a time
+- With upgrade: allows 2 active crafting jobs simultaneously
+- Enforced both on backend and frontend
+- Files: backend/.../service/BlacksmithService.java,
+         frontend/src/pages/BlacksmithPage.tsx,
+         shop/upgrade system files
+
+## 6. Seal Feature — Full Implementation (~17:52–18:24)
+Implemented the complete seal system for heroes.
+
+### Rules:
+- Heroes earn +1 seal point every 4 levels
+- Seal ranges from -10 to +10 (starts at 0)
+- Each seal change costs 1 seal point (up or down by 1)
+- A confirmation dialog is shown before changing seal
+
+### Effect on combat:
+- Seal controls the magic power damage RANGE
+- At seal -10: MP damage rolls from 0% to 100% of MP (widest range)
+- At seal 0: MP damage rolls from ~25% to 75%
+- At seal +10: MP damage is fixed at exactly 50% of MP (no variance)
+- Each seal level also affects Magic Proficiency %, Crit Chance %, Spell Activation %
+  (defined in SEAL_STATS_TABLE, synced between frontend and backend)
+
+### Backend:
+- Hero entity: `seal` (int, default 0), `sealChanges` (int, default 0)
+- sealPoints computed: floor(level/4) - sealChanges
+- API endpoint: POST /api/heroes/{id}/seal with direction "up"/"down"
+- PlayerService.getSealStats(seal) returns [magicProf%, critChance%, spellActivation%]
+- BattleService uses seal to set the MP roll range in combat
+- Files: Hero.java, PlayerService.java, PlayerController.java or HeroController.java,
+         BattleService.java
+
+### Sub Stats table updated to reflect seal:
+- Magic Proficiency → from seal table
+- Critical Chance → from seal table
+- Spell Activation → from seal table
+
+## 7. Seal UI — Move to Header (~18:31)
+Moved the seal display from the left column to below the XP bar in the hero header,
+making it more prominent and accessible.
+- Files: frontend/src/pages/HeroDetailPage.tsx
+
+## 8. Seal UI — Slide-Down Panel (~18:40)
+Redesigned the seal UI into a collapsible slide-down panel (NinjaManager-inspired):
+- "CHANGE SEAL" toggle button shows current seal level (+0, +3, -2, etc.)
+- Clicking the button slides down a panel with:
+  - Seal level chips from -10 to +10 (only adjacent levels are clickable)
+  - Live stat preview on hover (Magic Prof%, Crit Chance%, Spell Act.)
+  - Live damage range preview
+- Panel collapses when button is clicked again
+- States: sealPanelOpen, hoveredSeal
+- Files: frontend/src/pages/HeroDetailPage.tsx
+
+## 9. Seal UI — Damage Range Display (~18:53)
+Added live damage range calculation inside the seal panel:
+- Formula: dmgMin/Max = (PA/2) + (DEX * 0.33) + mpRange
+- mpRange depends on seal level:
+    rFactor = (10 - seal) / 20
+    mpMin = MP * 0.5 * (1 - rFactor)
+    mpMax = MP * 0.5 * (1 + rFactor)
+- Shows breakdown: "PA [value] · DEX [value] · MP [min]–[max]"
+- Labels show "PA" (not "PA/2") since PA value shown is already PA/2
+- Files: frontend/src/pages/HeroDetailPage.tsx
+
+## 10. Seal Button Polish (~19:03)
+- Removed "1 PT" gold badge from the Change Seal button
+- Now shows just the pts number with gold glow (textShadow + drop-shadow filter)
+- Added hover effect: purple-blue gradient glow, lift animation, lavender text
+- Files: frontend/src/pages/HeroDetailPage.tsx
+
+## 11. Sub Stats Defaults — Backend + Frontend (~19:14)
+Three sub-stats were showing "--" in the UI and had no base values in battle.
+Fixed to show correct defaults for all heroes with no equipment:
+
+| Stat            | Default | Effect in Battle                              |
+|-----------------|---------|-----------------------------------------------|
+| Dex Proficiency | 33%     | DEX contribution factor (already in calculator)|
+| Dex Posture     | 20%     | 20% of DEX immune to stamina penalty          |
+| Critical Damage | 25%     | Bonus crit multiplier: total 1.5 + 0.25 = 1.75x|
+
+- BattleService: Added dexPosture=0.20 and critDamage=0.25 base defaults in buildBattleStats()
+- PlayerService: buildEquipmentBonuses() now starts with the 3 base defaults, then merges ALL
+  sub-stats from equipped items and abilities (attack, magicProficiency, spellMastery,
+  dexProficiency, dexPosture, critChance, critDamage, expBonus, goldBonus, itemDiscovery,
+  physicalImmunity, magicImmunity, dexEvasiveness)
+- HeroStats TypeScript interface extended with optional sub-stat fields
+- Frontend rendering: dexProficiency, dexPosture, critDamage now read from hero.stats and
+  display as percentage
+- Key fix: renamed frontend key 'criticalDamage' → 'critDamage' to match backend
+- Files: BattleService.java, PlayerService.java, types/index.ts, HeroDetailPage.tsx
+
+## 12. TypeScript Compile Fix — LevelUpPopup (~19:23)
+Extending HeroStats with optional sub-stat fields broke LevelUpPopup.tsx which used
+Record<keyof HeroStats, string> (now required all 14+ keys).
+Fix: Changed STAT_KEYS to `as const` tuple, derived CoreStatKey type from it,
+changed STAT_LABELS to Record<CoreStatKey, string>.
+- Files: frontend/src/components/Hero/LevelUpPopup.tsx
+
+## Files Changed Today
+Backend:
+  - backend/.../entity/Hero.java                  (seal, sealChanges fields)
+  - backend/.../entity/Player.java                (upgrade unlock fields)
+  - backend/.../service/PlayerService.java        (seal logic, stat allocation, buildEquipmentBonuses)
+  - backend/.../service/BattleService.java        (seal in combat, dexPosture/critDamage defaults)
+  - backend/.../service/BlacksmithService.java    (crafting slot limit)
+  - backend/.../controller/* (seal endpoint, stat allocation endpoints)
+
+Frontend:
+  - frontend/src/pages/HeroDetailPage.tsx         (seal UI, stat allocation, sub stats)
+  - frontend/src/pages/BlacksmithPage.tsx         (crafting slot limit)
+  - frontend/src/pages/ShopPage.tsx (or similar)  (new upgrades)
+  - frontend/src/components/Layout/Navbar.tsx     (lineup responsiveness)
+  - frontend/src/components/Hero/LevelUpPopup.tsx (TS fix)
+  - frontend/src/types/index.ts                   (HeroStats extended)

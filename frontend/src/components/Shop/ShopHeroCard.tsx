@@ -11,7 +11,7 @@ const ELEMENT_COLOR: Record<string, string> = {
   EARTH: '#a16207', LIGHTNING: '#facc15',
 };
 const TIER_COLOR: Record<string, string> = {
-  COMMONER: '#6b7280', ELITE: '#a78bfa', LEGENDARY: '#f97316',
+  COMMONER: '#9ca3af', ELITE: '#a78bfa', LEGENDARY: '#f97316',
 };
 
 interface Props {
@@ -25,53 +25,53 @@ export default function ShopHeroCard({ hero, playerGold, onBuy }: Props) {
 
   return (
     <div style={{ ...styles.card, opacity: hero.owned ? 0.6 : 1 }} className="card-hover">
-      {/* Top row: portrait + info */}
+      {/* Top row: portrait col + hexagram */}
       <div style={styles.topRow}>
-        <HeroPortrait imagePath={hero.imagePath} name={hero.displayName} size={100} tier={hero.tier} />
-        <div style={styles.info}>
-          <div style={styles.nameRow}>
-            <div style={styles.name}>{hero.displayName}</div>
+        <div style={styles.portraitCol}>
+          <div style={{ ...styles.name, color: TIER_COLOR[hero.tier ?? ''] ?? '#6b7280' }}>{hero.displayName}</div>
+          <div style={styles.portraitWrapper}>
+            <HeroPortrait imagePath={hero.imagePath} name={hero.displayName} size={100} tier={hero.tier} />
             {hero.element && (
-              <span style={{ color: ELEMENT_COLOR[hero.element] ?? '#a0a0b0', fontSize: 15 }}>
+              <span style={{ ...styles.elementBadge, color: ELEMENT_COLOR[hero.element] ?? '#a0a0b0' }}>
                 {ELEMENT_SYMBOL[hero.element] ?? hero.element}
               </span>
             )}
-            {hero.tier && (
-              <span style={{ color: TIER_COLOR[hero.tier] ?? '#a0a0b0', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                {hero.tier.charAt(0) + hero.tier.slice(1).toLowerCase()}
-              </span>
-            )}
           </div>
-          <div style={styles.costRow}>
-            <span style={styles.gold}>{hero.cost}g</span>
-            <CapBadge value={hero.capacity} />
-          </div>
+          <CapBadge value={hero.capacity} />
+        </div>
+        <div style={styles.info}>
           <HexStatDiagram
             stats={hero.baseStats}
             growthStats={hero.growthStats}
-            size={180}
+            size={390}
           />
         </div>
       </div>
 
-      {/* Full-width button at bottom */}
-      {hero.owned ? (
-        <div style={styles.ownedBadge}>Owned</div>
-      ) : (
-        <button
-          onClick={onBuy}
-          disabled={!canBuy}
-          className={canBuy ? 'btn-shimmer' : ''}
-          style={{
-            ...styles.buyBtn,
-            background: canBuy ? 'linear-gradient(135deg, #e94560 0%, #c73652 100%)' : '#2a1a20',
-            opacity: canBuy ? 1 : 0.5,
-            cursor: canBuy ? 'pointer' : 'not-allowed',
-          }}
-        >
-          {playerGold < hero.cost ? 'Not enough gold' : 'Buy'}
-        </button>
-      )}
+      {/* Bottom: gold + button */}
+      <div style={styles.bottomRow}>
+        <div style={styles.costDisplay}>
+          <span style={styles.goldIcon}>💰</span>
+          <span style={styles.gold}>{hero.cost}g</span>
+        </div>
+        {hero.owned ? (
+          <div style={styles.ownedBadge}>Owned</div>
+        ) : (
+          <button
+            onClick={onBuy}
+            disabled={!canBuy}
+            className={canBuy ? 'btn-shimmer' : ''}
+            style={{
+              ...styles.buyBtn,
+              background: canBuy ? 'linear-gradient(135deg, #e94560 0%, #c73652 100%)' : '#2a1a20',
+              opacity: canBuy ? 1 : 0.5,
+              cursor: canBuy ? 'pointer' : 'not-allowed',
+            }}
+          >
+            Buy
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -90,6 +90,30 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: 16,
   },
+  portraitCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  },
+  portraitWrapper: {
+    position: 'relative',
+  },
+  elementBadge: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    fontSize: 16,
+    lineHeight: 1,
+    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))',
+  },
+  portraitMeta: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 4,
+  },
   info: {
     flex: 1,
     display: 'flex',
@@ -102,37 +126,45 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
   },
   name: {
-    color: '#e0e0e0',
     fontWeight: 700,
+    fontStyle: 'italic',
     fontSize: 16,
-  },
-  costRow: {
-    display: 'flex',
-    gap: 12,
-    fontSize: 13,
   },
   gold: {
     color: '#fbbf24',
     fontWeight: 600,
+    fontSize: 13,
+  },
+  bottomRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  costDisplay: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+  },
+  goldIcon: {
+    fontSize: 18,
+    lineHeight: 1,
   },
   buyBtn: {
-    padding: '8px 32px',
-    backgroundColor: '#e94560',
+    padding: '8px 24px',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
     fontSize: 13,
     fontWeight: 600,
-    alignSelf: 'center',
   },
   ownedBadge: {
-    padding: '8px 32px',
+    padding: '8px 24px',
     backgroundColor: '#16213e',
     color: '#4ade80',
     borderRadius: 4,
     fontSize: 13,
     fontWeight: 600,
-    textAlign: 'center',
-    alignSelf: 'center',
+    textAlign: 'center' as const,
   },
 };

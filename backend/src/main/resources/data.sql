@@ -141,10 +141,82 @@ SELECT 'hashirama', 'Hashirama', 'hashirama.gif', 2000, 30, 16, 16, 8, 12, 35, 2
 WHERE NOT EXISTS (SELECT 1 FROM hero_template WHERE name = 'hashirama');
 
 -- Summon Template
-INSERT INTO summon_template (name, display_name, image_path, cost, capacity, base_mana, base_mp, growth_mana, growth_mp)
-SELECT 'susanoo-spirit-summon', 'Susanoo', 'susanoo-spirit-summon.jpg', 300, 15, 10, 5, 5, 4
+INSERT INTO summon_template (name, display_name, image_path, cost, capacity, base_mana, base_mp, growth_mana, growth_mp, base_magic_proficiency, growth_magic_proficiency, base_spell_mastery, growth_spell_mastery)
+SELECT 'susanoo-spirit-summon', 'Susanoo', 'susanoo-spirit-summon.jpg', 300, 15, 10, 5, 5, 4, 3, 3, 5, 1
 WHERE NOT EXISTS (SELECT 1 FROM summon_template WHERE name = 'susanoo-spirit-summon');
 UPDATE summon_template SET display_name = 'Susanoo' WHERE name = 'susanoo-spirit-summon' AND display_name != 'Susanoo';
+UPDATE summon_template SET base_magic_proficiency = 3, growth_magic_proficiency = 3, base_spell_mastery = 5, growth_spell_mastery = 1, base_mana = 0, growth_mana = 0 WHERE name = 'susanoo-spirit-summon';
+
+INSERT INTO summon_template (name, display_name, image_path, cost, capacity, base_mana, base_mp, growth_mana, growth_mp, base_crit_chance, growth_crit_chance, base_crit_damage, growth_crit_damage)
+SELECT 'ikalgo', 'Ikalgo', 'ikalgo.jpg', 300, 15, 0, 0, 0, 0, 5, 1, 5, 1
+WHERE NOT EXISTS (SELECT 1 FROM summon_template WHERE name = 'ikalgo');
+UPDATE summon_template SET base_crit_chance = 5, growth_crit_chance = 1, base_crit_damage = 5, growth_crit_damage = 1 WHERE name = 'ikalgo';
+
+INSERT INTO summon_template (name, display_name, image_path, cost, capacity, base_mana, base_mp, growth_mana, growth_mp, base_dex, growth_dex, base_dex_proficiency, growth_dex_proficiency, base_dex_posture, growth_dex_posture)
+SELECT 'ant-bomb-timer', 'Ant Bomb Timer', 'ant-bomb-timer.jpg', 300, 15, 0, 0, 0, 0, 10, 5, 5, 1, 20, 2
+WHERE NOT EXISTS (SELECT 1 FROM summon_template WHERE name = 'ant-bomb-timer');
+UPDATE summon_template SET base_dex = 10, growth_dex = 5, base_dex_proficiency = 5, growth_dex_proficiency = 1, base_dex_posture = 20, growth_dex_posture = 2 WHERE name = 'ant-bomb-timer';
+
+INSERT INTO summon_template (name, display_name, image_path, cost, capacity, base_mana, base_mp, growth_mana, growth_mp, base_gold_bonus, growth_gold_bonus)
+SELECT 'mechanical-bird-summon', 'Mechanical Bird', 'mechanical-bird-summon.png', 300, 15, 0, 0, 0, 0, 15, 2
+WHERE NOT EXISTS (SELECT 1 FROM summon_template WHERE name = 'mechanical-bird-summon');
+UPDATE summon_template SET base_gold_bonus = 15, growth_gold_bonus = 2 WHERE name = 'mechanical-bird-summon';
+
+INSERT INTO summon_template (name, display_name, image_path, cost, capacity, base_mana, base_mp, growth_mana, growth_mp, base_item_find, growth_item_find)
+SELECT 'ninja-dogs-summon', 'Ninja Dogs', 'ninja-dogs-summon.png', 300, 15, 0, 0, 0, 0, 50, 15
+WHERE NOT EXISTS (SELECT 1 FROM summon_template WHERE name = 'ninja-dogs-summon');
+UPDATE summon_template SET base_item_find = 50, growth_item_find = 15 WHERE name = 'ninja-dogs-summon';
+
+INSERT INTO summon_template (name, display_name, image_path, cost, capacity, base_mana, base_mp, growth_mana, growth_mp, base_xp_bonus, growth_xp_bonus)
+SELECT 'pakkun-summon', 'Pakkun', 'pakkun-summon.png', 300, 15, 0, 0, 0, 0, 15, 2
+WHERE NOT EXISTS (SELECT 1 FROM summon_template WHERE name = 'pakkun-summon');
+UPDATE summon_template SET base_xp_bonus = 15, growth_xp_bonus = 2 WHERE name = 'pakkun-summon';
+
+INSERT INTO summon_template (name, display_name, image_path, cost, capacity, base_mana, base_mp, growth_mana, growth_mp, base_attack, growth_attack, base_spell_activation, growth_spell_activation)
+SELECT 'sad-going-merry', 'Sad Going Merry', 'sad-going-merry.jpg', 300, 15, 0, 0, 0, 0, 5, 2, 15, 2
+WHERE NOT EXISTS (SELECT 1 FROM summon_template WHERE name = 'sad-going-merry');
+UPDATE summon_template SET base_attack = 5, growth_attack = 2, base_spell_activation = 15, growth_spell_activation = 2 WHERE name = 'sad-going-merry';
+
+INSERT INTO summon_template (name, display_name, image_path, cost, capacity, base_mana, base_mp, growth_mana, growth_mp, base_magic_proficiency, growth_magic_proficiency)
+SELECT 'laboon', 'Laboon', 'laboon.jpg', 300, 15, 20, 0, 5, 0, 20, 1
+WHERE NOT EXISTS (SELECT 1 FROM summon_template WHERE name = 'laboon');
+UPDATE summon_template SET base_mana = 20, growth_mana = 5, base_magic_proficiency = 20, growth_magic_proficiency = 1 WHERE name = 'laboon';
+
+INSERT INTO summon_template (name, display_name, image_path, cost, capacity, base_mana, base_mp, growth_mana, growth_mp, base_stamina, growth_stamina, base_physical_attack, growth_physical_attack)
+SELECT 'karoo', 'Karoo', 'karoo.jpg', 300, 15, 0, 0, 0, 0, 10, 2, 5, 3
+WHERE NOT EXISTS (SELECT 1 FROM summon_template WHERE name = 'karoo');
+UPDATE summon_template SET base_stamina = 10, growth_stamina = 2, base_physical_attack = 5, growth_physical_attack = 3 WHERE name = 'karoo';
+
+-- Ensure no NULL values in nullable summon_template columns (Hibernate 6 throws on primitive double + NULL)
+UPDATE summon_template SET
+    base_magic_proficiency  = COALESCE(base_magic_proficiency,  0),
+    growth_magic_proficiency= COALESCE(growth_magic_proficiency,0),
+    base_spell_mastery      = COALESCE(base_spell_mastery,      0),
+    growth_spell_mastery    = COALESCE(growth_spell_mastery,    0),
+    base_crit_chance        = COALESCE(base_crit_chance,        0),
+    growth_crit_chance      = COALESCE(growth_crit_chance,      0),
+    base_crit_damage        = COALESCE(base_crit_damage,        0),
+    growth_crit_damage      = COALESCE(growth_crit_damage,      0),
+    base_dex                = COALESCE(base_dex,                0),
+    growth_dex              = COALESCE(growth_dex,              0),
+    base_dex_proficiency    = COALESCE(base_dex_proficiency,    0),
+    growth_dex_proficiency  = COALESCE(growth_dex_proficiency,  0),
+    base_dex_posture        = COALESCE(base_dex_posture,        0),
+    growth_dex_posture      = COALESCE(growth_dex_posture,      0),
+    base_gold_bonus         = COALESCE(base_gold_bonus,         0),
+    growth_gold_bonus       = COALESCE(growth_gold_bonus,       0),
+    base_item_find          = COALESCE(base_item_find,          0),
+    growth_item_find        = COALESCE(growth_item_find,        0),
+    base_xp_bonus           = COALESCE(base_xp_bonus,          0),
+    growth_xp_bonus         = COALESCE(growth_xp_bonus,        0),
+    base_attack             = COALESCE(base_attack,             0),
+    growth_attack           = COALESCE(growth_attack,           0),
+    base_spell_activation   = COALESCE(base_spell_activation,   0),
+    growth_spell_activation = COALESCE(growth_spell_activation, 0),
+    base_stamina            = COALESCE(base_stamina,            0),
+    growth_stamina          = COALESCE(growth_stamina,          0),
+    base_physical_attack    = COALESCE(base_physical_attack,    0),
+    growth_physical_attack  = COALESCE(growth_physical_attack,  0);
 
 -- Item Templates
 INSERT INTO item_template (name, cost, bonus_pa, bonus_mp, bonus_dex, bonus_elem, bonus_mana, bonus_stam) SELECT 'Training Weights', 100, 3, 0, 0, 0, 0, 0 WHERE NOT EXISTS (SELECT 1 FROM item_template WHERE name = 'Training Weights');

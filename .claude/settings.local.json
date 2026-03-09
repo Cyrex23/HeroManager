@@ -58,7 +58,10 @@
       "Bash(sort -t: -k2 -n)",
       "Bash(xargs grep -l \"craftQueue\\\\|CraftingJob\\\\|CraftJob\")",
       "Bash(xargs grep -l \"craft\\\\|Craft\")",
-      "Bash(xargs grep -l \"CraftQueueEntry\\\\|CraftQueue\")"
+      "Bash(xargs grep -l \"CraftQueueEntry\\\\|CraftQueue\")",
+      "Bash(iconv -f UTF-8 -t ASCII//TRANSLIT)",
+      "Bash(curl -s -X GET \"http://localhost:8080/api/team/1/lineup\" -H \"Content-Type: application/json\")",
+      "Bash(curl -sv \"http://localhost:8080/api/team/1/lineup\")"
     ]
   }
 }

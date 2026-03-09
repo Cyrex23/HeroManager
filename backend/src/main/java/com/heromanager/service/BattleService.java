@@ -30,7 +30,7 @@ public class BattleService {
     }
 
     public record HeroSlot(Hero hero, int slotNumber) {}
-    public record TeamData(List<HeroSlot> heroSlots, Summon summon, double summonMpBonus, String username, String profileImagePath) {}
+    public record TeamData(List<HeroSlot> heroSlots, Summon summon, Map<String, Double> summonBonuses, String username, String profileImagePath) {}
 
     public TeamData loadTeam(Long playerId, String username, String profileImagePath) {
         List<TeamSlot> slots = teamSlotRepository.findByPlayerId(playerId);
@@ -38,7 +38,7 @@ public class BattleService {
 
         List<HeroSlot> heroSlots = new ArrayList<>();
         Summon summon = null;
-        double summonMpBonus = 0;
+        Map<String, Double> summonBonuses = new HashMap<>();
 
         for (TeamSlot slot : slots) {
             if (slot.getHeroId() != null && slot.getSlotNumber() <= 6) {
@@ -49,12 +49,20 @@ public class BattleService {
                 summon = summonRepository.findById(slot.getSummonId()).orElse(null);
                 if (summon != null) {
                     SummonTemplate st = summon.getTemplate();
-                    summonMpBonus = st.getBaseMp() + st.getGrowthMp() * (summon.getLevel() - 1);
+                    int lv = summon.getLevel() - 1;
+                    summonBonuses.put("magicPower",       st.getBaseMp()              + st.getGrowthMp()              * lv);
+                    summonBonuses.put("magicProficiency", (st.getBaseMagicProficiency() + st.getGrowthMagicProficiency() * lv) / 100.0);
+                    summonBonuses.put("spellMastery",     st.getBaseSpellMastery()     + st.getGrowthSpellMastery()     * lv);
+                    summonBonuses.put("critChance",       (st.getBaseCritChance()      + st.getGrowthCritChance()      * lv) / 100.0);
+                    summonBonuses.put("critDamage",       (st.getBaseCritDamage()      + st.getGrowthCritDamage()      * lv) / 100.0);
+                    summonBonuses.put("dexterity",         st.getBaseDex()              + st.getGrowthDex()              * lv);
+                    summonBonuses.put("dexProficiency",   (st.getBaseDexProficiency()  + st.getGrowthDexProficiency()  * lv) / 100.0);
+                    summonBonuses.put("dexPosture",       (st.getBaseDexPosture()      + st.getGrowthDexPosture()      * lv) / 100.0);
                 }
             }
         }
 
-        return new TeamData(heroSlots, summon, summonMpBonus, username, profileImagePath);
+        return new TeamData(heroSlots, summon, summonBonuses, username, profileImagePath);
     }
 
     @Transactional(readOnly = true)
@@ -79,14 +87,14 @@ public class BattleService {
         Map<Long, Double> dHeroExpBonus = new HashMap<>();
 
         for (HeroSlot hs : cSlots) {
-            Map<String, Double> s = buildBattleStats(hs.hero(), hs.slotNumber(), challengerTeam.summonMpBonus());
+            Map<String, Double> s = buildBattleStats(hs.hero(), hs.slotNumber(), challengerTeam.summonBonuses());
             cManaTotal       += s.getOrDefault("mana",          0.0);
             cGoldBonus       += s.getOrDefault("goldBonus",     0.0);
             cItemDiscovery   += s.getOrDefault("itemDiscovery", 0.0);
             cHeroExpBonus.put(hs.hero().getId(), s.getOrDefault("expBonus", 0.0));
         }
         for (HeroSlot hs : dSlots) {
-            Map<String, Double> s = buildBattleStats(hs.hero(), hs.slotNumber(), defenderTeam.summonMpBonus());
+            Map<String, Double> s = buildBattleStats(hs.hero(), hs.slotNumber(), defenderTeam.summonBonuses());
             dManaTotal       += s.getOrDefault("mana",          0.0);
             dGoldBonus       += s.getOrDefault("goldBonus",     0.0);
             dItemDiscovery   += s.getOrDefault("itemDiscovery", 0.0);
@@ -115,8 +123,8 @@ public class BattleService {
             Hero cHero = cSlot.hero();
             Hero dHero = dSlot.hero();
 
-            Map<String, Double> cStats = buildBattleStats(cHero, cSlot.slotNumber(), challengerTeam.summonMpBonus());
-            Map<String, Double> dStats = buildBattleStats(dHero, dSlot.slotNumber(), defenderTeam.summonMpBonus());
+            Map<String, Double> cStats = buildBattleStats(cHero, cSlot.slotNumber(), challengerTeam.summonBonuses());
+            Map<String, Double> dStats = buildBattleStats(dHero, dSlot.slotNumber(), defenderTeam.summonBonuses());
 
             // ── Hero turn tracking (reset on hero change) ─────────────────────
             if (cIdx != prevCIdx) { cHeroTurn = 0; cWsUsages = new HashMap<>(); prevCIdx = cIdx; }
@@ -377,26 +385,46 @@ public class BattleService {
             round.put("attackerRawAttack",        Math.round(cBreak.rawAttack()  * 100.0) / 100.0);
             if (cBreak.staminaReduction() > 0.001) round.put("attackerStaminaReduction", Math.round(cBreak.staminaReduction() * 100.0) / 100.0);
             if (cBreak.didCrit())                  round.put("attackerCrit", true);
+            if (cBreak.didMagicProf())             round.put("attackerMagicProf", true);
+            round.put("attackerDexFactor",        Math.round((0.33 + cMods.dexProficiency()) * 1000.0) / 1000.0);
+            round.put("attackerDexProficiency",   Math.round((0.33 + cMods.dexProficiency()) * 1000.0) / 1000.0);
+            round.put("attackerDexPosture",       Math.round(cMods.dexPosture()     * 1000.0) / 1000.0);
+            round.put("attackerCritDamagePct",    Math.round(cMods.critDamage()       * 1000.0) / 1000.0);
+            if (cBreak.didCrit())                  round.put("attackerCritPaBonus",     Math.round(cBreak.critPaBonus()      * 100.0)  / 100.0);
+            round.put("attackerMpRoll",            Math.round(cBreak.mpRoll()      * 1000.0) / 1000.0);
+            if (cBreak.didMagicProf())             round.put("attackerMpFirstRoll", Math.round(cBreak.mpFirstRoll() * 1000.0) / 1000.0);
+            round.put("attackerCritChance",        Math.round(cMods.critChance()       * 1000.0) / 1000.0);
+            round.put("attackerMagicProfChance",   Math.round(cMods.magicProficiency() * 1000.0) / 1000.0);
             round.put("attackerStatPa",   Math.round(cStats.getOrDefault("physicalAttack", 0.0) * 100.0) / 100.0);
             round.put("attackerStatMp",   Math.round(cStats.getOrDefault("magicPower",     0.0) * 100.0) / 100.0);
             round.put("attackerStatDex",  Math.round(cStats.getOrDefault("dexterity",      0.0) * 100.0) / 100.0);
             round.put("attackerStatElem", Math.round(cStats.getOrDefault("element",        0.0) * 100.0) / 100.0);
             round.put("attackerStatMana", Math.round(cStats.getOrDefault("mana",           0.0) * 100.0) / 100.0);
             round.put("attackerStatStam", Math.round(cStats.getOrDefault("stamina",        0.0) * 100.0) / 100.0);
-            if (cHero.getTemplate().getElement() != null) round.put("attackerElement", cHero.getTemplate().getElement().name());
+            if (getEffectiveElement(cHero) != null) round.put("attackerElement", getEffectiveElement(cHero).name());
             round.put("defenderPaContrib",        Math.round(dBreak.paContrib()  * 100.0) / 100.0);
             round.put("defenderMpContrib",        Math.round(dBreak.mpContrib()  * 100.0) / 100.0);
             round.put("defenderDexContrib",       Math.round(dBreak.dexContrib() * 100.0) / 100.0);
             round.put("defenderRawAttack",        Math.round(dBreak.rawAttack()  * 100.0) / 100.0);
             if (dBreak.staminaReduction() > 0.001) round.put("defenderStaminaReduction", Math.round(dBreak.staminaReduction() * 100.0) / 100.0);
             if (dBreak.didCrit())                  round.put("defenderCrit", true);
+            if (dBreak.didMagicProf())             round.put("defenderMagicProf", true);
+            round.put("defenderDexFactor",        Math.round((0.33 + dMods.dexProficiency()) * 1000.0) / 1000.0);
+            round.put("defenderDexProficiency",   Math.round((0.33 + dMods.dexProficiency()) * 1000.0) / 1000.0);
+            round.put("defenderDexPosture",       Math.round(dMods.dexPosture()     * 1000.0) / 1000.0);
+            round.put("defenderCritDamagePct",    Math.round(dMods.critDamage()       * 1000.0) / 1000.0);
+            if (dBreak.didCrit())                  round.put("defenderCritPaBonus",     Math.round(dBreak.critPaBonus()      * 100.0)  / 100.0);
+            round.put("defenderMpRoll",            Math.round(dBreak.mpRoll()      * 1000.0) / 1000.0);
+            if (dBreak.didMagicProf())             round.put("defenderMpFirstRoll", Math.round(dBreak.mpFirstRoll() * 1000.0) / 1000.0);
+            round.put("defenderCritChance",        Math.round(dMods.critChance()       * 1000.0) / 1000.0);
+            round.put("defenderMagicProfChance",   Math.round(dMods.magicProficiency() * 1000.0) / 1000.0);
             round.put("defenderStatPa",   Math.round(dStats.getOrDefault("physicalAttack", 0.0) * 100.0) / 100.0);
             round.put("defenderStatMp",   Math.round(dStats.getOrDefault("magicPower",     0.0) * 100.0) / 100.0);
             round.put("defenderStatDex",  Math.round(dStats.getOrDefault("dexterity",      0.0) * 100.0) / 100.0);
             round.put("defenderStatElem", Math.round(dStats.getOrDefault("element",        0.0) * 100.0) / 100.0);
             round.put("defenderStatMana", Math.round(dStats.getOrDefault("mana",           0.0) * 100.0) / 100.0);
             round.put("defenderStatStam", Math.round(dStats.getOrDefault("stamina",        0.0) * 100.0) / 100.0);
-            if (dHero.getTemplate().getElement() != null) round.put("defenderElement", dHero.getTemplate().getElement().name());
+            if (getEffectiveElement(dHero) != null) round.put("defenderElement", getEffectiveElement(dHero).name());
             round.put("attackerImagePath", cHero.getTemplate().getImagePath() != null ? cHero.getTemplate().getImagePath() : "");
             round.put("defenderImagePath", dHero.getTemplate().getImagePath() != null ? dHero.getTemplate().getImagePath() : "");
             if (cElemBonus > 0) round.put("attackerElementBonus", Math.round(cElemBonus * 100.0) / 100.0);
@@ -495,7 +523,7 @@ public class BattleService {
             h.put("name",      hs.hero().getTemplate().getDisplayName());
             h.put("imagePath", hs.hero().getTemplate().getImagePath() != null ? hs.hero().getTemplate().getImagePath() : "");
             h.put("level",     hs.hero().getLevel());
-            if (hs.hero().getTemplate().getElement() != null) h.put("element", hs.hero().getTemplate().getElement().name());
+            if (getEffectiveElement(hs.hero()) != null) h.put("element", getEffectiveElement(hs.hero()).name());
             return h;
         }).toList());
         if (challengerTeam.summon() != null) {
@@ -513,7 +541,7 @@ public class BattleService {
             h.put("name",      hs.hero().getTemplate().getDisplayName());
             h.put("imagePath", hs.hero().getTemplate().getImagePath() != null ? hs.hero().getTemplate().getImagePath() : "");
             h.put("level",     hs.hero().getLevel());
-            if (hs.hero().getTemplate().getElement() != null) h.put("element", hs.hero().getTemplate().getElement().name());
+            if (getEffectiveElement(hs.hero()) != null) h.put("element", getEffectiveElement(hs.hero()).name());
             return h;
         }).toList());
         if (defenderTeam.summon() != null) {
@@ -540,7 +568,7 @@ public class BattleService {
         return result;
     }
 
-    private Map<String, Double> buildBattleStats(Hero hero, int slotNumber, double summonMpBonus) {
+    private Map<String, Double> buildBattleStats(Hero hero, int slotNumber, Map<String, Double> summonBonuses) {
         Map<String, Double> stats = new HashMap<>(PlayerService.buildHeroStats(hero.getTemplate(), hero.getLevel()));
 
         // ── Base sub-stat defaults (all heroes, before equipment) ─────────────
@@ -602,9 +630,14 @@ public class BattleService {
             stats.merge("dexEvasiveness",   at.getBonusDexEvasiveness(),  Double::sum);
         }
 
-        if (summonMpBonus > 0) {
-            stats.put("magicPower", stats.get("magicPower") + summonMpBonus);
+        for (Map.Entry<String, Double> bonus : summonBonuses.entrySet()) {
+            if (bonus.getValue() != 0) stats.merge(bonus.getKey(), bonus.getValue(), Double::sum);
         }
+
+        // ── Seal stats (magicProficiency + critChance from seal table) ────────
+        int[] sealStats = PlayerService.getSealStats(hero.getSeal());
+        stats.merge("magicProficiency", sealStats[0] / 100.0, Double::sum);
+        stats.merge("critChance",       sealStats[1] / 100.0, Double::sum);
 
         // ── Off-slot stamina debuff ───────────────────────────────────────────
         HeroTier heroTier = hero.getTemplate().getTier();
@@ -649,9 +682,16 @@ public class BattleService {
         };
     }
 
+    private HeroElement getEffectiveElement(Hero hero) {
+        if (hero.getElementOverride() != null) {
+            try { return HeroElement.valueOf(hero.getElementOverride()); } catch (IllegalArgumentException ignored) {}
+        }
+        return hero.getTemplate() != null ? hero.getTemplate().getElement() : null;
+    }
+
     private double calculateElementBonus(Hero attacker, Hero defender) {
-        HeroElement attackerElem = attacker.getTemplate().getElement();
-        HeroElement defenderElem = defender.getTemplate().getElement();
+        HeroElement attackerElem = getEffectiveElement(attacker);
+        HeroElement defenderElem = getEffectiveElement(defender);
         if (attackerElem == null || defenderElem == null) return 0;
         if (!hasElementAdvantage(attackerElem, defenderElem)) return 0;
 

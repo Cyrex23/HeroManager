@@ -86,8 +86,8 @@ public class ShopService {
                     "imagePath", st.getImagePath(),
                     "cost", st.getCost(),
                     "capacity", st.getCapacity(),
-                    "baseStats", Map.of("mana", st.getBaseMana(), "magicPower", st.getBaseMp()),
-                    "growthStats", Map.of("mana", st.getGrowthMana(), "magicPower", st.getGrowthMp()),
+                    "baseStats",   buildSummonStatsMap(st, false),
+                    "growthStats", buildSummonStatsMap(st, true),
                     "owned", owned
             ));
         }
@@ -319,6 +319,43 @@ public class ShopService {
                 "message", template.getName() + " added to " + hero.getTemplate().getDisplayName() + "'s abilities!",
                 "goldRemaining", player.getGold()
         );
+    }
+
+    private static Map<String, Object> buildSummonStatsMap(SummonTemplate st, boolean useGrowth) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        double mana         = useGrowth ? st.getGrowthMana()             : st.getBaseMana();
+        double mp           = useGrowth ? st.getGrowthMp()              : st.getBaseMp();
+        double magicProf    = useGrowth ? st.getGrowthMagicProficiency() : st.getBaseMagicProficiency();
+        double spellMastery = useGrowth ? st.getGrowthSpellMastery()     : st.getBaseSpellMastery();
+        double critChance   = useGrowth ? st.getGrowthCritChance()       : st.getBaseCritChance();
+        double critDamage   = useGrowth ? st.getGrowthCritDamage()       : st.getBaseCritDamage();
+        double dex          = useGrowth ? st.getGrowthDex()              : st.getBaseDex();
+        double dexProf      = useGrowth ? st.getGrowthDexProficiency()   : st.getBaseDexProficiency();
+        double dexPosture   = useGrowth ? st.getGrowthDexPosture()       : st.getBaseDexPosture();
+        double goldBonus    = useGrowth ? st.getGrowthGoldBonus()        : st.getBaseGoldBonus();
+        double itemFind     = useGrowth ? st.getGrowthItemFind()         : st.getBaseItemFind();
+        double xpBonus      = useGrowth ? st.getGrowthXpBonus()          : st.getBaseXpBonus();
+        if (mana         != 0) map.put("mana",              mana);
+        if (mp           != 0) map.put("magicPower",       mp);
+        if (magicProf    != 0) map.put("magicProficiency", magicProf);
+        if (spellMastery != 0) map.put("spellMastery",     spellMastery);
+        if (critChance   != 0) map.put("critChance",       critChance);
+        if (critDamage   != 0) map.put("critDamage",       critDamage);
+        if (dex          != 0) map.put("dexterity",        dex);
+        if (dexProf      != 0) map.put("dexProficiency",   dexProf);
+        if (dexPosture   != 0) map.put("dexPosture",       dexPosture);
+        double attack          = useGrowth ? st.getGrowthAttack()          : st.getBaseAttack();
+        double spellActivation = useGrowth ? st.getGrowthSpellActivation() : st.getBaseSpellActivation();
+        double stamina         = useGrowth ? st.getGrowthStamina()         : st.getBaseStamina();
+        double physicalAttack  = useGrowth ? st.getGrowthPhysicalAttack()  : st.getBasePhysicalAttack();
+        if (goldBonus       != 0) map.put("goldBonus",       goldBonus);
+        if (itemFind        != 0) map.put("itemFind",        itemFind);
+        if (xpBonus         != 0) map.put("xpBonus",        xpBonus);
+        if (attack          != 0) map.put("attack",          attack);
+        if (spellActivation != 0) map.put("spellActivation", spellActivation);
+        if (stamina         != 0) map.put("stamina",         stamina);
+        if (physicalAttack  != 0) map.put("physicalAttack",  physicalAttack);
+        return map;
     }
 
     public static class ShopException extends RuntimeException {

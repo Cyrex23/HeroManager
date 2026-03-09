@@ -134,6 +134,19 @@ public class PlayerController {
         }
     }
 
+    @PostMapping("/hero/{heroId}/change-element")
+    public ResponseEntity<?> changeElement(@PathVariable Long heroId,
+                                           @RequestBody Map<String, String> body,
+                                           Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        String element = body.get("element");
+        try {
+            return ResponseEntity.ok(playerService.changeElement(playerId, heroId, element));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/hero/{heroId}/change-seal")
     public ResponseEntity<?> changeSeal(@PathVariable Long heroId,
                                         @RequestBody Map<String, String> body,

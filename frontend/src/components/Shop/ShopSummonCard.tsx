@@ -1,6 +1,7 @@
 import type { ShopSummonResponse } from '../../types';
 import HeroPortrait from '../Hero/HeroPortrait';
 import CapBadge from '../Hero/CapBadge';
+import { SUMMON_STAT_CONFIG } from '../../utils/summonStatConfig';
 
 interface Props {
   summon: ShopSummonResponse;
@@ -8,29 +9,24 @@ interface Props {
   onBuy: () => void;
 }
 
-const STAT_ROWS: { key: 'magicPower' | 'mana'; label: string }[] = [
-  { key: 'magicPower', label: 'Magic Power' },
-  { key: 'mana',       label: 'Mana'        },
-];
-
 export default function ShopSummonCard({ summon, playerGold, onBuy }: Props) {
   const canBuy = !summon.owned && playerGold >= summon.cost;
 
   return (
     <div style={{ ...styles.card, opacity: summon.owned ? 0.6 : 1 }} className="card-hover">
-      {/* Top row: portrait + info */}
+      {/* Top row: portrait col + info */}
       <div style={styles.topRow}>
-        <HeroPortrait imagePath={summon.imagePath} name={summon.name} size={100} />
-
-        <div style={styles.info}>
-          {/* Name + cost row */}
-          <div style={styles.nameRow}>
-            <div style={styles.name}>{summon.name}</div>
+        {/* Left: portrait + cap + gold stacked */}
+        <div style={styles.portraitCol}>
+          <HeroPortrait imagePath={summon.imagePath} name={summon.name} size={100} />
+          <div style={styles.portraitMeta}>
             <CapBadge value={summon.capacity} />
           </div>
-          <div style={styles.costRow}>
-            <span style={styles.gold}>{summon.cost}g</span>
-          </div>
+        </div>
+
+        <div style={styles.info}>
+          {/* Name row */}
+          <div style={styles.name}>{summon.name}</div>
 
           {/* Attributes table */}
           <div style={styles.statTable}>
@@ -39,35 +35,47 @@ export default function ShopSummonCard({ summon, playerGold, onBuy }: Props) {
               <span style={styles.statHeaderNum}>Base</span>
               <span style={styles.statHeaderNum}>Growth</span>
             </div>
-            {STAT_ROWS.map(({ key, label }) => (
-              <div key={key} style={styles.statRow}>
-                <span style={styles.statLabel}>{label}</span>
-                <span style={styles.statBase}>{summon.baseStats[key]}</span>
-                <span style={styles.statGrowth}>+{summon.growthStats[key]}</span>
-              </div>
-            ))}
+            {Object.entries(summon.baseStats)
+              .filter(([key]) => SUMMON_STAT_CONFIG[key])
+              .map(([key, base]) => {
+                const cfg = SUMMON_STAT_CONFIG[key];
+                const growth = summon.growthStats[key as keyof typeof summon.growthStats] ?? 0;
+                return (
+                  <div key={key} style={styles.statRow}>
+                    <span style={styles.statLabel}>{cfg.label}</span>
+                    <span style={styles.statBase}>{base}{cfg.pct ? '%' : ''}</span>
+                    <span style={styles.statGrowth}>+{growth}{cfg.pct ? '%' : ''}</span>
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>
 
-      {/* Full-width button at bottom */}
-      {summon.owned ? (
-        <div style={styles.ownedBadge}>Owned</div>
-      ) : (
-        <button
-          onClick={onBuy}
-          disabled={!canBuy}
-          className={canBuy ? 'btn-shimmer' : ''}
-          style={{
-            ...styles.buyBtn,
-            background: canBuy ? 'linear-gradient(135deg, #e94560 0%, #c73652 100%)' : '#2a1a20',
-            opacity: canBuy ? 1 : 0.5,
-            cursor: canBuy ? 'pointer' : 'not-allowed',
-          }}
-        >
-          {playerGold < summon.cost ? 'Not enough gold' : 'Buy'}
-        </button>
-      )}
+      {/* Bottom: gold + button */}
+      <div style={styles.bottomRow}>
+        <div style={styles.costDisplay}>
+          <span style={styles.goldIcon}>💰</span>
+          <span style={styles.gold}>{summon.cost}g</span>
+        </div>
+        {summon.owned ? (
+          <div style={styles.ownedBadge}>Owned</div>
+        ) : (
+          <button
+            onClick={onBuy}
+            disabled={!canBuy}
+            className={canBuy ? 'btn-shimmer' : ''}
+            style={{
+              ...styles.buyBtn,
+              background: canBuy ? 'linear-gradient(135deg, #e94560 0%, #c73652 100%)' : '#2a1a20',
+              opacity: canBuy ? 1 : 0.5,
+              cursor: canBuy ? 'pointer' : 'not-allowed',
+            }}
+          >
+            Buy
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -86,31 +94,34 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: 16,
   },
+  portraitCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  },
+  portraitMeta: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 4,
+  },
   info: {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
   },
-  nameRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-  },
   name: {
     color: '#e0e0e0',
     fontWeight: 700,
     fontSize: 16,
-    flex: 1,
-  },
-  costRow: {
-    display: 'flex',
-    gap: 12,
-    fontSize: 13,
   },
   gold: {
     color: '#fbbf24',
     fontWeight: 600,
+    fontSize: 13,
   },
 
   // ── Stat table ─────────────────────────────────────────────
@@ -176,23 +187,36 @@ const styles: Record<string, React.CSSProperties> = {
     fontVariantNumeric: 'tabular-nums',
   },
 
+  bottomRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  costDisplay: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+  },
+  goldIcon: {
+    fontSize: 18,
+    lineHeight: 1,
+  },
   buyBtn: {
-    padding: '8px 32px',
+    padding: '8px 24px',
     color: '#fff',
     border: 'none',
     borderRadius: 4,
     fontSize: 13,
     fontWeight: 600,
-    alignSelf: 'center',
   },
   ownedBadge: {
-    padding: '8px 32px',
+    padding: '8px 24px',
     backgroundColor: '#16213e',
     color: '#4ade80',
     borderRadius: 4,
     fontSize: 13,
     fontWeight: 600,
     textAlign: 'center' as const,
-    alignSelf: 'center',
   },
 };

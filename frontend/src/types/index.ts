@@ -96,10 +96,7 @@ export interface HeroStats {
   dexEvasiveness?: number;
 }
 
-export interface SummonStats {
-  mana: number;
-  magicPower: number;
-}
+export type SummonStats = Record<string, number>;
 
 // ============================================================
 // Hero Types
@@ -219,8 +216,7 @@ export interface TeamSlotSummon {
   level: number;
   capacity: number;
   teamBonus: string;
-  magicPower: number;
-  mana: number;
+  stats: SummonStats;
   currentXp: number;
   xpToNextLevel: number;
 }
@@ -441,6 +437,28 @@ export interface BattleRound {
   defenderStatMana?: number;
   defenderStatStam?: number;
   defenderElement?: string;
+  attackerCrit?: boolean;
+  defenderCrit?: boolean;
+  attackerMagicProf?: boolean;
+  defenderMagicProf?: boolean;
+  attackerDexFactor?: number;
+  defenderDexFactor?: number;
+  attackerDexProficiency?: number;
+  defenderDexProficiency?: number;
+  attackerDexPosture?: number;
+  defenderDexPosture?: number;
+  attackerCritDamagePct?: number;
+  defenderCritDamagePct?: number;
+  attackerCritPaBonus?: number;
+  defenderCritPaBonus?: number;
+  attackerMpRoll?: number;
+  defenderMpRoll?: number;
+  attackerMpFirstRoll?: number;
+  defenderMpFirstRoll?: number;
+  attackerCritChance?: number;
+  defenderCritChance?: number;
+  attackerMagicProfChance?: number;
+  defenderMagicProfChance?: number;
   attackerImagePath?: string;
   defenderImagePath?: string;
   challengerSpells?: SpellEvent[];

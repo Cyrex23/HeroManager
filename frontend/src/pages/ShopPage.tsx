@@ -347,7 +347,7 @@ export default function ShopPage() {
                 <div style={{ ...styles.tierHeader, borderLeftColor: TIER_COLOR[tier] }}>
                   <span style={{ color: TIER_COLOR[tier] }}>{tier.charAt(0) + tier.slice(1).toLowerCase()}s</span>
                 </div>
-                <div style={styles.grid}>
+                <div style={styles.heroGrid}>
                   {tierHeroes.map((hero) => (
                     <ShopHeroCard
                       key={hero.templateId}
@@ -769,6 +769,11 @@ const styles: Record<string, React.CSSProperties> = {
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+    gap: 12,
+  },
+  heroGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))',
     gap: 12,
   },
   itemGrid: {

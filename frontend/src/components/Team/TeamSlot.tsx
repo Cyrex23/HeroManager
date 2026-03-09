@@ -3,6 +3,7 @@ import HeroPortrait from '../Hero/HeroPortrait';
 import CapBadge from '../Hero/CapBadge';
 import AbilityTierIcon from '../Equipment/AbilityTierIcon';
 import EquipmentTooltip from '../Equipment/EquipmentTooltip';
+import { SUMMON_STAT_CONFIG } from '../../utils/summonStatConfig';
 
 const ITEM_ICON: Record<string, string> = {
   'Training Weights': '🏋️', 'Iron Kunai': '🗡️', 'Chakra Scroll': '📜',
@@ -172,14 +173,19 @@ export default function TeamSlotComponent({ slot, onUnequip, onHeroClick, onSumm
                   >{summon.name}</div>
                   <div style={{ alignSelf: 'flex-start' }}><CapBadge value={summon.capacity} /></div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: '#44446a', fontSize: 9 }}>Magic Power</span>
-                      <span style={{ color: '#60a5fa', fontSize: 10, fontWeight: 700 }}>{Math.round(summon.magicPower)}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: '#44446a', fontSize: 9 }}>Mana</span>
-                      <span style={{ color: '#818cf8', fontSize: 10, fontWeight: 700 }}>{Math.round(summon.mana)}</span>
-                    </div>
+                    {Object.entries(summon.stats)
+                      .filter(([key, val]) => SUMMON_STAT_CONFIG[key] && val > 0)
+                      .map(([key, val]) => {
+                        const cfg = SUMMON_STAT_CONFIG[key];
+                        return (
+                          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#44446a', fontSize: 9 }}>{cfg.label}</span>
+                            <span style={{ color: '#a78bfa', fontSize: 10, fontWeight: 700 }}>
+                              {cfg.pct ? Math.round(val) + '%' : Math.round(val)}
+                            </span>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
               </div>

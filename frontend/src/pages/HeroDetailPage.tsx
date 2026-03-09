@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Swords, Skull, Zap, ShieldAlert, TrendingUp, TrendingDown, ChevronLeft } from 'lucide-react';
-import { getHero, sellHero, halveCapacity, buyStats, allocateStats, resetHeroStats, changeSeal } from '../api/playerApi';
+import { getHero, sellHero, halveCapacity, buyStats, allocateStats, resetHeroStats, changeSeal, changeElement } from '../api/playerApi';
 import { getHeroEquipment, unequipItemFromSlot, sellInventoryItem, unequipAbilityFromSlot, equipItemToSlot, equipAbilityToSlot } from '../api/equipmentApi';
 import { getTeamSetups, switchTeamSetup, renameTeamSetup } from '../api/teamApi';
 import { usePlayer } from '../context/PlayerContext';
@@ -176,6 +176,9 @@ export default function HeroDetailPage() {
   const [setupSwitching, setSetupSwitching] = useState(false);
   const [renamingIdx, setRenamingIdx] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [confirmElement, setConfirmElement] = useState(false);
+  const [confirmBuyStats, setConfirmBuyStats] = useState(false);
 
   const heroId = Number(id);
 
@@ -356,6 +359,20 @@ export default function HeroDetailPage() {
     }
   }
 
+  async function handleChangeElement() {
+    if (!selectedElement) return;
+    setError(''); setMessage('');
+    try {
+      const res = await changeElement(heroId, selectedElement);
+      setMessage(res.message);
+      setSelectedElement(null);
+      await Promise.all([refresh(), fetchPlayer()]);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to change element.';
+      setError(msg);
+    }
+  }
+
   if (loading) return <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}><span className="spinner" style={{ width: 18, height: 18 }} />Loading hero...</div>;
   if (!hero) return <div style={{ color: '#e94560' }}>Hero not found.</div>;
 
@@ -431,6 +448,55 @@ export default function HeroDetailPage() {
           </div>
         );
       })()}
+
+      {confirmElement && selectedElement && hero && (
+        <div style={styles.confirmOverlay}>
+          <div style={styles.confirmCard}>
+            <div style={styles.confirmTitle}>Change Element?</div>
+            <div style={styles.confirmHeroName}>{hero.name}</div>
+            <div style={styles.confirmSub}>
+              Change element from{' '}
+              <strong style={{ color: ELEMENT_COLOR[hero.element ?? ''] ?? '#a0a0b0' }}>
+                {ELEMENT_SYMBOL[hero.element ?? ''] ?? hero.element ?? 'None'}
+              </strong>
+              {' → '}
+              <strong style={{ color: ELEMENT_COLOR[selectedElement] }}>
+                {ELEMENT_SYMBOL[selectedElement]} {selectedElement.charAt(0) + selectedElement.slice(1).toLowerCase()}
+              </strong>
+              <br />
+              Costs <strong style={{ color: '#fbbf24' }}>
+                {hero.tier === 'LEGENDARY' ? 300 : hero.tier === 'ELITE' ? 150 : 75}g
+              </strong>
+            </div>
+            <div style={styles.confirmBtns}>
+              <button style={{ ...styles.confirmYes, backgroundColor: '#1a2a3a', color: ELEMENT_COLOR[selectedElement], border: `1px solid ${ELEMENT_COLOR[selectedElement]}44` }}
+                onClick={() => { setConfirmElement(false); handleChangeElement(); }}>
+                Confirm
+              </button>
+              <button style={styles.confirmNo} onClick={() => setConfirmElement(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmBuyStats && hero && (
+        <div style={styles.confirmOverlay}>
+          <div style={styles.confirmCard}>
+            <div style={styles.confirmTitle}>Buy Stats?</div>
+            <div style={styles.confirmHeroName}>{hero.name}</div>
+            <div style={styles.confirmSub}>
+              Purchase +1 stat point to allocate.<br />
+              Costs <strong style={{ color: '#fbbf24' }}>{hero.nextStatCost}g</strong>
+            </div>
+            <div style={styles.confirmBtns}>
+              <button style={styles.confirmYes} onClick={() => { setConfirmBuyStats(false); handleBuyStats(); }}>
+                Buy
+              </button>
+              <button style={styles.confirmNo} onClick={() => setConfirmBuyStats(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmHalve && (
         <div style={styles.confirmOverlay}>
@@ -1080,6 +1146,59 @@ export default function HeroDetailPage() {
         </div>{/* end rightCol */}
       </div>{/* end bodyColumns */}
 
+      <div style={{ borderTop: '1px solid rgba(233,69,96,0.12)', display: 'flex', flexDirection: 'column' as const, alignItems: 'stretch' }}>
+      {/* Change Element bar */}
+      {(() => {
+        const ELEMENTS = ['FIRE', 'WIND', 'LIGHTNING', 'EARTH', 'WATER'] as const;
+        const elementCost = hero.tier === 'LEGENDARY' ? 300 : hero.tier === 'ELITE' ? 150 : 75;
+        const canChange = selectedElement !== null && (player?.gold ?? 0) >= elementCost;
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '28px 16px', backgroundColor: '#0e0e1c', flexWrap: 'wrap' as const }}>
+            <span style={{ color: '#f97316', fontStyle: 'italic', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>Change Element to...</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {ELEMENTS.map((el) => {
+                const isActive = selectedElement === el;
+                const isCurrent = hero.element === el;
+                return (
+                  <button
+                    key={el}
+                    onClick={() => setSelectedElement(isActive ? null : el)}
+                    title={el.charAt(0) + el.slice(1).toLowerCase() + (isCurrent ? ' (current)' : '')}
+                    style={{
+                      width: 34, height: 34, borderRadius: 6, border: `2px solid ${isActive ? ELEMENT_COLOR[el] : isCurrent ? ELEMENT_COLOR[el] + '66' : '#2a2a44'}`,
+                      background: isActive ? ELEMENT_COLOR[el] + '28' : isCurrent ? ELEMENT_COLOR[el] + '10' : 'transparent',
+                      cursor: isCurrent ? 'default' : 'pointer',
+                      fontSize: 18, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: isCurrent ? 0.5 : 1,
+                    }}
+                    disabled={isCurrent}
+                  >
+                    {ELEMENT_SYMBOL[el]}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 4 }}>
+              <span style={{ fontSize: 16 }}>💰</span>
+              <span style={{ color: '#fbbf24', fontWeight: 700, fontSize: 13 }}>{elementCost}g</span>
+            </div>
+            <button
+              onClick={() => canChange && setConfirmElement(true)}
+              disabled={!canChange}
+              style={{
+                padding: '7px 20px', borderRadius: 5, border: 'none', fontSize: 13, fontWeight: 700,
+                background: canChange ? '#4a4a6a' : '#252535',
+                color: canChange ? '#e0e0f0' : '#44445a',
+                cursor: canChange ? 'pointer' : 'not-allowed',
+                letterSpacing: '0.05em',
+              }}
+            >
+              CHANGE
+            </button>
+          </div>
+        );
+      })()}
+
       <div style={styles.sellHeroFooter}>
         <button
           style={{ ...styles.halveCapBtn, ...(hero.capacityHalved ? styles.halveCapBtnDone : {}) }}
@@ -1095,7 +1214,7 @@ export default function HeroDetailPage() {
 
         <div style={styles.sellHeroSep} />
 
-        <button style={styles.buyStatsBtn} onClick={handleBuyStats}>
+        <button style={styles.buyStatsBtn} onClick={() => setConfirmBuyStats(true)}>
           Buy Stats
         </button>
         <span style={styles.buyStatsPrice}>💰 {hero.nextStatCost}g</span>
@@ -1135,6 +1254,7 @@ export default function HeroDetailPage() {
         </button>
         <span style={styles.sellHeroPrice}>💰 {hero.sellPrice}g</span>
       </div>
+      </div>{/* end footer wrapper */}
     </div>
   );
 }
@@ -1652,10 +1772,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'Inter, sans-serif',
   },
   sellHeroFooter: {
-    marginTop: 36,
-    paddingTop: 10,
-    marginBottom: 32,
-    borderTop: '1px solid rgba(233,69,96,0.12)',
+    padding: '16px 0 28px',
     display: 'flex',
     alignItems: 'center',
     gap: 10,

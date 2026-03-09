@@ -35,7 +35,7 @@ export default function HexStatDiagram({ stats, growthStats, size = 240, maxValu
   const center = size / 2;
   const radius = size * 0.35;
   const labelRadius = size * 0.47;
-  const fontSize = size >= 200 ? 11 : 10;
+  const fontSize = size >= 200 ? 13 : 11;
   const lineH = fontSize * 1.55;
 
   const uid = `hex-${size}`;
@@ -49,8 +49,8 @@ export default function HexStatDiagram({ stats, growthStats, size = 240, maxValu
 
   return (
     <svg
-      width={size + pad * 2}
-      height={size + pad * 2}
+      width="100%"
+      style={{ display: 'block', maxWidth: size + pad * 2 }}
       viewBox={`${-pad} ${-pad} ${size + pad * 2} ${size + pad * 2}`}
     >
       <defs>
@@ -165,10 +165,10 @@ export default function HexStatDiagram({ stats, growthStats, size = 240, maxValu
         return (
           <text key={`label-${i}`} textAnchor={textAnchor} fontSize={fontSize}>
             <tspan x={p.x} y={y0}>
-              <tspan fill={s.color} fontWeight="700">{value.toFixed(0)}</tspan>
-              <tspan fill="#4ade80" fontSize={fontSize - 1}> +{growth.toFixed(1)}</tspan>
+              <tspan fill={s.color} fontWeight="800" fontSize={fontSize + 1}>{value.toFixed(0)}</tspan>
+              <tspan fill="#4ade80" fontSize={fontSize}> +{growth.toFixed(1)}</tspan>
             </tspan>
-            <tspan x={p.x} dy={lineH} fill="#6b6b90" fontSize={fontSize - 1}>{s.label}</tspan>
+            <tspan x={p.x} dy={lineH} fill="#c0c0e0" fontWeight="600" fontSize={fontSize - 1}>{s.label}</tspan>
           </text>
         );
       })}

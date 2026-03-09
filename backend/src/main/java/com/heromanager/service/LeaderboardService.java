@@ -43,7 +43,7 @@ public class LeaderboardService {
             entry.put("name", t.getDisplayName());
             entry.put("imagePath", t.getImagePath());
             entry.put("tier", t.getTier() != null ? t.getTier().name() : null);
-            entry.put("element", t.getElement() != null ? t.getElement().name() : null);
+            entry.put("element", hero.getElementOverride() != null ? hero.getElementOverride() : (t.getElement() != null ? t.getElement().name() : null));
             entry.put("level", hero.getLevel());
             entry.put("clashesWon", hero.getClashesWon());
             entry.put("clashesLost", hero.getClashesLost());

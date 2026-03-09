@@ -16,6 +16,7 @@ import type {
   TeamResponse, TeamSetupResponse, HeroResponse, SummonResponse, ErrorResponse,
   HeroEquipmentResponse, CombinedSlot, HeroStats,
 } from '../types';
+import { SUMMON_STAT_CONFIG } from '../utils/summonStatConfig';
 const POWER_CSS = `
 @keyframes setupTabPulse {
   0%, 100% { box-shadow: 0 0 10px rgba(233,69,96,0.25), inset 0 1px 0 rgba(255,255,255,0.05); }
@@ -520,14 +521,19 @@ export default function TeamPage() {
                             </div>
                             <CapBadge value={summon.capacity} />
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 1 }}>
-                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <span style={{ color: '#8888aa', fontSize: 11, fontStyle: 'italic', minWidth: 72 }}>Magic Power</span>
-                                <span style={{ color: '#60a5fa', fontSize: 12, fontWeight: 700 }}>{Math.round(summon.stats.magicPower)}</span>
-                              </div>
-                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <span style={{ color: '#8888aa', fontSize: 11, fontStyle: 'italic', minWidth: 72 }}>Mana</span>
-                                <span style={{ color: '#60a5fa', fontSize: 12, fontWeight: 700 }}>{Math.round(summon.stats.mana)}</span>
-                              </div>
+                              {Object.entries(summon.stats)
+                                .filter(([key, val]) => SUMMON_STAT_CONFIG[key] && (val ?? 0) > 0)
+                                .map(([key, val]) => {
+                                  const cfg = SUMMON_STAT_CONFIG[key];
+                                  return (
+                                    <div key={key} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                      <span style={{ color: '#8888aa', fontSize: 11, fontStyle: 'italic', minWidth: 72 }}>{cfg.label}</span>
+                                      <span style={{ color: '#a78bfa', fontSize: 12, fontWeight: 700 }}>
+                                        {cfg.pct ? Math.round(val ?? 0) + '%' : Math.round(val ?? 0)}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
                             </div>
                           </div>
                         </div>

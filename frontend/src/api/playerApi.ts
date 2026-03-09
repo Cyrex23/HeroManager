@@ -108,6 +108,11 @@ export async function changeSeal(heroId: number, direction: 'up' | 'down'): Prom
   return res.data;
 }
 
+export async function changeElement(heroId: number, element: string): Promise<{ message: string; element: string; goldSpent: number; goldTotal: number }> {
+  const res = await apiClient.post(`/player/hero/${heroId}/change-element`, { element });
+  return res.data;
+}
+
 export async function getOnlineCount(): Promise<number> {
   const res = await apiClient.get<{ count: number }>('/player/online-count');
   return res.data.count;

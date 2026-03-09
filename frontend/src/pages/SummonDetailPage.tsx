@@ -6,6 +6,7 @@ import { usePlayer } from '../context/PlayerContext';
 import type { SummonResponse } from '../types';
 import HeroPortrait from '../components/Hero/HeroPortrait';
 import CapBadge from '../components/Hero/CapBadge';
+import { SUMMON_STAT_CONFIG } from '../utils/summonStatConfig';
 
 if (typeof document !== 'undefined') {
   const id = 'summon-detail-css';
@@ -46,10 +47,11 @@ if (typeof document !== 'undefined') {
   }
 }
 
-const STAT_ROWS: { key: 'magicPower' | 'mana'; label: string; color: string }[] = [
-  { key: 'magicPower', label: 'Magic Power', color: '#60a5fa' },
-  { key: 'mana',       label: 'Mana',        color: '#a78bfa' },
-];
+const SUMMON_STAT_COLOR: Record<string, string> = {
+  magicPower:       '#60a5fa',
+  magicProficiency: '#a78bfa',
+  spellMastery:     '#c4b5fd',
+};
 
 export default function SummonDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -207,14 +209,22 @@ export default function SummonDetailPage() {
             <span style={styles.statHeaderAttr}>Attribute</span>
             <span style={styles.statHeaderNum}>Value</span>
           </div>
-          {STAT_ROWS.map(({ key, label, color }) => (
-            <div key={key} style={styles.statRow}>
-              <span style={{ ...styles.statLabel, color }}>{label}</span>
-              <span style={styles.statValue}>
-                {summon.stats[key] !== undefined ? summon.stats[key].toFixed(1) : '—'}
-              </span>
-            </div>
-          ))}
+          {Object.entries(summon.stats)
+            .filter(([key]) => SUMMON_STAT_CONFIG[key])
+            .map(([key, raw]) => {
+              const cfg = SUMMON_STAT_CONFIG[key];
+              const color = SUMMON_STAT_COLOR[key] ?? '#e0e0e0';
+              let display = '—';
+              if (raw !== undefined) {
+                display = cfg.pct ? Math.round(raw) + '%' : raw.toFixed(1);
+              }
+              return (
+                <div key={key} style={styles.statRow}>
+                  <span style={{ ...styles.statLabel, color }}>{cfg.label}</span>
+                  <span style={styles.statValue}>{display}</span>
+                </div>
+              );
+            })}
         </div>
       </div>
 

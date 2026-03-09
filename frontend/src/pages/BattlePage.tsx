@@ -237,18 +237,35 @@ export default function BattlePage() {
                     <span>Elem <strong>{(round.attackerStatElem ?? 0).toFixed(1)}</strong></span>
                     <span>Mana <strong>{(round.attackerStatMana ?? 0).toFixed(1)}</strong></span>
                     <span>Stam <strong>{(round.attackerStatStam ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#fb923c' }}>Crit Chance <strong>{((round.attackerCritChance ?? 0) * 100).toFixed(1)}%</strong></span>
+                    <span style={{ color: '#f97316' }}>Crit Dmg <strong>{((round.attackerCritDamagePct ?? 0) * 100).toFixed(1)}%</strong></span>
+                    <span style={{ color: '#60a5fa' }}>MagP <strong>{((round.attackerMagicProfChance ?? 0) * 100).toFixed(1)}%</strong></span>
+                    <span style={{ color: '#34d399' }}>Dex Prof <strong>{((round.attackerDexProficiency ?? 0) * 100).toFixed(1)}%</strong></span>
+                    <span style={{ color: '#6ee7b7' }}>Dex Posture <strong>{((round.attackerDexPosture ?? 0) * 100).toFixed(1)}%</strong></span>
                   </div>
                   {/* Calculation */}
                   <div style={styles.mathRow}>
                     <span style={styles.mathKey}>PA ×0.5</span>
                     <span style={styles.mathVal}>{(round.attackerPaContrib ?? 0).toFixed(2)}</span>
                   </div>
+                  {round.attackerCrit && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 12 }}>
+                      <span style={{ ...styles.mathKey, color: '#fb923c', fontSize: 10 }}>↳ Crit PA +{((round.attackerCritDamagePct ?? 0) * 100).toFixed(0)}%</span>
+                      <span style={{ ...styles.mathVal, color: '#fb923c' }}>+{(round.attackerCritPaBonus ?? 0).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div style={styles.mathRow}>
-                    <span style={styles.mathKey}>MP ×rand</span>
-                    <span style={styles.mathVal}>{(round.attackerMpContrib ?? 0).toFixed(2)}</span>
+                    <span style={styles.mathKey}>MP ×{(round.attackerMpRoll ?? 0).toFixed(3)}{round.attackerMagicProf ? ' ↺' : ''}</span>
+                    <span style={{ ...styles.mathVal, ...(round.attackerMagicProf ? { color: '#60a5fa' } : {}) }}>{(round.attackerMpContrib ?? 0).toFixed(2)}</span>
                   </div>
+                  {round.attackerMagicProf && round.attackerMpFirstRoll != null && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#60a5fa', fontSize: 9 }}>↺ rolled {(round.attackerMpFirstRoll).toFixed(3)} → {(round.attackerMpRoll ?? 0).toFixed(3)}</span>
+                      <span />
+                    </div>
+                  )}
                   <div style={styles.mathRow}>
-                    <span style={styles.mathKey}>Dex ×0.33</span>
+                    <span style={styles.mathKey}>Dex ×{(round.attackerDexFactor ?? 0.33).toFixed(2)}</span>
                     <span style={styles.mathVal}>{(round.attackerDexContrib ?? 0).toFixed(2)}</span>
                   </div>
                   <div style={{ ...styles.mathRow, borderTop: '1px solid #16213e', marginTop: 2, paddingTop: 2 }}>
@@ -295,18 +312,35 @@ export default function BattlePage() {
                     <span>Elem <strong>{(round.defenderStatElem ?? 0).toFixed(1)}</strong></span>
                     <span>Mana <strong>{(round.defenderStatMana ?? 0).toFixed(1)}</strong></span>
                     <span>Stam <strong>{(round.defenderStatStam ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#fb923c' }}>Crit Chance <strong>{((round.defenderCritChance ?? 0) * 100).toFixed(1)}%</strong></span>
+                    <span style={{ color: '#f97316' }}>Crit Dmg <strong>{((round.defenderCritDamagePct ?? 0) * 100).toFixed(1)}%</strong></span>
+                    <span style={{ color: '#60a5fa' }}>MagP <strong>{((round.defenderMagicProfChance ?? 0) * 100).toFixed(1)}%</strong></span>
+                    <span style={{ color: '#34d399' }}>Dex Prof <strong>{((round.defenderDexProficiency ?? 0) * 100).toFixed(1)}%</strong></span>
+                    <span style={{ color: '#6ee7b7' }}>Dex Posture <strong>{((round.defenderDexPosture ?? 0) * 100).toFixed(1)}%</strong></span>
                   </div>
                   {/* Calculation */}
                   <div style={styles.mathRow}>
                     <span style={styles.mathKey}>PA ×0.5</span>
                     <span style={styles.mathVal}>{(round.defenderPaContrib ?? 0).toFixed(2)}</span>
                   </div>
+                  {round.defenderCrit && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 12 }}>
+                      <span style={{ ...styles.mathKey, color: '#fb923c', fontSize: 10 }}>↳ Crit PA +{((round.defenderCritDamagePct ?? 0) * 100).toFixed(0)}%</span>
+                      <span style={{ ...styles.mathVal, color: '#fb923c' }}>+{(round.defenderCritPaBonus ?? 0).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div style={styles.mathRow}>
-                    <span style={styles.mathKey}>MP ×rand</span>
-                    <span style={styles.mathVal}>{(round.defenderMpContrib ?? 0).toFixed(2)}</span>
+                    <span style={styles.mathKey}>MP ×{(round.defenderMpRoll ?? 0).toFixed(3)}{round.defenderMagicProf ? ' ↺' : ''}</span>
+                    <span style={{ ...styles.mathVal, ...(round.defenderMagicProf ? { color: '#60a5fa' } : {}) }}>{(round.defenderMpContrib ?? 0).toFixed(2)}</span>
                   </div>
+                  {round.defenderMagicProf && round.defenderMpFirstRoll != null && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#60a5fa', fontSize: 9 }}>↺ rolled {(round.defenderMpFirstRoll).toFixed(3)} → {(round.defenderMpRoll ?? 0).toFixed(3)}</span>
+                      <span />
+                    </div>
+                  )}
                   <div style={styles.mathRow}>
-                    <span style={styles.mathKey}>Dex ×0.33</span>
+                    <span style={styles.mathKey}>Dex ×{(round.defenderDexFactor ?? 0.33).toFixed(2)}</span>
                     <span style={styles.mathVal}>{(round.defenderDexContrib ?? 0).toFixed(2)}</span>
                   </div>
                   <div style={{ ...styles.mathRow, borderTop: '1px solid #16213e', marginTop: 2, paddingTop: 2 }}>

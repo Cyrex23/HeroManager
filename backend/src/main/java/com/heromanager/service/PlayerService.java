@@ -128,7 +128,7 @@ public class PlayerService {
                 .equippedItems(Collections.emptyList())
                 .equippedAbilities(Collections.emptyList())
                 .tier(t.getTier() != null ? t.getTier().name() : null)
-                .element(t.getElement() != null ? t.getElement().name() : null)
+                .element(hero.getElementOverride() != null ? hero.getElementOverride() : (t.getElement() != null ? t.getElement().name() : null))
                 .clashesWon(hero.getClashesWon())
                 .clashesLost(hero.getClashesLost())
                 .currentWinStreak(hero.getCurrentWinStreak())
@@ -210,7 +210,7 @@ public class PlayerService {
                     .equippedItems(Collections.emptyList())
                     .equippedAbilities(Collections.emptyList())
                     .tier(t.getTier() != null ? t.getTier().name() : null)
-                    .element(t.getElement() != null ? t.getElement().name() : null)
+                    .element(hero.getElementOverride() != null ? hero.getElementOverride() : (t.getElement() != null ? t.getElement().name() : null))
                     .clashesWon(hero.getClashesWon())
                     .clashesLost(hero.getClashesLost())
                     .currentWinStreak(hero.getCurrentWinStreak())
@@ -253,8 +253,7 @@ public class PlayerService {
             SummonTemplate t = summon.getTemplate();
             if (t == null) continue;
             int level = summon.getLevel();
-            double mp = t.getBaseMp() + t.getGrowthMp() * (level - 1);
-            double mana = t.getBaseMana() + t.getGrowthMana() * (level - 1);
+            Map<String, Double> stats = buildSummonStats(t, level);
 
             result.add(SummonResponse.builder()
                     .id(summon.getId())
@@ -266,8 +265,8 @@ public class PlayerService {
                     .xpToNextLevel(level * level * 10)
                     .capacity(summon.getCapacityOverride() != null ? summon.getCapacityOverride() : t.getCapacity())
                     .isEquipped(equippedSummonIds.contains(summon.getId()))
-                    .stats(Map.of("mana", mana, "magicPower", mp))
-                    .teamBonus("+" + (int) mp + " Magic Power to all team heroes")
+                    .stats(stats)
+                    .teamBonus(buildSummonTeamBonusString(stats))
                     .sellPrice((int) Math.floor(t.getCost() * 0.5))
                     .capacityHalved(summon.getCapacityOverride() != null)
                     .build());
@@ -412,6 +411,39 @@ public class PlayerService {
                 "magicProficiency", stats[0],
                 "criticalChance", stats[1],
                 "spellActivation", stats[2]
+        );
+    }
+
+    @Transactional
+    public Map<String, Object> changeElement(Long playerId, Long heroId, String element) {
+        Hero hero = heroRepository.findByIdAndPlayerId(heroId, playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Hero not found."));
+        try {
+            HeroElement.valueOf(element);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid element: " + element);
+        }
+        HeroTemplate t = hero.getTemplate();
+        int cost;
+        if (t.getTier() == null) cost = 75;
+        else cost = switch (t.getTier()) {
+            case LEGENDARY -> 300;
+            case ELITE -> 150;
+            default -> 75;
+        };
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Player not found."));
+        if (player.getGold() < cost)
+            throw new IllegalArgumentException("Not enough gold. Requires " + cost + "g.");
+        player.setGold(player.getGold() - cost);
+        hero.setElementOverride(element);
+        playerRepository.save(player);
+        heroRepository.save(hero);
+        return Map.of(
+                "message", "Element changed to " + element + ".",
+                "element", element,
+                "goldSpent", cost,
+                "goldTotal", player.getGold()
         );
     }
 
@@ -601,8 +633,7 @@ public class PlayerService {
         SummonTemplate t = summon.getTemplate();
         if (t == null) return null;
         int level = summon.getLevel();
-        double mp = t.getBaseMp() + t.getGrowthMp() * (level - 1);
-        double mana = t.getBaseMana() + t.getGrowthMana() * (level - 1);
+        Map<String, Double> stats = buildSummonStats(t, level);
         List<TeamSlot> slots = teamSlotRepository.findByPlayerId(playerId);
         boolean equipped = slots.stream().anyMatch(s -> summonId.equals(s.getSummonId()));
         return SummonResponse.builder()
@@ -615,8 +646,8 @@ public class PlayerService {
                 .xpToNextLevel(level * level * 10)
                 .capacity(summon.getCapacityOverride() != null ? summon.getCapacityOverride() : t.getCapacity())
                 .isEquipped(equipped)
-                .stats(Map.of("mana", mana, "magicPower", mp))
-                .teamBonus("+" + (int) mp + " Magic Power to all team heroes")
+                .stats(stats)
+                .teamBonus(buildSummonTeamBonusString(stats))
                 .sellPrice((int) Math.floor(t.getCost() * 0.5))
                 .capacityHalved(summon.getCapacityOverride() != null)
                 .build();
@@ -682,6 +713,65 @@ public class PlayerService {
                 "goldSpent", cost,
                 "goldTotal", player.getGold()
         );
+    }
+
+    public static Map<String, Double> buildSummonStats(SummonTemplate t, int level) {
+        int lv = level - 1;
+        Map<String, Double> stats = new LinkedHashMap<>();
+        double mana         = t.getBaseMana()             + t.getGrowthMana()             * lv;
+        double mp           = t.getBaseMp()              + t.getGrowthMp()              * lv;
+        double magicProf    = t.getBaseMagicProficiency() + t.getGrowthMagicProficiency() * lv;
+        double spellMastery = t.getBaseSpellMastery()     + t.getGrowthSpellMastery()     * lv;
+        double critChance   = t.getBaseCritChance()       + t.getGrowthCritChance()       * lv;
+        double critDamage   = t.getBaseCritDamage()       + t.getGrowthCritDamage()       * lv;
+        double dex          = t.getBaseDex()              + t.getGrowthDex()              * lv;
+        double dexProf      = t.getBaseDexProficiency()   + t.getGrowthDexProficiency()   * lv;
+        double dexPosture   = t.getBaseDexPosture()       + t.getGrowthDexPosture()       * lv;
+        double goldBonus        = t.getBaseGoldBonus()        + t.getGrowthGoldBonus()        * lv;
+        double itemFind         = t.getBaseItemFind()         + t.getGrowthItemFind()         * lv;
+        double xpBonus          = t.getBaseXpBonus()          + t.getGrowthXpBonus()          * lv;
+        double attack           = t.getBaseAttack()           + t.getGrowthAttack()           * lv;
+        double spellActivation  = t.getBaseSpellActivation()  + t.getGrowthSpellActivation()  * lv;
+        double stamina          = t.getBaseStamina()          + t.getGrowthStamina()          * lv;
+        double physicalAttack   = t.getBasePhysicalAttack()   + t.getGrowthPhysicalAttack()   * lv;
+        if (mana         != 0) stats.put("mana",              mana);
+        if (mp           != 0) stats.put("magicPower",       mp);
+        if (magicProf    != 0) stats.put("magicProficiency", magicProf);
+        if (spellMastery != 0) stats.put("spellMastery",     spellMastery);
+        if (critChance   != 0) stats.put("critChance",       critChance);
+        if (critDamage   != 0) stats.put("critDamage",       critDamage);
+        if (dex          != 0) stats.put("dexterity",        dex);
+        if (dexProf      != 0) stats.put("dexProficiency",   dexProf);
+        if (dexPosture   != 0) stats.put("dexPosture",       dexPosture);
+        if (goldBonus       != 0) stats.put("goldBonus",       goldBonus);
+        if (itemFind        != 0) stats.put("itemFind",        itemFind);
+        if (xpBonus         != 0) stats.put("xpBonus",        xpBonus);
+        if (attack          != 0) stats.put("attack",          attack);
+        if (spellActivation != 0) stats.put("spellActivation", spellActivation);
+        if (stamina         != 0) stats.put("stamina",         stamina);
+        if (physicalAttack  != 0) stats.put("physicalAttack",  physicalAttack);
+        return stats;
+    }
+
+    public static String buildSummonTeamBonusString(Map<String, Double> stats) {
+        List<String> parts = new ArrayList<>();
+        if (stats.containsKey("mana"))             parts.add("+" + (int)(double) stats.get("mana")             + " Mana");
+        if (stats.containsKey("magicPower"))       parts.add("+" + (int)(double) stats.get("magicPower")       + " Magic Power");
+        if (stats.containsKey("magicProficiency")) parts.add("+" + Math.round(stats.get("magicProficiency"))   + "% Magic Prof");
+        if (stats.containsKey("spellMastery"))     parts.add("+" + (int)(double) stats.get("spellMastery")     + " Spell Mastery");
+        if (stats.containsKey("critChance"))       parts.add("+" + Math.round(stats.get("critChance"))         + "% Crit Chance");
+        if (stats.containsKey("critDamage"))       parts.add("+" + Math.round(stats.get("critDamage"))         + "% Crit Damage");
+        if (stats.containsKey("dexterity"))        parts.add("+" + (int)(double) stats.get("dexterity")        + " Dexterity");
+        if (stats.containsKey("dexProficiency"))   parts.add("+" + Math.round(stats.get("dexProficiency"))     + "% Dex Prof");
+        if (stats.containsKey("dexPosture"))       parts.add("+" + Math.round(stats.get("dexPosture"))         + "% Dex Posture");
+        if (stats.containsKey("goldBonus"))        parts.add("+" + Math.round(stats.get("goldBonus"))          + "% Gold");
+        if (stats.containsKey("itemFind"))         parts.add("+" + (int)(double) stats.get("itemFind")         + " Item Find");
+        if (stats.containsKey("xpBonus"))          parts.add("+" + Math.round(stats.get("xpBonus"))            + "% XP");
+        if (stats.containsKey("attack"))           parts.add("+" + (int)(double) stats.get("attack")           + " Attack");
+        if (stats.containsKey("spellActivation"))  parts.add("+" + Math.round(stats.get("spellActivation"))    + "% Spell Activation");
+        if (stats.containsKey("stamina"))          parts.add("+" + (int)(double) stats.get("stamina")          + " Stamina");
+        if (stats.containsKey("physicalAttack"))   parts.add("+" + (int)(double) stats.get("physicalAttack")   + " Phys Attack");
+        return String.join(", ", parts);
     }
 
     public static Map<String, Double> buildHeroStats(HeroTemplate t, int level) {

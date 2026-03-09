@@ -13,7 +13,10 @@ public class BattleCalculator {
             double staminaReduction,
             double finalAttack,
             boolean didCrit,
-            boolean didMagicProf
+            boolean didMagicProf,
+            double mpRoll,
+            double mpFirstRoll,  // only meaningful when didMagicProf — the initial roll before reroll
+            double critPaBonus   // extra PA damage added on crit (paContrib * critDamage%), 0 if no crit
     ) {}
 
     /**
@@ -64,13 +67,16 @@ public class BattleCalculator {
         double paRaw = pa * 0.5 * (1.0 - Math.min(defPhysImmunity, 0.9));
 
         // ── MP contribution (Magic Proficiency = reroll) ──────────────────────
-        double roll = rng.nextDouble(0.1, 1.0);
+        double roll1 = rng.nextDouble(0.1, 1.0);
+        double mpRoll = roll1;
+        double mpFirstRoll = roll1;
         boolean didMagicProf = false;
         if (attackerMods.magicProficiency() > 0 && rng.nextDouble() < attackerMods.magicProficiency()) {
-            roll = Math.max(roll, rng.nextDouble(0.1, 1.0));
+            double roll2 = rng.nextDouble(0.1, 1.0);
+            mpRoll = Math.max(roll1, roll2);
             didMagicProf = true;
         }
-        double mpRaw = mp * roll * (1.0 - Math.min(defMagicImmunity, 0.9));
+        double mpRaw = mp * mpRoll * (1.0 - Math.min(defMagicImmunity, 0.9));
 
         // ── DEX contribution (Dex Proficiency + Dex Posture) ─────────────────
         double dexFactor = 0.33 + attackerMods.dexProficiency();
@@ -91,11 +97,11 @@ public class BattleCalculator {
         double preCritAttack = statAttack + attackFlat;
         double staminaReduction = rawAttack - preCritAttack;
 
-        // ── Critical hit (only applies to stat-based damage, not attackFlat) ─
+        // ── Critical hit (only boosts PA contribution) ────────────────────────
         boolean didCrit = rng.nextDouble() < attackerMods.critChance();
-        double critMult = didCrit ? (1.5 + attackerMods.critDamage()) : 1.0;
-        double finalAttack = statAttack * critMult + attackFlat;
+        double critPaBonus = didCrit ? paContrib * attackerMods.critDamage() : 0.0;
+        double finalAttack = statAttack + critPaBonus + attackFlat;
 
-        return new AttackBreakdown(paContrib, mpContrib, dexContrib, rawAttack, staminaReduction, finalAttack, didCrit, didMagicProf);
+        return new AttackBreakdown(paContrib, mpContrib, dexContrib, rawAttack, staminaReduction, finalAttack, didCrit, didMagicProf, mpRoll, mpFirstRoll, critPaBonus);
     }
 }
