@@ -245,16 +245,18 @@ export default function Navbar() {
   return (
     <nav style={styles.nav}>
       <style>{XP_STRIP_CSS}</style>
-      {/* Left: Brand + online pill */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+      {/* Left: Brand */}
+      <div style={{ flexShrink: 0 }}>
         <HeroManagerLogo size="md" linkTo="/team" />
-        {onlineCount !== null && (
-          <div style={styles.onlinePill}>
-            <span style={styles.onlineDot} />
-            <span style={styles.onlinePillText}>{onlineCount} players online</span>
-          </div>
-        )}
       </div>
+
+      {/* Online pill — sits between logo and energy bars */}
+      {onlineCount !== null && (
+        <div style={styles.onlinePill}>
+          <span style={styles.onlineDot} />
+          <span style={styles.onlinePillText}>{onlineCount} players online</span>
+        </div>
+      )}
 
       {/* Energy bars */}
       {player && (

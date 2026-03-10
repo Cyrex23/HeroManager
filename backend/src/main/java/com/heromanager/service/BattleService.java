@@ -50,14 +50,22 @@ public class BattleService {
                 if (summon != null) {
                     SummonTemplate st = summon.getTemplate();
                     int lv = summon.getLevel() - 1;
-                    summonBonuses.put("magicPower",       st.getBaseMp()              + st.getGrowthMp()              * lv);
-                    summonBonuses.put("magicProficiency", (st.getBaseMagicProficiency() + st.getGrowthMagicProficiency() * lv) / 100.0);
-                    summonBonuses.put("spellMastery",     st.getBaseSpellMastery()     + st.getGrowthSpellMastery()     * lv);
-                    summonBonuses.put("critChance",       (st.getBaseCritChance()      + st.getGrowthCritChance()      * lv) / 100.0);
-                    summonBonuses.put("critDamage",       (st.getBaseCritDamage()      + st.getGrowthCritDamage()      * lv) / 100.0);
-                    summonBonuses.put("dexterity",         st.getBaseDex()              + st.getGrowthDex()              * lv);
-                    summonBonuses.put("dexProficiency",   (st.getBaseDexProficiency()  + st.getGrowthDexProficiency()  * lv) / 100.0);
-                    summonBonuses.put("dexPosture",       (st.getBaseDexPosture()      + st.getGrowthDexPosture()      * lv) / 100.0);
+                    summonBonuses.put("magicPower",       st.getBaseMp()                + st.getGrowthMp()                * lv);
+                    summonBonuses.put("mana",             st.getBaseMana()              + st.getGrowthMana()              * lv);
+                    summonBonuses.put("physicalAttack",   st.getBasePhysicalAttack()    + st.getGrowthPhysicalAttack()    * lv);
+                    summonBonuses.put("stamina",          st.getBaseStamina()           + st.getGrowthStamina()           * lv);
+                    summonBonuses.put("attack",           st.getBaseAttack()            + st.getGrowthAttack()            * lv);
+                    summonBonuses.put("magicProficiency", (st.getBaseMagicProficiency() + st.getGrowthMagicProficiency()  * lv) / 100.0);
+                    summonBonuses.put("spellMastery",    (st.getBaseSpellMastery()      + st.getGrowthSpellMastery()      * lv) / 100.0);
+                    summonBonuses.put("spellActivation",  (st.getBaseSpellActivation()  + st.getGrowthSpellActivation()   * lv) / 100.0);
+                    summonBonuses.put("critChance",       (st.getBaseCritChance()       + st.getGrowthCritChance()        * lv) / 100.0);
+                    summonBonuses.put("critDamage",       (st.getBaseCritDamage()       + st.getGrowthCritDamage()        * lv) / 100.0);
+                    summonBonuses.put("dexterity",         st.getBaseDex()              + st.getGrowthDex()               * lv);
+                    summonBonuses.put("dexProficiency",   (st.getBaseDexProficiency()   + st.getGrowthDexProficiency()    * lv) / 100.0);
+                    summonBonuses.put("dexPosture",       (st.getBaseDexPosture()       + st.getGrowthDexPosture()        * lv) / 100.0);
+                    summonBonuses.put("expBonus",         (st.getBaseXpBonus()          + st.getGrowthXpBonus()           * lv) / 100.0);
+                    summonBonuses.put("goldBonus",        (st.getBaseGoldBonus()        + st.getGrowthGoldBonus()         * lv) / 100.0);
+                    summonBonuses.put("itemDiscovery",     st.getBaseItemFind()         + st.getGrowthItemFind()          * lv);
                 }
             }
         }
@@ -115,6 +123,9 @@ public class BattleService {
         Map<String, Integer> dWsUsages = new HashMap<>(); // spellId → uses for current d hero
         int cHeroTurn = 0, dHeroTurn = 0;
         int prevCIdx = -1, prevDIdx = -1;
+        // Track remaining DEX per hero (consumed each round, partially recovered via dexPosture)
+        Map<Long, Double> cHeroDex = new HashMap<>();
+        Map<Long, Double> dHeroDex = new HashMap<>();
 
         while (cIdx < cSlots.size() && dIdx < dSlots.size()) {
             roundNumber++;
@@ -155,10 +166,18 @@ public class BattleService {
                 boolean fires = ("ENTRANCE".equals(at.getSpellTrigger()) && cIsNew)
                         || "ATTACK".equals(at.getSpellTrigger());
                 if (!fires || cMana < at.getSpellManaCost()) continue;
-                // Spell Activation boosts T4 chance; Spell Mastery boosts T3 effect
-                double effectiveChance = at.getSpellChance() + (at.getTier() == 4 ? cSpellActivation : 0.0);
-                if (random.nextDouble() >= effectiveChance) continue;
-                cMana -= at.getSpellManaCost();
+                // Spell Activation boosts chance for all tiers; Spell Mastery boosts T3 effect and reduces mana cost
+                double effectiveChance = Math.min(1.0, at.getSpellChance() + cSpellActivation);
+                boolean fired = random.nextDouble() < effectiveChance;
+                Map<String, Object> ev = new LinkedHashMap<>();
+                ev.put("spellName", at.getSpellName());
+                ev.put("heroName",  cHero.getTemplate().getDisplayName());
+                ev.put("trigger",   at.getSpellTrigger());
+                ev.put("chance",    Math.round(effectiveChance * 1000.0) / 10.0);
+                ev.put("fired",     fired);
+                if (!fired) { cSpells.add(ev); continue; }
+                double cEffectiveCost = Math.max(0.0, at.getSpellManaCost() * (1.0 - cSpellMastery));
+                cMana -= cEffectiveCost;
                 double masteryMult = (at.getTier() == 3 && cSpellMastery > 0) ? (1.0 + cSpellMastery) : 1.0;
                 if (at.getSpellBonusPa()   != 0) cStats.merge("physicalAttack", at.getSpellBonusPa()   * masteryMult, Double::sum);
                 if (at.getSpellBonusMp()   != 0) cStats.merge("magicPower",     at.getSpellBonusMp()   * masteryMult, Double::sum);
@@ -166,11 +185,8 @@ public class BattleService {
                 if (at.getSpellBonusElem() != 0) cStats.merge("element",        at.getSpellBonusElem() * masteryMult, Double::sum);
                 if (at.getSpellBonusMana() != 0) cStats.merge("mana",           at.getSpellBonusMana() * masteryMult, Double::sum);
                 if (at.getSpellBonusStam() != 0) cStats.merge("stamina",        at.getSpellBonusStam() * masteryMult, Double::sum);
-                Map<String, Object> ev = new LinkedHashMap<>();
-                ev.put("spellName", at.getSpellName());
-                ev.put("manaCost",  at.getSpellManaCost());
-                ev.put("heroName",  cHero.getTemplate().getDisplayName());
-                ev.put("trigger",   at.getSpellTrigger());
+                ev.put("manaCost",  Math.round(cEffectiveCost * 10.0) / 10.0);
+                if (cSpellMastery > 0) ev.put("originalManaCost", at.getSpellManaCost());
                 cSpells.add(ev);
             }
             // ── Weapon spells pre-clash (challenger) ──────────────────────────
@@ -192,15 +208,18 @@ public class BattleService {
                     if (!fires || cMana < ws.getSpellManaCost()) continue;
                     String wsKey = ws.getId().toString();
                     if (ws.getMaxUsages() > 0 && cWsUsages.getOrDefault(wsKey, 0) >= ws.getMaxUsages()) continue;
-                    if (random.nextDouble() >= ws.getSpellChance() + cSpellActivation) continue;
+                    double wsChanceC = Math.min(1.0, ws.getSpellChance() + cSpellActivation);
+                    boolean wsFiredC = random.nextDouble() < wsChanceC;
+                    Map<String, Object> ev = new LinkedHashMap<>();
+                    ev.put("spellName", ws.getSpellName()); ev.put("heroName", cHero.getTemplate().getDisplayName());
+                    ev.put("trigger", wsTrig); ev.put("chance", Math.round(wsChanceC * 1000.0) / 10.0); ev.put("fired", wsFiredC);
+                    if (!wsFiredC) { cSpells.add(ev); continue; }
                     cMana -= ws.getSpellManaCost();
                     cWsUsages.merge(wsKey, 1, Integer::sum);
                     Map<String, Double> target = ws.isAffectsOpponent() ? dStats : cStats;
                     List<ActiveBuff> targetBufs = ws.isAffectsOpponent() ? dBufList : cBufList;
                     applyWeaponSpellBonuses(ws, target, targetBufs, ws.getLastsTurns(), false);
-                    Map<String, Object> ev = new LinkedHashMap<>();
-                    ev.put("spellName", ws.getSpellName()); ev.put("manaCost", ws.getSpellManaCost());
-                    ev.put("heroName", cHero.getTemplate().getDisplayName()); ev.put("trigger", wsTrig);
+                    ev.put("manaCost", ws.getSpellManaCost());
                     if (ws.isAffectsOpponent()) ev.put("affectsOpponent", true);
                     cSpells.add(ev);
                 }
@@ -214,9 +233,17 @@ public class BattleService {
                 boolean fires = ("ENTRANCE".equals(at.getSpellTrigger()) && dIsNew)
                         || "ATTACK".equals(at.getSpellTrigger());
                 if (!fires || dMana < at.getSpellManaCost()) continue;
-                double effectiveChance = at.getSpellChance() + (at.getTier() == 4 ? dSpellActivation : 0.0);
-                if (random.nextDouble() >= effectiveChance) continue;
-                dMana -= at.getSpellManaCost();
+                double effectiveChance = Math.min(1.0, at.getSpellChance() + dSpellActivation);
+                boolean fired = random.nextDouble() < effectiveChance;
+                Map<String, Object> ev = new LinkedHashMap<>();
+                ev.put("spellName", at.getSpellName());
+                ev.put("heroName",  dHero.getTemplate().getDisplayName());
+                ev.put("trigger",   at.getSpellTrigger());
+                ev.put("chance",    Math.round(effectiveChance * 1000.0) / 10.0);
+                ev.put("fired",     fired);
+                if (!fired) { dSpells.add(ev); continue; }
+                double dEffectiveCost = Math.max(0.0, at.getSpellManaCost() * (1.0 - dSpellMastery));
+                dMana -= dEffectiveCost;
                 double masteryMult = (at.getTier() == 3 && dSpellMastery > 0) ? (1.0 + dSpellMastery) : 1.0;
                 if (at.getSpellBonusPa()   != 0) dStats.merge("physicalAttack", at.getSpellBonusPa()   * masteryMult, Double::sum);
                 if (at.getSpellBonusMp()   != 0) dStats.merge("magicPower",     at.getSpellBonusMp()   * masteryMult, Double::sum);
@@ -224,11 +251,8 @@ public class BattleService {
                 if (at.getSpellBonusElem() != 0) dStats.merge("element",        at.getSpellBonusElem() * masteryMult, Double::sum);
                 if (at.getSpellBonusMana() != 0) dStats.merge("mana",           at.getSpellBonusMana() * masteryMult, Double::sum);
                 if (at.getSpellBonusStam() != 0) dStats.merge("stamina",        at.getSpellBonusStam() * masteryMult, Double::sum);
-                Map<String, Object> ev = new LinkedHashMap<>();
-                ev.put("spellName", at.getSpellName());
-                ev.put("manaCost",  at.getSpellManaCost());
-                ev.put("heroName",  dHero.getTemplate().getDisplayName());
-                ev.put("trigger",   at.getSpellTrigger());
+                ev.put("manaCost",  Math.round(dEffectiveCost * 10.0) / 10.0);
+                if (dSpellMastery > 0) ev.put("originalManaCost", at.getSpellManaCost());
                 dSpells.add(ev);
             }
             // ── Weapon spells pre-clash (defender) ────────────────────────────
@@ -250,20 +274,29 @@ public class BattleService {
                     if (!fires || dMana < ws.getSpellManaCost()) continue;
                     String wsKey = ws.getId().toString();
                     if (ws.getMaxUsages() > 0 && dWsUsages.getOrDefault(wsKey, 0) >= ws.getMaxUsages()) continue;
-                    if (random.nextDouble() >= ws.getSpellChance() + dSpellActivation) continue;
+                    double wsChanceD = Math.min(1.0, ws.getSpellChance() + dSpellActivation);
+                    boolean wsFiredD = random.nextDouble() < wsChanceD;
+                    Map<String, Object> ev = new LinkedHashMap<>();
+                    ev.put("spellName", ws.getSpellName()); ev.put("heroName", dHero.getTemplate().getDisplayName());
+                    ev.put("trigger", wsTrig); ev.put("chance", Math.round(wsChanceD * 1000.0) / 10.0); ev.put("fired", wsFiredD);
+                    if (!wsFiredD) { dSpells.add(ev); continue; }
                     dMana -= ws.getSpellManaCost();
                     dWsUsages.merge(wsKey, 1, Integer::sum);
                     Map<String, Double> target = ws.isAffectsOpponent() ? cStats : dStats;
                     List<ActiveBuff> targetBufs = ws.isAffectsOpponent() ? cBufList : dBufList;
                     applyWeaponSpellBonuses(ws, target, targetBufs, ws.getLastsTurns(), false);
-                    Map<String, Object> ev = new LinkedHashMap<>();
-                    ev.put("spellName", ws.getSpellName()); ev.put("manaCost", ws.getSpellManaCost());
-                    ev.put("heroName", dHero.getTemplate().getDisplayName()); ev.put("trigger", wsTrig);
+                    ev.put("manaCost", ws.getSpellManaCost());
                     if (ws.isAffectsOpponent()) ev.put("affectsOpponent", true);
                     dSpells.add(ev);
                 }
             }
             dEntranceFired.add(dHero.getId());
+
+            // ── DEX persistence: apply tracked current DEX (consumed & recovered each round) ──
+            double cCurrentDex = cHeroDex.getOrDefault(cHero.getId(), cStats.getOrDefault("dexterity", 0.0));
+            double dCurrentDex = dHeroDex.getOrDefault(dHero.getId(), dStats.getOrDefault("dexterity", 0.0));
+            cStats.put("dexterity", cCurrentDex);
+            dStats.put("dexterity", dCurrentDex);
 
             // ── Stamina effectiveness ─────────────────────────────────────────
             double cStaminaEff = Math.min(1.0, cStats.getOrDefault("stamina", 0.0) / (60.0 + cHero.getLevel() * 2.5));
@@ -305,6 +338,19 @@ public class BattleService {
             double cAttack = cBreak.finalAttack();
             double dAttack = dBreak.finalAttack();
 
+            // ── DEX update: consume used DEX, recover fraction via dexPosture ──
+            double cDexFactor    = 0.33 + cMods.dexProficiency();
+            double cDexUsed      = cCurrentDex * cDexFactor;
+            double cDexRecovered = cMods.dexPosture() * cDexUsed;
+            double cNextDex      = Math.max(0.0, cCurrentDex - cDexUsed + cDexRecovered);
+            cHeroDex.put(cHero.getId(), cNextDex);
+
+            double dDexFactor    = 0.33 + dMods.dexProficiency();
+            double dDexUsed      = dCurrentDex * dDexFactor;
+            double dDexRecovered = dMods.dexPosture() * dDexUsed;
+            double dNextDex      = Math.max(0.0, dCurrentDex - dDexUsed + dDexRecovered);
+            dHeroDex.put(dHero.getId(), dNextDex);
+
             // ── Weapon spells post-clash (challenger) ─────────────────────────
             for (EquippedItem ei : equippedItemRepository.findByHeroIdAndSlotNumberIsNotNull(cHero.getId())) {
                 ItemTemplate it = ei.getItemTemplate();
@@ -321,14 +367,17 @@ public class BattleService {
                     if (!fires || cMana < ws.getSpellManaCost()) continue;
                     String wsKey = ws.getId().toString();
                     if (ws.getMaxUsages() > 0 && cWsUsages.getOrDefault(wsKey, 0) >= ws.getMaxUsages()) continue;
-                    if (random.nextDouble() >= ws.getSpellChance() + cSpellActivation) continue;
+                    double wsChanceC2 = Math.min(1.0, ws.getSpellChance() + cSpellActivation);
+                    boolean wsFiredC2 = random.nextDouble() < wsChanceC2;
+                    Map<String, Object> ev = new LinkedHashMap<>();
+                    ev.put("spellName", ws.getSpellName()); ev.put("heroName", cHero.getTemplate().getDisplayName());
+                    ev.put("trigger", wsTrig); ev.put("chance", Math.round(wsChanceC2 * 1000.0) / 10.0); ev.put("fired", wsFiredC2);
+                    if (!wsFiredC2) { cSpells.add(ev); continue; }
                     cMana -= ws.getSpellManaCost();
                     cWsUsages.merge(wsKey, 1, Integer::sum);
                     List<ActiveBuff> targetBufs = ws.isAffectsOpponent() ? dBufList : cBufList;
                     applyWeaponSpellBonuses(ws, null, targetBufs, ws.getLastsTurns(), true);
-                    Map<String, Object> ev = new LinkedHashMap<>();
-                    ev.put("spellName", ws.getSpellName()); ev.put("manaCost", ws.getSpellManaCost());
-                    ev.put("heroName", cHero.getTemplate().getDisplayName()); ev.put("trigger", wsTrig);
+                    ev.put("manaCost", ws.getSpellManaCost());
                     if (ws.isAffectsOpponent()) ev.put("affectsOpponent", true);
                     cSpells.add(ev);
                 }
@@ -349,14 +398,17 @@ public class BattleService {
                     if (!fires || dMana < ws.getSpellManaCost()) continue;
                     String wsKey = ws.getId().toString();
                     if (ws.getMaxUsages() > 0 && dWsUsages.getOrDefault(wsKey, 0) >= ws.getMaxUsages()) continue;
-                    if (random.nextDouble() >= ws.getSpellChance() + dSpellActivation) continue;
+                    double wsChanceD2 = Math.min(1.0, ws.getSpellChance() + dSpellActivation);
+                    boolean wsFiredD2 = random.nextDouble() < wsChanceD2;
+                    Map<String, Object> ev = new LinkedHashMap<>();
+                    ev.put("spellName", ws.getSpellName()); ev.put("heroName", dHero.getTemplate().getDisplayName());
+                    ev.put("trigger", wsTrig); ev.put("chance", Math.round(wsChanceD2 * 1000.0) / 10.0); ev.put("fired", wsFiredD2);
+                    if (!wsFiredD2) { dSpells.add(ev); continue; }
                     dMana -= ws.getSpellManaCost();
                     dWsUsages.merge(wsKey, 1, Integer::sum);
                     List<ActiveBuff> targetBufs = ws.isAffectsOpponent() ? cBufList : dBufList;
                     applyWeaponSpellBonuses(ws, null, targetBufs, ws.getLastsTurns(), true);
-                    Map<String, Object> ev = new LinkedHashMap<>();
-                    ev.put("spellName", ws.getSpellName()); ev.put("manaCost", ws.getSpellManaCost());
-                    ev.put("heroName", dHero.getTemplate().getDisplayName()); ev.put("trigger", wsTrig);
+                    ev.put("manaCost", ws.getSpellManaCost());
                     if (ws.isAffectsOpponent()) ev.put("affectsOpponent", true);
                     dSpells.add(ev);
                 }
@@ -386,6 +438,7 @@ public class BattleService {
             if (cBreak.staminaReduction() > 0.001) round.put("attackerStaminaReduction", Math.round(cBreak.staminaReduction() * 100.0) / 100.0);
             if (cBreak.didCrit())                  round.put("attackerCrit", true);
             if (cBreak.didMagicProf())             round.put("attackerMagicProf", true);
+            if (cDexFactor >= 0.80)                round.put("attackerHighDex", true);
             round.put("attackerDexFactor",        Math.round((0.33 + cMods.dexProficiency()) * 1000.0) / 1000.0);
             round.put("attackerDexProficiency",   Math.round((0.33 + cMods.dexProficiency()) * 1000.0) / 1000.0);
             round.put("attackerDexPosture",       Math.round(cMods.dexPosture()     * 1000.0) / 1000.0);
@@ -397,10 +450,15 @@ public class BattleService {
             round.put("attackerMagicProfChance",   Math.round(cMods.magicProficiency() * 1000.0) / 1000.0);
             round.put("attackerStatPa",   Math.round(cStats.getOrDefault("physicalAttack", 0.0) * 100.0) / 100.0);
             round.put("attackerStatMp",   Math.round(cStats.getOrDefault("magicPower",     0.0) * 100.0) / 100.0);
-            round.put("attackerStatDex",  Math.round(cStats.getOrDefault("dexterity",      0.0) * 100.0) / 100.0);
+            round.put("attackerStatDex",  Math.round(cCurrentDex * 100.0) / 100.0);
+            if (cMods.attackBonus() > 0)       round.put("attackerStatAttack",        Math.round(cMods.attackBonus()                               * 100.0) / 100.0);
+            if (cSpellActivation > 0)          round.put("attackerStatSpellActivation", Math.round(cSpellActivation                                  * 1000.0) / 1000.0);
             round.put("attackerStatElem", Math.round(cStats.getOrDefault("element",        0.0) * 100.0) / 100.0);
             round.put("attackerStatMana", Math.round(cStats.getOrDefault("mana",           0.0) * 100.0) / 100.0);
             round.put("attackerStatStam", Math.round(cStats.getOrDefault("stamina",        0.0) * 100.0) / 100.0);
+            round.put("attackerDexUsed",      Math.round(cDexUsed      * 100.0) / 100.0);
+            round.put("attackerDexRecovered", Math.round(cDexRecovered * 100.0) / 100.0);
+            round.put("attackerDexRemaining", Math.round(cNextDex      * 100.0) / 100.0);
             if (getEffectiveElement(cHero) != null) round.put("attackerElement", getEffectiveElement(cHero).name());
             round.put("defenderPaContrib",        Math.round(dBreak.paContrib()  * 100.0) / 100.0);
             round.put("defenderMpContrib",        Math.round(dBreak.mpContrib()  * 100.0) / 100.0);
@@ -409,6 +467,7 @@ public class BattleService {
             if (dBreak.staminaReduction() > 0.001) round.put("defenderStaminaReduction", Math.round(dBreak.staminaReduction() * 100.0) / 100.0);
             if (dBreak.didCrit())                  round.put("defenderCrit", true);
             if (dBreak.didMagicProf())             round.put("defenderMagicProf", true);
+            if (dDexFactor >= 0.80)                round.put("defenderHighDex", true);
             round.put("defenderDexFactor",        Math.round((0.33 + dMods.dexProficiency()) * 1000.0) / 1000.0);
             round.put("defenderDexProficiency",   Math.round((0.33 + dMods.dexProficiency()) * 1000.0) / 1000.0);
             round.put("defenderDexPosture",       Math.round(dMods.dexPosture()     * 1000.0) / 1000.0);
@@ -420,10 +479,15 @@ public class BattleService {
             round.put("defenderMagicProfChance",   Math.round(dMods.magicProficiency() * 1000.0) / 1000.0);
             round.put("defenderStatPa",   Math.round(dStats.getOrDefault("physicalAttack", 0.0) * 100.0) / 100.0);
             round.put("defenderStatMp",   Math.round(dStats.getOrDefault("magicPower",     0.0) * 100.0) / 100.0);
-            round.put("defenderStatDex",  Math.round(dStats.getOrDefault("dexterity",      0.0) * 100.0) / 100.0);
+            round.put("defenderStatDex",  Math.round(dCurrentDex * 100.0) / 100.0);
+            if (dMods.attackBonus() > 0)       round.put("defenderStatAttack",        Math.round(dMods.attackBonus()                               * 100.0) / 100.0);
+            if (dSpellActivation > 0)          round.put("defenderStatSpellActivation", Math.round(dSpellActivation                                  * 1000.0) / 1000.0);
             round.put("defenderStatElem", Math.round(dStats.getOrDefault("element",        0.0) * 100.0) / 100.0);
             round.put("defenderStatMana", Math.round(dStats.getOrDefault("mana",           0.0) * 100.0) / 100.0);
             round.put("defenderStatStam", Math.round(dStats.getOrDefault("stamina",        0.0) * 100.0) / 100.0);
+            round.put("defenderDexUsed",      Math.round(dDexUsed      * 100.0) / 100.0);
+            round.put("defenderDexRecovered", Math.round(dDexRecovered * 100.0) / 100.0);
+            round.put("defenderDexRemaining", Math.round(dNextDex      * 100.0) / 100.0);
             if (getEffectiveElement(dHero) != null) round.put("defenderElement", getEffectiveElement(dHero).name());
             round.put("attackerImagePath", cHero.getTemplate().getImagePath() != null ? cHero.getTemplate().getImagePath() : "");
             round.put("defenderImagePath", dHero.getTemplate().getImagePath() != null ? dHero.getTemplate().getImagePath() : "");
@@ -433,6 +497,8 @@ public class BattleService {
             if (!dSpells.isEmpty()) round.put("defenderSpells",   dSpells);
             round.put("challengerManaAfter", Math.round(cMana * 10.0) / 10.0);
             round.put("defenderManaAfter",   Math.round(dMana * 10.0) / 10.0);
+            if (cSpellMastery > 0) round.put("attackerSpellMastery", Math.round(cSpellMastery * 1000.0) / 1000.0);
+            if (dSpellMastery > 0) round.put("defenderSpellMastery", Math.round(dSpellMastery * 1000.0) / 1000.0);
 
             // ── Determine winner ──────────────────────────────────────────────
             if (cAttack > dAttack) {
@@ -555,7 +621,20 @@ public class BattleService {
         result.put("defender",               defenderInfo);
         result.put("rounds",                 rounds);
         result.put("winner",                 winner);
+        // Build xpBonusPercent maps (heroName → bonus %) for frontend display
+        Map<String, Integer> cXpBonusPct = new LinkedHashMap<>();
+        for (HeroSlot hs : challengerTeam.heroSlots()) {
+            double bonus = cHeroExpBonus.getOrDefault(hs.hero().getId(), 0.0);
+            if (bonus > 0) cXpBonusPct.put(hs.hero().getTemplate().getDisplayName(), (int) Math.round(bonus * 100));
+        }
+        Map<String, Integer> dXpBonusPct = new LinkedHashMap<>();
+        for (HeroSlot hs : defenderTeam.heroSlots()) {
+            double bonus = dHeroExpBonus.getOrDefault(hs.hero().getId(), 0.0);
+            if (bonus > 0) dXpBonusPct.put(hs.hero().getTemplate().getDisplayName(), (int) Math.round(bonus * 100));
+        }
+
         result.put("xpGained",               Map.of("challenger", challengerXp, "defender", defenderXp));
+        result.put("xpBonusPercent",          Map.of("challenger", cXpBonusPct, "defender", dXpBonusPct));
         result.put("summonXp",               Map.of("challenger", challengerSummonXp, "defender", defenderSummonXp));
         result.put("challengerManaTotal",    Math.round(cManaTotal * 10.0) / 10.0);
         result.put("defenderManaTotal",      Math.round(dManaTotal * 10.0) / 10.0);
@@ -634,10 +713,11 @@ public class BattleService {
             if (bonus.getValue() != 0) stats.merge(bonus.getKey(), bonus.getValue(), Double::sum);
         }
 
-        // ── Seal stats (magicProficiency + critChance from seal table) ────────
+        // ── Seal stats (magicProficiency + critChance + spellActivation from seal table) ──
         int[] sealStats = PlayerService.getSealStats(hero.getSeal());
         stats.merge("magicProficiency", sealStats[0] / 100.0, Double::sum);
         stats.merge("critChance",       sealStats[1] / 100.0, Double::sum);
+        stats.merge("spellActivation",  sealStats[2] / 100.0, Double::sum);
 
         // ── Off-slot stamina debuff ───────────────────────────────────────────
         HeroTier heroTier = hero.getTemplate().getTier();

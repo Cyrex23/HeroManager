@@ -81,6 +81,12 @@ function itemSlotColor(sellPrice: number | null) {
 import ShopPage from './ShopPage';
 import { AxiosError } from 'axios';
 
+type PendingOp =
+  | { type: 'equipHero'; heroId: number; slotNumber: number }
+  | { type: 'unequipHero'; slotNumber: number }
+  | { type: 'equipSummon'; summonId: number }
+  | { type: 'unequipSummon' };
+
 interface PickerOption {
   id: number;
   label: string;
@@ -108,6 +114,12 @@ export default function TeamPage() {
   const [renameValue, setRenameValue] = useState('');
   const [hoveredSetupIdx, setHoveredSetupIdx] = useState<number | null>(null);
   const [setupSwitching, setSetupSwitching] = useState(false);
+  const [pendingSwitchIdx, setPendingSwitchIdx] = useState<number | null>(null);
+  const [pendingOps, setPendingOps] = useState<PendingOp[]>([]);
+  const [stagedTeam, setStagedTeam] = useState<TeamResponse | null>(null);
+  const [stagedHeroes, setStagedHeroes] = useState<HeroResponse[]>([]);
+  const [stagedSummons, setStagedSummons] = useState<SummonResponse[]>([]);
+  const [applyingChanges, setApplyingChanges] = useState(false);
   const pickerCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { fetchPlayer, player } = usePlayer();
   const { refreshTeam } = useTeam();
@@ -123,6 +135,10 @@ export default function TeamPage() {
       setTeam(teamData);
       setHeroes(heroData);
       setSummons(summonData);
+      setStagedTeam(teamData);
+      setStagedHeroes(heroData);
+      setStagedSummons(summonData);
+      setPendingOps([]);
       setError('');
 
       // Load equipment for ALL heroes (team + bench)
@@ -148,6 +164,13 @@ export default function TeamPage() {
 
   async function handleSwitchSetup(idx: number) {
     if (setupSwitching) return;
+    setPendingSwitchIdx(idx);
+  }
+
+  async function confirmSwitchSetup() {
+    if (pendingSwitchIdx == null || setupSwitching) return;
+    const idx = pendingSwitchIdx;
+    setPendingSwitchIdx(null);
     setSetupSwitching(true);
     try {
       await switchTeamSetup(idx);
@@ -178,46 +201,101 @@ export default function TeamPage() {
     } catch { /* non-fatal */ }
   }
 
-  async function handleEquipHero(heroId: number, slotNumber: number) {
+  function handleEquipHero(heroId: number, slotNumber: number) {
     setSelectedBenchHeroId(null);
-    try {
-      await equipHero({ heroId, slotNumber });
-      await Promise.all([refresh(), refreshTeam(), fetchPlayer()]);
-    } catch (err) {
-      const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
-      setError(msg || 'Failed to equip hero.');
-    }
+    const hero = stagedHeroes.find((h) => h.id === heroId);
+    if (!hero || !stagedTeam) return;
+    const slotHero: import('../types').TeamSlotHero = {
+      id: hero.id, name: hero.name, imagePath: hero.imagePath, level: hero.level,
+      capacity: hero.capacity, totalStats: hero.stats, currentXp: hero.currentXp,
+      xpToNextLevel: hero.xpToNextLevel, tier: hero.tier, element: hero.element,
+      equippedSlots: [],
+    };
+    setStagedTeam((prev) => prev ? { ...prev, slots: prev.slots.map((s) =>
+      s.slotNumber === slotNumber ? { ...s, hero: slotHero } : s
+    )} : prev);
+    setStagedHeroes((prev) => prev.map((h) =>
+      h.id === heroId ? { ...h, isEquipped: true, teamSlot: slotNumber } : h
+    ));
+    setPendingOps((prev) => [...prev, { type: 'equipHero', heroId, slotNumber }]);
   }
 
-  async function handleUnequipHero(slotNumber: number) {
-    try {
-      await unequipHero({ slotNumber });
-      await Promise.all([refresh(), refreshTeam(), fetchPlayer()]);
-    } catch (err) {
-      const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
-      setError(msg || 'Failed to unequip hero.');
+  function handleUnequipHero(slotNumber: number) {
+    if (!stagedTeam) return;
+    const slot = stagedTeam.slots.find((s) => s.slotNumber === slotNumber);
+    const heroId = slot?.hero?.id;
+    setStagedTeam((prev) => prev ? { ...prev, slots: prev.slots.map((s) =>
+      s.slotNumber === slotNumber ? { ...s, hero: null } : s
+    )} : prev);
+    if (heroId != null) {
+      setStagedHeroes((prev) => prev.map((h) =>
+        h.id === heroId ? { ...h, isEquipped: false, teamSlot: null } : h
+      ));
     }
+    setPendingOps((prev) => [...prev, { type: 'unequipHero', slotNumber }]);
   }
 
-  async function handleEquipSummon(summonId: number) {
+  function handleEquipSummon(summonId: number) {
     setSelectedBenchSummonId(null);
+    const summon = stagedSummons.find((s) => s.id === summonId);
+    if (!summon || !stagedTeam) return;
+    const slotSummon: import('../types').TeamSlotSummon = {
+      id: summon.id, name: summon.name, imagePath: summon.imagePath, level: summon.level,
+      capacity: summon.capacity, teamBonus: summon.teamBonus, stats: summon.stats,
+      currentXp: summon.currentXp, xpToNextLevel: summon.xpToNextLevel,
+    };
+    setStagedTeam((prev) => prev ? { ...prev, slots: prev.slots.map((s) =>
+      s.type === 'summon' ? { ...s, summon: slotSummon } : s
+    )} : prev);
+    setStagedSummons((prev) => prev.map((s) =>
+      s.id === summonId ? { ...s, isEquipped: true } : s
+    ));
+    setPendingOps((prev) => [...prev, { type: 'equipSummon', summonId }]);
+  }
+
+  function handleUnequipSummon() {
+    if (!stagedTeam) return;
+    const slot = stagedTeam.slots.find((s) => s.type === 'summon');
+    const summonId = slot?.summon?.id;
+    setStagedTeam((prev) => prev ? { ...prev, slots: prev.slots.map((s) =>
+      s.type === 'summon' ? { ...s, summon: null } : s
+    )} : prev);
+    if (summonId != null) {
+      setStagedSummons((prev) => prev.map((s) =>
+        s.id === summonId ? { ...s, isEquipped: false } : s
+      ));
+    }
+    setPendingOps((prev) => [...prev, { type: 'unequipSummon' }]);
+  }
+
+  async function handleApplyChanges() {
+    if (applyingChanges || pendingOps.length === 0) return;
+    setApplyingChanges(true);
+    setError('');
     try {
-      await equipSummon({ summonId });
+      for (const op of pendingOps) {
+        if (op.type === 'equipHero')    await equipHero({ heroId: op.heroId, slotNumber: op.slotNumber });
+        if (op.type === 'unequipHero')  await unequipHero({ slotNumber: op.slotNumber });
+        if (op.type === 'equipSummon')  await equipSummon({ summonId: op.summonId });
+        if (op.type === 'unequipSummon') await unequipSummon();
+      }
       await Promise.all([refresh(), refreshTeam(), fetchPlayer()]);
     } catch (err) {
       const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
-      setError(msg || 'Failed to equip summon.');
+      setError(msg || 'Failed to apply changes.');
+      await refresh();
+    } finally {
+      setApplyingChanges(false);
     }
   }
 
-  async function handleUnequipSummon() {
-    try {
-      await unequipSummon();
-      await Promise.all([refresh(), refreshTeam(), fetchPlayer()]);
-    } catch (err) {
-      const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
-      setError(msg || 'Failed to unequip summon.');
-    }
+  function handleDiscardChanges() {
+    setStagedTeam(team);
+    setStagedHeroes(heroes);
+    setStagedSummons(summons);
+    setPendingOps([]);
+    setSelectedBenchHeroId(null);
+    setSelectedBenchSummonId(null);
   }
 
   async function handleEquipToSlot(heroId: number, slotNumber: number, option: PickerOption) {
@@ -268,15 +346,46 @@ export default function TeamPage() {
 
   if (loading) return <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}><span className="spinner" style={{ width: 18, height: 18 }} />Loading team...</div>;
 
-  const benchHeroes = heroes.filter((h) => !h.isEquipped);
-  const benchSummons = summons.filter((s) => !s.isEquipped);
+  const benchHeroes = stagedHeroes.filter((h) => !h.isEquipped);
+  const benchSummons = stagedSummons.filter((s) => !s.isEquipped);
 
-  const selectedHero = heroes.find((h) => h.id === selectedBenchHeroId) ?? null;
+  const selectedHero = stagedHeroes.find((h) => h.id === selectedBenchHeroId) ?? null;
+  const hasPendingChanges = pendingOps.length > 0;
 
+
+  const pendingSetupName = pendingSwitchIdx != null
+    ? (setups.find((s) => s.setupIndex === pendingSwitchIdx)?.name ?? `Team Setup ${pendingSwitchIdx}`)
+    : '';
 
   return (
     <div onClick={() => setActivePicker(null)} onKeyDown={() => setActivePicker(null)}>
       <style>{POWER_CSS}</style>
+
+      {/* ── Setup switch confirmation modal ── */}
+      {pendingSwitchIdx != null && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.55)' }}
+          onClick={() => setPendingSwitchIdx(null)}>
+          <div style={{ background: '#1a1a2e', border: '1px solid #2a2a4a', borderRadius: 14, padding: '28px 32px', minWidth: 300, textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}
+            onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#e0e0e0', marginBottom: 8 }}>Switch Setup?</div>
+            <div style={{ fontSize: 13, color: '#a0a0b0', marginBottom: 24, lineHeight: 1.6 }}>
+              Switch to <span style={{ color: '#fbbf24', fontWeight: 600 }}>{pendingSetupName}</span>?<br />
+              Your current active setup will be replaced.
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button onClick={() => setPendingSwitchIdx(null)}
+                style={{ padding: '8px 22px', borderRadius: 8, border: '1px solid #2a2a4a', background: 'transparent', color: '#a0a0b0', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                Cancel
+              </button>
+              <button onClick={confirmSwitchSetup}
+                style={{ padding: '8px 22px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#e94560,#c73652)', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
+                Switch
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* ── Tab bar ── */}
       <div style={styles.tabBar}>
@@ -362,20 +471,38 @@ export default function TeamPage() {
 
       {error && <div style={styles.error}>{error}</div>}
 
-      {team && (
+      {stagedTeam && (
         <>
           <div style={styles.topRow}>
-            <CapacityBar used={team.capacity.used} max={team.capacity.max} />
+            <CapacityBar used={team?.capacity.used ?? stagedTeam.capacity.used} max={team?.capacity.max ?? stagedTeam.capacity.max} />
             <div style={styles.powerBadge} className="power-badge-anim">
               <span style={styles.powerIcon}>⚔</span>
               <div style={styles.powerInner}>
                 <span style={styles.powerLabel}>Power</span>
                 <span style={styles.powerValue} className="power-value-anim">
-                  {team.teamPower.toFixed(0)}
+                  {(team?.teamPower ?? stagedTeam.teamPower).toFixed(0)}
                 </span>
               </div>
             </div>
           </div>
+
+          {hasPendingChanges && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '8px 0 4px', padding: '8px 16px', background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 10 }}>
+              <span style={{ color: '#a0a0b0', fontSize: 12 }}>{pendingOps.length} unsaved change{pendingOps.length !== 1 ? 's' : ''}</span>
+              <button
+                onClick={handleApplyChanges}
+                disabled={applyingChanges}
+                style={{ padding: '6px 20px', borderRadius: 8, border: 'none', background: applyingChanges ? '#2a4a2a' : 'linear-gradient(135deg,#22c55e,#16a34a)', color: '#fff', cursor: applyingChanges ? 'default' : 'pointer', fontSize: 13, fontWeight: 700, boxShadow: applyingChanges ? 'none' : '0 0 12px rgba(34,197,94,0.4)' }}>
+                {applyingChanges ? 'Updating...' : '✓ Update Team'}
+              </button>
+              <button
+                onClick={handleDiscardChanges}
+                disabled={applyingChanges}
+                style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#a0a0b0', cursor: 'pointer', fontSize: 12 }}>
+                Discard
+              </button>
+            </div>
+          )}
 
           {(selectedBenchHeroId !== null || selectedBenchSummonId !== null) && (
             <div style={styles.selectionHint}>
@@ -387,7 +514,7 @@ export default function TeamPage() {
           )}
 
           {(() => {
-            const renderSlot = (slot: typeof team.slots[0]) => {
+            const renderSlot = (slot: typeof stagedTeam.slots[0]) => {
               let onUnequip: (() => void) | undefined;
               if (slot.type === 'hero' && slot.hero) onUnequip = () => { handleUnequipHero(slot.slotNumber); };
               else if (slot.type === 'summon' && slot.summon) onUnequip = () => { handleUnequipSummon(); };
@@ -412,10 +539,10 @@ export default function TeamPage() {
               );
             };
 
-            const commoners  = team.slots.filter(s => s.type === 'hero' && s.slotTier === 'COMMONER');
-            const elites     = team.slots.filter(s => s.type === 'hero' && s.slotTier === 'ELITE');
-            const legendary  = team.slots.filter(s => s.type === 'hero' && s.slotTier === 'LEGENDARY');
-            const summons    = team.slots.filter(s => s.type === 'summon');
+            const commoners  = stagedTeam.slots.filter(s => s.type === 'hero' && s.slotTier === 'COMMONER');
+            const elites     = stagedTeam.slots.filter(s => s.type === 'hero' && s.slotTier === 'ELITE');
+            const legendary  = stagedTeam.slots.filter(s => s.type === 'hero' && s.slotTier === 'LEGENDARY');
+            const summons    = stagedTeam.slots.filter(s => s.type === 'summon');
 
             return (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, maxWidth: 720, margin: '0 auto' }}>

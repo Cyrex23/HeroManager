@@ -231,6 +231,8 @@ public class ArenaService {
                 .battleId(log.getId())
                 .result(challengerWon ? "WIN" : "LOSS")
                 .goldEarned(challengerGold)
+                .goldBase(challengerGoldBase)
+                .goldBonusPct((int) Math.round(cGoldBonus * 100))
                 .energyCost(energyCost)
                 .arenaEnergyRemaining(challenger.getArenaEnergy())
                 .battleLog(battleLog)

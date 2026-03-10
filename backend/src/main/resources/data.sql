@@ -187,6 +187,11 @@ SELECT 'karoo', 'Karoo', 'karoo.jpg', 300, 15, 0, 0, 0, 0, 10, 2, 5, 3
 WHERE NOT EXISTS (SELECT 1 FROM summon_template WHERE name = 'karoo');
 UPDATE summon_template SET base_stamina = 10, growth_stamina = 2, base_physical_attack = 5, growth_physical_attack = 3 WHERE name = 'karoo';
 
+INSERT INTO summon_template (name, display_name, image_path, cost, capacity, base_mana, base_mp, growth_mana, growth_mp, base_dex_proficiency, growth_dex_proficiency)
+SELECT 'evil-cross', 'Evil Cross', 'evil-cross.jpg', 300, 15, 0, 0, 0, 0, 60, 1
+WHERE NOT EXISTS (SELECT 1 FROM summon_template WHERE name = 'evil-cross');
+UPDATE summon_template SET base_dex_proficiency = 60, growth_dex_proficiency = 1 WHERE name = 'evil-cross';
+
 -- Ensure no NULL values in nullable summon_template columns (Hibernate 6 throws on primitive double + NULL)
 UPDATE summon_template SET
     base_magic_proficiency  = COALESCE(base_magic_proficiency,  0),

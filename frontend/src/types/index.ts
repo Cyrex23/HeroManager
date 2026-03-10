@@ -140,6 +140,7 @@ export interface HeroResponse {
   baseStats: HeroStats;
   growthStats: HeroStats;
   bonusStats: HeroStats;
+  summonStats: Partial<HeroStats>;
   equippedItems: EquippedItemSummary[];
   equippedAbilities: EquippedAbilitySummary[];
   tier: 'COMMONER' | 'ELITE' | 'LEGENDARY' | null;
@@ -342,8 +343,11 @@ export interface SpellInfo {
 export interface SpellEvent {
   spellName: string;
   manaCost: number;
+  originalManaCost?: number;
   heroName: string;
-  trigger: 'ENTRANCE' | 'ATTACK';
+  trigger: string;
+  fired?: boolean;
+  chance?: number;
 }
 
 export interface ShopAbilityResponse {
@@ -421,6 +425,8 @@ export interface BattleRound {
   attackerStatPa?: number;
   attackerStatMp?: number;
   attackerStatDex?: number;
+  attackerStatAttack?: number;
+  attackerStatSpellActivation?: number;
   attackerStatElem?: number;
   attackerStatMana?: number;
   attackerStatStam?: number;
@@ -433,6 +439,8 @@ export interface BattleRound {
   defenderStatPa?: number;
   defenderStatMp?: number;
   defenderStatDex?: number;
+  defenderStatAttack?: number;
+  defenderStatSpellActivation?: number;
   defenderStatElem?: number;
   defenderStatMana?: number;
   defenderStatStam?: number;
@@ -441,6 +449,8 @@ export interface BattleRound {
   defenderCrit?: boolean;
   attackerMagicProf?: boolean;
   defenderMagicProf?: boolean;
+  attackerHighDex?: boolean;
+  defenderHighDex?: boolean;
   attackerDexFactor?: number;
   defenderDexFactor?: number;
   attackerDexProficiency?: number;
@@ -465,6 +475,14 @@ export interface BattleRound {
   defenderSpells?: SpellEvent[];
   challengerManaAfter?: number;
   defenderManaAfter?: number;
+  attackerSpellMastery?: number;
+  defenderSpellMastery?: number;
+  attackerDexUsed?: number;
+  attackerDexRecovered?: number;
+  attackerDexRemaining?: number;
+  defenderDexUsed?: number;
+  defenderDexRecovered?: number;
+  defenderDexRemaining?: number;
 }
 
 export interface BattleHeroInfo {
@@ -493,6 +511,10 @@ export interface BattleLog {
     challenger: Record<string, number>;
     defender: Record<string, number>;
   };
+  xpBonusPercent?: {
+    challenger: Record<string, number>;
+    defender: Record<string, number>;
+  };
   summonXp: {
     challenger: number;
     defender: number;
@@ -505,6 +527,8 @@ export interface BattleResultResponse {
   battleId: number;
   result: 'WIN' | 'LOSS';
   goldEarned: number;
+  goldBase?: number;
+  goldBonusPct?: number;
   energyCost: number;
   arenaEnergyRemaining: number;
   battleLog: BattleLog;

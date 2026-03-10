@@ -904,6 +904,7 @@ export default function HeroDetailPage() {
               <span style={styles.th}>Base</span>
               <span style={{ ...styles.th, color: '#8b6fd4' }}>Bought</span>
               <span style={{ ...styles.th, color: '#4a7ab0' }}>Equip</span>
+              <span style={{ ...styles.th, color: '#22d3ee' }}>Summon</span>
               <span style={styles.thTotal}>Total</span>
             </div>
             {Object.entries(STAT_LABELS).map(([key, label]) => {
@@ -913,6 +914,7 @@ export default function HeroDetailPage() {
               const bought  = hero.purchasedStats?.[key as keyof StatsType] ?? 0;
               const allBonus = hero.bonusStats[key as keyof StatsType] ?? 0;
               const equip   = allBonus - bought;
+              const summon  = (hero.summonStats?.[key as keyof StatsType] ?? 0) as number;
               const total   = hero.stats[key as keyof StatsType] ?? 0;
               return (
                 <div key={key} style={{ ...styles.tableRow, borderLeft: `3px solid ${statColor}33` }}>
@@ -923,6 +925,9 @@ export default function HeroDetailPage() {
                   </span>
                   <span style={{ ...styles.td, color: equip > 0 ? '#60a5fa' : '#35354a', fontWeight: equip > 0 ? 700 : 400 }}>
                     {equip > 0 ? `+${equip.toFixed(1)}` : '—'}
+                  </span>
+                  <span style={{ ...styles.td, color: summon > 0 ? '#22d3ee' : '#35354a', fontWeight: summon > 0 ? 700 : 400 }}>
+                    {summon > 0 ? `+${summon.toFixed(1)}` : '—'}
                   </span>
                   <span style={{ ...styles.tdTotal, color: statColor }}>{total.toFixed(1)}</span>
                 </div>
@@ -937,31 +942,100 @@ export default function HeroDetailPage() {
             <div style={styles.statsSectionLine} />
           </div>
 
-          <div style={styles.subStatsGrid}>
+          <div style={styles.statsTable}>
+            {/* Sub stats header */}
+            <div style={styles.tableHeader}>
+              <span style={styles.thStat}>Stat</span>
+              <span style={styles.th}>Base</span>
+              <span style={{ ...styles.th, color: '#8b6fd4' }}>Bought</span>
+              <span style={{ ...styles.th, color: '#4a7ab0' }}>Equip</span>
+              <span style={{ ...styles.th, color: '#22d3ee' }}>Summon</span>
+              <span style={styles.thTotal}>Total</span>
+            </div>
             {SUB_STATS.map(({ key, label, color }) => {
               const sealRow = SEAL_STATS_TABLE[hero.seal ?? 0] ?? [18, 13, 7];
-              let value = '—';
+              const bs = hero.bonusStats as unknown as Record<string, number>;
+              const ss = (hero.summonStats ?? {}) as Record<string, number>;
+
+              // Helper formatters
+              const fmtPct  = (v: number) => v > 0 ? `+${Math.round(v * 100)}%` : '—';
+              const fmtFlat = (v: number) => v > 0 ? `+${v.toFixed(1)}` : '—';
+
+              // Compute base / equip / summon / total per stat
+              let base = '—', equip = '—', summon = '—', total = '—';
+
               if (key === 'staminaEffectiveness') {
-                value = `${Math.min(100, (hero.stats.stamina / (60 + hero.level * 2.5)) * 100).toFixed(1)}%`;
+                base  = `${Math.min(100, (hero.stats.stamina / (60 + hero.level * 2.5)) * 100).toFixed(1)}%`;
+                total = base;
               } else if (key === 'magicProficiency') {
-                value = `${sealRow[0]}%`;
+                base   = `${sealRow[0]}%`;
+                equip  = fmtPct(bs.magicProficiency ?? 0);
+                summon = fmtPct(ss.magicProficiency ?? 0);
+                total  = `${sealRow[0] + Math.round(((bs.magicProficiency ?? 0) + (ss.magicProficiency ?? 0)) * 100)}%`;
               } else if (key === 'criticalChance') {
-                value = `${sealRow[1]}%`;
+                base   = `${sealRow[1]}%`;
+                equip  = fmtPct(bs.critChance ?? 0);
+                summon = fmtPct(ss.critChance ?? 0);
+                total  = `${sealRow[1] + Math.round(((bs.critChance ?? 0) + (ss.critChance ?? 0)) * 100)}%`;
               } else if (key === 'spellActivation') {
-                value = `${sealRow[2]}%`;
-              } else if (key === 'dexProficiency' && hero.stats.dexProficiency !== undefined) {
-                value = `${(hero.stats.dexProficiency * 100).toFixed(0)}%`;
-              } else if (key === 'dexPosture' && hero.stats.dexPosture !== undefined) {
-                value = `${(hero.stats.dexPosture * 100).toFixed(0)}%`;
-              } else if (key === 'critDamage' && hero.stats.critDamage !== undefined) {
-                value = `${(hero.stats.critDamage * 100).toFixed(0)}%`;
+                base   = `${sealRow[2]}%`;
+                equip  = fmtPct(bs.spellActivation ?? 0);
+                summon = fmtPct(ss.spellActivation ?? 0);
+                total  = `${sealRow[2] + Math.round(((bs.spellActivation ?? 0) + (ss.spellActivation ?? 0)) * 100)}%`;
+              } else if (key === 'dexProficiency') {
+                base   = '33%';
+                const equipVal = (bs.dexProficiency ?? 0.33) - 0.33;
+                equip  = fmtPct(equipVal);
+                summon = fmtPct(ss.dexProficiency ?? 0);
+                total  = `${Math.round(((bs.dexProficiency ?? 0.33) + (ss.dexProficiency ?? 0)) * 100)}%`;
+              } else if (key === 'dexPosture') {
+                base   = '20%';
+                const equipVal = (bs.dexPosture ?? 0.20) - 0.20;
+                equip  = fmtPct(equipVal);
+                summon = fmtPct(ss.dexPosture ?? 0);
+                total  = `${Math.round(((bs.dexPosture ?? 0.20) + (ss.dexPosture ?? 0)) * 100)}%`;
+              } else if (key === 'critDamage') {
+                base   = '25%';
+                const equipVal = (bs.critDamage ?? 0.25) - 0.25;
+                equip  = fmtPct(equipVal);
+                summon = fmtPct(ss.critDamage ?? 0);
+                total  = `${Math.round(((bs.critDamage ?? 0.25) + (ss.critDamage ?? 0)) * 100)}%`;
+              } else if (key === 'attack') {
+                equip  = fmtFlat(bs.attack ?? 0);
+                summon = fmtFlat(ss.attack ?? 0);
+                const t = (bs.attack ?? 0) + (ss.attack ?? 0);
+                if (t > 0) total = `+${t.toFixed(1)}`;
+              } else if (key === 'spellMastery') {
+                equip  = fmtPct(bs.spellMastery ?? 0);
+                summon = fmtPct(ss.spellMastery ?? 0);
+                const t = (bs.spellMastery ?? 0) + (ss.spellMastery ?? 0);
+                if (t > 0) total = `+${Math.round(t * 100)}%`;
+              } else if (key === 'itemDiscovery') {
+                equip  = fmtFlat(bs.itemDiscovery ?? 0);
+                summon = fmtFlat(ss.itemDiscovery ?? 0);
+                const t = (bs.itemDiscovery ?? 0) + (ss.itemDiscovery ?? 0);
+                if (t > 0) total = `+${t.toFixed(0)}`;
+              } else {
+                // Percentage bonus stats with no base
+                const bsKey = key as keyof typeof bs;
+                equip  = fmtPct(bs[bsKey] ?? 0);
+                summon = fmtPct(ss[bsKey] ?? 0);
+                const t = (bs[bsKey] ?? 0) + (ss[bsKey] ?? 0);
+                if (t > 0) total = `+${Math.round(t * 100)}%`;
               }
-              const hasValue = value !== '—';
+
+              const hasTotal = total !== '—';
               return (
-                <div key={key} style={styles.subStatRow}>
-                  <span style={{ ...styles.subStatDot, backgroundColor: color, boxShadow: `0 0 4px ${color}55` }} />
-                  <span style={styles.subStatLabel}>{label}</span>
-                  <span style={{ ...styles.subStatValue, color: hasValue ? color : '#28283e' }}>{value}</span>
+                <div key={key} style={{ ...styles.tableRow, borderLeft: `3px solid ${color}33` }}>
+                  <span style={{ ...styles.tdStat, display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, display: 'inline-block', backgroundColor: color, boxShadow: `0 0 4px ${color}88` }} />
+                    <span style={{ color, fontWeight: 700, fontSize: 11 }}>{label}</span>
+                  </span>
+                  <span style={styles.td}>{base}</span>
+                  <span style={{ ...styles.td, color: '#35354a' }}>—</span>
+                  <span style={{ ...styles.td, color: equip !== '—' ? '#60a5fa' : '#35354a', fontWeight: equip !== '—' ? 700 : 400 }}>{equip}</span>
+                  <span style={{ ...styles.td, color: summon !== '—' ? '#22d3ee' : '#35354a', fontWeight: summon !== '—' ? 700 : 400 }}>{summon}</span>
+                  <span style={{ ...styles.tdTotal, color: hasTotal ? color : '#35354a', fontWeight: hasTotal ? 700 : 400 }}>{total}</span>
                 </div>
               );
             })}

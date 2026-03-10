@@ -25,6 +25,7 @@ public class HeroResponse {
     private Map<String, Double> baseStats;
     private Map<String, Double> growthStats;
     private Map<String, Double> bonusStats;
+    private Map<String, Double> summonStats;
     private List<EquippedItemInfo> equippedItems;
     private List<EquippedAbilityInfo> equippedAbilities;
     private String tier;

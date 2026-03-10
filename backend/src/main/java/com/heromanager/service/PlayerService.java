@@ -100,8 +100,10 @@ public class PlayerService {
                 "mana", t.getGrowthMana(), "stamina", t.getGrowthStam()
         );
         Map<String, Double> bonusStats = buildEquipmentBonuses(heroId);
+        Map<String, Double> summonStats = buildSummonBonuses(playerId);
         Map<String, Double> totalStats = new HashMap<>(stats);
         bonusStats.forEach((k, v) -> totalStats.merge(k, v, Double::sum));
+        summonStats.forEach((k, v) -> totalStats.merge(k, v, Double::sum));
 
         List<TeamSlot> teamSlots = teamSlotRepository.findByPlayerId(playerId);
         Integer slotNum = teamSlots.stream()
@@ -125,6 +127,7 @@ public class PlayerService {
                 .baseStats(baseStats)
                 .growthStats(growthStats)
                 .bonusStats(bonusStats)
+                .summonStats(summonStats)
                 .equippedItems(Collections.emptyList())
                 .equippedAbilities(Collections.emptyList())
                 .tier(t.getTier() != null ? t.getTier().name() : null)
@@ -168,6 +171,8 @@ public class PlayerService {
             }
         }
 
+        Map<String, Double> summonStats = buildSummonBonuses(playerId);
+
         List<HeroResponse> result = new ArrayList<>();
         for (Hero hero : heroes) {
             HeroTemplate t = hero.getTemplate();
@@ -188,6 +193,7 @@ public class PlayerService {
             Map<String, Double> bonusStats = buildEquipmentBonuses(hero.getId());
             Map<String, Double> totalStats = new HashMap<>(stats);
             bonusStats.forEach((k, v) -> totalStats.merge(k, v, Double::sum));
+            summonStats.forEach((k, v) -> totalStats.merge(k, v, Double::sum));
 
             Integer slotNum = heroSlotMap.get(hero.getId());
 
@@ -207,6 +213,7 @@ public class PlayerService {
                     .baseStats(baseStats)
                     .growthStats(growthStats)
                     .bonusStats(bonusStats)
+                    .summonStats(summonStats)
                     .equippedItems(Collections.emptyList())
                     .equippedAbilities(Collections.emptyList())
                     .tier(t.getTier() != null ? t.getTier().name() : null)
@@ -340,6 +347,33 @@ public class PlayerService {
             bonuses.merge("magicImmunity",   at.getBonusMagicImmunity(),    Double::sum);
             bonuses.merge("dexEvasiveness",  at.getBonusDexEvasiveness(),   Double::sum);
         }
+        return bonuses;
+    }
+
+    public Map<String, Double> buildSummonBonuses(Long playerId) {
+        Map<String, Double> bonuses = new HashMap<>();
+        teamSlotRepository.findByPlayerIdAndSlotNumber(playerId, 7).ifPresent(slot -> {
+            if (slot.getSummonId() == null) return;
+            summonRepository.findById(slot.getSummonId()).ifPresent(summon -> {
+                SummonTemplate st = summon.getTemplate();
+                if (st == null) return;
+                Map<String, Double> ss = buildSummonStats(st, summon.getLevel());
+                // Flat stats (same key, same units as bonusStats)
+                for (String k : new String[]{"magicPower","mana","dexterity","attack","stamina","physicalAttack"})
+                    if (ss.containsKey(k)) bonuses.merge(k, ss.get(k), Double::sum);
+                if (ss.containsKey("spellMastery"))     bonuses.merge("spellMastery",     ss.get("spellMastery")     / 100.0, Double::sum);
+                // Percentage stats: summon stores as raw %, bonusStats uses decimal (/100)
+                if (ss.containsKey("magicProficiency")) bonuses.merge("magicProficiency", ss.get("magicProficiency") / 100.0, Double::sum);
+                if (ss.containsKey("critChance"))       bonuses.merge("critChance",       ss.get("critChance")       / 100.0, Double::sum);
+                if (ss.containsKey("critDamage"))       bonuses.merge("critDamage",       ss.get("critDamage")       / 100.0, Double::sum);
+                if (ss.containsKey("dexProficiency"))   bonuses.merge("dexProficiency",   ss.get("dexProficiency")   / 100.0, Double::sum);
+                if (ss.containsKey("dexPosture"))       bonuses.merge("dexPosture",       ss.get("dexPosture")       / 100.0, Double::sum);
+                if (ss.containsKey("goldBonus"))        bonuses.merge("goldBonus",        ss.get("goldBonus")        / 100.0, Double::sum);
+                if (ss.containsKey("xpBonus"))          bonuses.merge("expBonus",         ss.get("xpBonus")          / 100.0, Double::sum);
+                if (ss.containsKey("spellActivation"))  bonuses.merge("spellActivation",  ss.get("spellActivation")  / 100.0, Double::sum);
+                if (ss.containsKey("itemFind"))         bonuses.merge("itemDiscovery",    ss.get("itemFind"),               Double::sum);
+            });
+        });
         return bonuses;
     }
 

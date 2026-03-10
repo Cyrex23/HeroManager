@@ -25,6 +25,8 @@ export default function BattlePage() {
   );
   const [result] = useState<string | null>(passedResult?.result ?? null);
   const [goldEarned] = useState<number | null>(passedResult?.goldEarned ?? null);
+  const [goldBase] = useState<number | null>(passedResult?.goldBase ?? null);
+  const [goldBonusPct] = useState<number | null>(passedResult?.goldBonusPct ?? null);
   const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(!passedResult);
   const [fetchError, setFetchError] = useState(false);
@@ -51,7 +53,7 @@ export default function BattlePage() {
       </Link>
 
       {/* ── Battle Animator ── */}
-      <BattleAnimator battleLog={battleLog} result={result} goldEarned={goldEarned} />
+      <BattleAnimator battleLog={battleLog} result={result} goldEarned={goldEarned} goldBase={goldBase} goldBonusPct={goldBonusPct} />
 
       {/* ── Toggle for detailed stats ── */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
@@ -75,7 +77,17 @@ export default function BattlePage() {
             {result === 'WIN' ? 'Victory!' : 'Defeat'}
           </span>
           {goldEarned != null && (
-            <span style={{ color: '#fbbf24', fontSize: 16 }}>+{goldEarned} gold</span>
+            goldBonusPct != null && goldBonusPct > 0 && goldBase != null ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                <span style={{ color: '#a3a3c2' }}>+{goldBase} base</span>
+                <span style={{ color: '#a3a3c2' }}>+</span>
+                <span style={{ color: '#fbbf24', fontWeight: 600 }}>+{goldEarned - goldBase} ({goldBonusPct}%)</span>
+                <span style={{ color: '#a3a3c2' }}>=</span>
+                <span style={{ color: '#fbbf24', fontWeight: 700, fontSize: 16 }}>+{goldEarned} gold</span>
+              </span>
+            ) : (
+              <span style={{ color: '#fbbf24', fontSize: 16 }}>+{goldEarned} gold</span>
+            )
           )}
         </div>
       )}
@@ -139,16 +151,30 @@ export default function BattlePage() {
             )}
             {((round.challengerSpells?.length ?? 0) > 0 || (round.defenderSpells?.length ?? 0) > 0) && (
               <div style={styles.spellRow}>
-                {round.challengerSpells?.map((sp, i) => (
-                  <span key={i} style={styles.spellTag}>
-                    ✦ {sp.heroName}: <strong>{sp.spellName}</strong> <span style={styles.spellTagCost}>−{sp.manaCost} MP</span>
-                  </span>
-                ))}
-                {round.defenderSpells?.map((sp, i) => (
-                  <span key={`d${i}`} style={{ ...styles.spellTag, borderColor: 'rgba(96,165,250,0.3)' }}>
-                    ✦ {sp.heroName}: <strong>{sp.spellName}</strong> <span style={styles.spellTagCost}>−{sp.manaCost} MP</span>
-                  </span>
-                ))}
+                {round.challengerSpells?.map((sp, i) => {
+                  const fired = sp.fired !== false;
+                  const saved = fired && sp.originalManaCost != null ? sp.originalManaCost - sp.manaCost : 0;
+                  return (
+                    <span key={i} style={{ ...styles.spellTag, opacity: fired ? 1 : 0.45, borderColor: fired ? undefined : 'rgba(255,255,255,0.1)' }}>
+                      {fired ? '✦' : '✗'} {sp.heroName}: <strong>{sp.spellName}</strong>
+                      {sp.chance != null && <span style={{ color: '#a0a0b0', marginLeft: 4, fontSize: 10 }}>{sp.chance}%</span>}
+                      {fired && <span style={styles.spellTagCost}> −{sp.manaCost} MP</span>}
+                      {saved > 0.05 && <span style={{ color: '#4ade80', marginLeft: 4, fontSize: 10 }}>(saved {saved.toFixed(1)})</span>}
+                    </span>
+                  );
+                })}
+                {round.defenderSpells?.map((sp, i) => {
+                  const fired = sp.fired !== false;
+                  const saved = fired && sp.originalManaCost != null ? sp.originalManaCost - sp.manaCost : 0;
+                  return (
+                    <span key={`d${i}`} style={{ ...styles.spellTag, borderColor: fired ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.1)', opacity: fired ? 1 : 0.45 }}>
+                      {fired ? '✦' : '✗'} {sp.heroName}: <strong>{sp.spellName}</strong>
+                      {sp.chance != null && <span style={{ color: '#a0a0b0', marginLeft: 4, fontSize: 10 }}>{sp.chance}%</span>}
+                      {fired && <span style={styles.spellTagCost}> −{sp.manaCost} MP</span>}
+                      {saved > 0.05 && <span style={{ color: '#4ade80', marginLeft: 4, fontSize: 10 }}>(saved {saved.toFixed(1)})</span>}
+                    </span>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -159,12 +185,29 @@ export default function BattlePage() {
         <>
           <h3 style={styles.subtitle}>XP Gained</h3>
           <div style={styles.xpSection}>
-            {Object.entries(battleLog.xpGained.challenger).map(([hero, xp]) => (
-              <div key={hero} style={styles.xpEntry}>
-                <span style={styles.heroName}>{battleLog.challenger.username}'s {hero}</span>
-                <span style={{ color: '#4ade80' }}>+{xp} XP</span>
-              </div>
-            ))}
+            {Object.entries(battleLog.xpGained.challenger).map(([hero, xp]) => {
+              const bonusPct = battleLog.xpBonusPercent?.challenger[hero] ?? 0;
+              const total = bonusPct > 0 ? Math.round(xp * (1 + bonusPct / 100)) : xp;
+              const bonusAmt = total - xp;
+              return (
+                <div key={hero} style={styles.xpEntry}>
+                  <span style={styles.heroName}>{battleLog.challenger.username}'s {hero}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {bonusPct > 0 ? (
+                      <>
+                        <span style={{ color: '#a3a3c2', fontSize: 11 }}>+{xp} base</span>
+                        <span style={{ color: '#a3a3c2', fontSize: 11 }}>+</span>
+                        <span style={{ color: '#fbbf24', fontSize: 11, fontWeight: 600 }}>+{bonusAmt} ({bonusPct}%)</span>
+                        <span style={{ color: '#a3a3c2', fontSize: 11 }}>=</span>
+                        <span style={{ color: '#4ade80' }}>+{total} XP</span>
+                      </>
+                    ) : (
+                      <span style={{ color: '#4ade80' }}>+{total} XP</span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
             {battleLog.summonXp?.challenger > 0 && (
               <div style={styles.xpEntry}>
                 <span style={{ ...styles.heroName, color: '#a78bfa' }}>
@@ -173,12 +216,29 @@ export default function BattlePage() {
                 <span style={{ color: '#4ade80' }}>+{battleLog.summonXp.challenger} XP</span>
               </div>
             )}
-            {Object.entries(battleLog.xpGained.defender).map(([hero, xp]) => (
-              <div key={hero} style={styles.xpEntry}>
-                <span style={styles.heroName}>{battleLog.defender.username}'s {hero}</span>
-                <span style={{ color: '#4ade80' }}>+{xp} XP</span>
-              </div>
-            ))}
+            {Object.entries(battleLog.xpGained.defender).map(([hero, xp]) => {
+              const bonusPct = battleLog.xpBonusPercent?.defender[hero] ?? 0;
+              const total = bonusPct > 0 ? Math.round(xp * (1 + bonusPct / 100)) : xp;
+              const bonusAmt = total - xp;
+              return (
+                <div key={hero} style={styles.xpEntry}>
+                  <span style={styles.heroName}>{battleLog.defender.username}'s {hero}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {bonusPct > 0 ? (
+                      <>
+                        <span style={{ color: '#a3a3c2', fontSize: 11 }}>+{xp} base</span>
+                        <span style={{ color: '#a3a3c2', fontSize: 11 }}>+</span>
+                        <span style={{ color: '#fbbf24', fontSize: 11, fontWeight: 600 }}>+{bonusAmt} ({bonusPct}%)</span>
+                        <span style={{ color: '#a3a3c2', fontSize: 11 }}>=</span>
+                        <span style={{ color: '#4ade80' }}>+{total} XP</span>
+                      </>
+                    ) : (
+                      <span style={{ color: '#4ade80' }}>+{total} XP</span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
             {battleLog.summonXp?.defender > 0 && (
               <div style={styles.xpEntry}>
                 <span style={{ ...styles.heroName, color: '#a78bfa' }}>
@@ -237,12 +297,36 @@ export default function BattlePage() {
                     <span>Elem <strong>{(round.attackerStatElem ?? 0).toFixed(1)}</strong></span>
                     <span>Mana <strong>{(round.attackerStatMana ?? 0).toFixed(1)}</strong></span>
                     <span>Stam <strong>{(round.attackerStatStam ?? 0).toFixed(1)}</strong></span>
+                    {round.attackerStatAttack != null && round.attackerStatAttack > 0 && (
+                      <span style={{ color: '#f97316' }}>Attack <strong>+{round.attackerStatAttack.toFixed(1)}</strong></span>
+                    )}
                     <span style={{ color: '#fb923c' }}>Crit Chance <strong>{((round.attackerCritChance ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#f97316' }}>Crit Dmg <strong>{((round.attackerCritDamagePct ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#60a5fa' }}>MagP <strong>{((round.attackerMagicProfChance ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#34d399' }}>Dex Prof <strong>{((round.attackerDexProficiency ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#6ee7b7' }}>Dex Posture <strong>{((round.attackerDexPosture ?? 0) * 100).toFixed(1)}%</strong></span>
+                    {round.attackerSpellMastery != null && round.attackerSpellMastery > 0 && (
+                      <span style={{ color: '#c084fc' }}>Spell Mastery <strong>+{(round.attackerSpellMastery * 100).toFixed(0)}%</strong></span>
+                    )}
+                    {round.attackerStatSpellActivation != null && round.attackerStatSpellActivation > 0 && (
+                      <span style={{ color: '#e879f9' }}>Spell Act. <strong>+{(round.attackerStatSpellActivation * 100).toFixed(1)}%</strong></span>
+                    )}
                   </div>
+                  {/* Spell attempts */}
+                  {round.challengerSpells && round.challengerSpells.length > 0 && (
+                    <div style={{ marginBottom: 6 }}>
+                      {round.challengerSpells.map((sp, i) => {
+                        const fired = sp.fired !== false;
+                        return (
+                          <div key={i} style={{ fontSize: 10, opacity: fired ? 1 : 0.5, color: fired ? '#e879f9' : '#a0a0b0', marginBottom: 1 }}>
+                            {fired ? '✦' : '✗'} <strong>{sp.spellName}</strong>
+                            {sp.chance != null && <span style={{ color: '#a0a0b0' }}> {sp.chance}%</span>}
+                            {fired && sp.manaCost != null && <span style={{ color: '#60a5fa' }}> −{sp.manaCost} MP</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   {/* Calculation */}
                   <div style={styles.mathRow}>
                     <span style={styles.mathKey}>PA ×0.5</span>
@@ -268,6 +352,24 @@ export default function BattlePage() {
                     <span style={styles.mathKey}>Dex ×{(round.attackerDexFactor ?? 0.33).toFixed(2)}</span>
                     <span style={styles.mathVal}>{(round.attackerDexContrib ?? 0).toFixed(2)}</span>
                   </div>
+                  {round.attackerDexUsed != null && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#f87171', fontSize: 9 }}>↳ used {round.attackerDexUsed.toFixed(1)}</span>
+                      <span />
+                    </div>
+                  )}
+                  {round.attackerDexRecovered != null && round.attackerDexRecovered > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#4ade80', fontSize: 9 }}>↺ recovered {round.attackerDexRecovered.toFixed(1)} → rem. {(round.attackerDexRemaining ?? 0).toFixed(1)}</span>
+                      <span />
+                    </div>
+                  )}
+                  {round.attackerDexRecovered === 0 && round.attackerDexUsed != null && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#a0a0b0', fontSize: 9 }}>rem. {(round.attackerDexRemaining ?? 0).toFixed(1)}</span>
+                      <span />
+                    </div>
+                  )}
                   <div style={{ ...styles.mathRow, borderTop: '1px solid #16213e', marginTop: 2, paddingTop: 2 }}>
                     <span style={styles.mathKey}>Raw total</span>
                     <span style={styles.mathVal}>{(round.attackerRawAttack ?? 0).toFixed(2)}</span>
@@ -282,6 +384,12 @@ export default function BattlePage() {
                     <div style={styles.mathRow}>
                       <span style={styles.mathKey}>Elem bonus</span>
                       <span style={{ ...styles.mathVal, color: '#4ade80' }}>+{round.attackerElementBonus.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {round.attackerStatAttack != null && round.attackerStatAttack > 0 && (
+                    <div style={styles.mathRow}>
+                      <span style={{ ...styles.mathKey, color: '#f97316' }}>Attack (flat)</span>
+                      <span style={{ ...styles.mathVal, color: '#f97316' }}>+{round.attackerStatAttack.toFixed(2)}</span>
                     </div>
                   )}
                   <div style={{ ...styles.mathRow, marginTop: 4 }}>
@@ -312,12 +420,36 @@ export default function BattlePage() {
                     <span>Elem <strong>{(round.defenderStatElem ?? 0).toFixed(1)}</strong></span>
                     <span>Mana <strong>{(round.defenderStatMana ?? 0).toFixed(1)}</strong></span>
                     <span>Stam <strong>{(round.defenderStatStam ?? 0).toFixed(1)}</strong></span>
+                    {round.defenderStatAttack != null && round.defenderStatAttack > 0 && (
+                      <span style={{ color: '#f97316' }}>Attack <strong>+{round.defenderStatAttack.toFixed(1)}</strong></span>
+                    )}
                     <span style={{ color: '#fb923c' }}>Crit Chance <strong>{((round.defenderCritChance ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#f97316' }}>Crit Dmg <strong>{((round.defenderCritDamagePct ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#60a5fa' }}>MagP <strong>{((round.defenderMagicProfChance ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#34d399' }}>Dex Prof <strong>{((round.defenderDexProficiency ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#6ee7b7' }}>Dex Posture <strong>{((round.defenderDexPosture ?? 0) * 100).toFixed(1)}%</strong></span>
+                    {round.defenderSpellMastery != null && round.defenderSpellMastery > 0 && (
+                      <span style={{ color: '#c084fc' }}>Spell Mastery <strong>+{(round.defenderSpellMastery * 100).toFixed(0)}%</strong></span>
+                    )}
+                    {round.defenderStatSpellActivation != null && round.defenderStatSpellActivation > 0 && (
+                      <span style={{ color: '#e879f9' }}>Spell Act. <strong>+{(round.defenderStatSpellActivation * 100).toFixed(1)}%</strong></span>
+                    )}
                   </div>
+                  {/* Spell attempts */}
+                  {round.defenderSpells && round.defenderSpells.length > 0 && (
+                    <div style={{ marginBottom: 6 }}>
+                      {round.defenderSpells.map((sp, i) => {
+                        const fired = sp.fired !== false;
+                        return (
+                          <div key={i} style={{ fontSize: 10, opacity: fired ? 1 : 0.5, color: fired ? '#e879f9' : '#a0a0b0', marginBottom: 1 }}>
+                            {fired ? '✦' : '✗'} <strong>{sp.spellName}</strong>
+                            {sp.chance != null && <span style={{ color: '#a0a0b0' }}> {sp.chance}%</span>}
+                            {fired && sp.manaCost != null && <span style={{ color: '#60a5fa' }}> −{sp.manaCost} MP</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   {/* Calculation */}
                   <div style={styles.mathRow}>
                     <span style={styles.mathKey}>PA ×0.5</span>
@@ -343,6 +475,24 @@ export default function BattlePage() {
                     <span style={styles.mathKey}>Dex ×{(round.defenderDexFactor ?? 0.33).toFixed(2)}</span>
                     <span style={styles.mathVal}>{(round.defenderDexContrib ?? 0).toFixed(2)}</span>
                   </div>
+                  {round.defenderDexUsed != null && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#f87171', fontSize: 9 }}>↳ used {round.defenderDexUsed.toFixed(1)}</span>
+                      <span />
+                    </div>
+                  )}
+                  {round.defenderDexRecovered != null && round.defenderDexRecovered > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#4ade80', fontSize: 9 }}>↺ recovered {round.defenderDexRecovered.toFixed(1)} → rem. {(round.defenderDexRemaining ?? 0).toFixed(1)}</span>
+                      <span />
+                    </div>
+                  )}
+                  {round.defenderDexRecovered === 0 && round.defenderDexUsed != null && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#a0a0b0', fontSize: 9 }}>rem. {(round.defenderDexRemaining ?? 0).toFixed(1)}</span>
+                      <span />
+                    </div>
+                  )}
                   <div style={{ ...styles.mathRow, borderTop: '1px solid #16213e', marginTop: 2, paddingTop: 2 }}>
                     <span style={styles.mathKey}>Raw total</span>
                     <span style={styles.mathVal}>{(round.defenderRawAttack ?? 0).toFixed(2)}</span>
@@ -357,6 +507,12 @@ export default function BattlePage() {
                     <div style={styles.mathRow}>
                       <span style={styles.mathKey}>Elem bonus</span>
                       <span style={{ ...styles.mathVal, color: '#4ade80' }}>+{round.defenderElementBonus.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {round.defenderStatAttack != null && round.defenderStatAttack > 0 && (
+                    <div style={styles.mathRow}>
+                      <span style={{ ...styles.mathKey, color: '#f97316' }}>Attack (flat)</span>
+                      <span style={{ ...styles.mathVal, color: '#f97316' }}>+{round.defenderStatAttack.toFixed(2)}</span>
                     </div>
                   )}
                   <div style={{ ...styles.mathRow, marginTop: 4 }}>

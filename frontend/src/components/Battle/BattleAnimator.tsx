@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Coins } from 'lucide-react';
 import type { BattleLog } from '../../types';
 import HeroPortrait from '../Hero/HeroPortrait';
 
@@ -45,6 +46,7 @@ const ANIM_CSS = `
 @keyframes baBloodMain { 0%{opacity:0;transform:translate(-50%,-50%) scale(0) rotate(-12deg)} 28%{opacity:1;transform:translate(-50%,-50%) scale(1.3) rotate(-14deg)} 55%{transform:translate(-50%,-50%) scale(0.88) rotate(-11deg)} 100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-12deg)} }
 @keyframes baBloodDrop { 0%{opacity:0;transform:translate(-50%,-50%) scale(0)} 38%{opacity:1;transform:translate(-50%,-50%) scale(1.3)} 65%{transform:translate(-50%,-50%) scale(0.85)} 100%{opacity:1;transform:translate(-50%,-50%) scale(1)} }
 @keyframes baXP { 0%{opacity:0;transform:translateY(10px) scale(.75)} 55%{opacity:1;transform:translateY(-2px) scale(1.08)} 100%{opacity:1;transform:translateY(0) scale(1)} }
+@keyframes baXPJump { 0%{transform:scale(1);filter:brightness(1)} 25%{transform:scale(1.6);filter:brightness(1.8)} 55%{transform:scale(1.4);filter:brightness(1.4)} 75%{transform:scale(1.1);filter:brightness(1.1)} 100%{transform:scale(1);filter:brightness(1)} }
 @keyframes baSpell { 0%{opacity:0;transform:translateY(18px) scale(0.68);filter:brightness(1)} 7%{opacity:1;transform:translateY(-7px) scale(1.22);filter:brightness(3) saturate(2.2)} 15%{transform:translateX(-8px) scale(1.14);filter:brightness(2.4)} 23%{transform:translateX(8px) scale(1.17);filter:brightness(2.8)} 31%{transform:translateX(-6px) scale(1.10);filter:brightness(2.1)} 39%{transform:translateX(6px) scale(1.08);filter:brightness(1.8)} 47%{transform:translateX(-4px) scale(1.05);filter:brightness(1.5)} 55%{transform:translateX(3px) scale(1.03);filter:brightness(1.3)} 63%{transform:translateX(0) scale(1.01);filter:brightness(1.1)} 100%{opacity:1;transform:scale(1);filter:brightness(1)} }
 @keyframes baManaGlow { 0%,100%{box-shadow:0 0 8px rgba(59,130,246,0.55),0 0 0 rgba(96,165,250,0)} 50%{box-shadow:0 0 28px rgba(59,130,246,1),0 0 56px rgba(96,165,250,0.7),0 0 90px rgba(147,197,253,0.35)} }
 @keyframes baOverlayIn { 0%{opacity:0;transform:scale(0.92)} 100%{opacity:1;transform:scale(1)} }
@@ -120,9 +122,11 @@ interface Props {
   battleLog: BattleLog;
   result?: string | null;
   goldEarned?: number | null;
+  goldBase?: number | null;
+  goldBonusPct?: number | null;
 }
 
-export default function BattleAnimator({ battleLog, result, goldEarned }: Props) {
+export default function BattleAnimator({ battleLog, result, goldEarned, goldBonusPct }: Props) {
   const navigate = useNavigate();
   const rounds = battleLog.rounds;
   const cRoster = useMemo(
@@ -144,8 +148,8 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
   const [rAnim, setRAnim] = useState<AnimSlot>(IDLE);
   const [showImpact, setShowImpact] = useState(false);
   const [impactKey, setImpactKey] = useState(0);
-  const [dmgL, setDmgL] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number; crit?: boolean; magicProf?: boolean } | null>(null);
-  const [dmgR, setDmgR] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number; crit?: boolean; magicProf?: boolean } | null>(null);
+  const [dmgL, setDmgL] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number; crit?: boolean; magicProf?: boolean; attackFlat?: number; highDex?: boolean } | null>(null);
+  const [dmgR, setDmgR] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number; crit?: boolean; magicProf?: boolean; attackFlat?: number; highDex?: boolean } | null>(null);
   const [roundRes, setRoundRes] = useState<'attacker' | 'defender' | null>(null);
   const [hitInd, setHitInd] = useState<{ type: HitType; side: 'left' | 'right'; k: number } | null>(null);
   const [cSpellNotif, setCSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number }>; k: number } | null>(null);
@@ -155,6 +159,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
 
   const [showEndOverlay, setShowEndOverlay] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [displayedXp, setDisplayedXp] = useState<Record<string, number>>({});
 
   const cancelRef = useRef(false);
   const doneRef   = useRef(false); // true only when animation runs to natural completion
@@ -218,8 +223,8 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     }
 
     // ── Spell notifications ───────────────────────────────────────────────────
-    const cSp = (round as any).challengerSpells as Array<{ spellName: string; manaCost: number }> | undefined;
-    const dSp = (round as any).defenderSpells as Array<{ spellName: string; manaCost: number }> | undefined;
+    const cSp = ((round as any).challengerSpells as Array<{ spellName: string; manaCost: number; fired?: boolean }> | undefined)?.filter(sp => sp.fired !== false);
+    const dSp = ((round as any).defenderSpells as Array<{ spellName: string; manaCost: number; fired?: boolean }> | undefined)?.filter(sp => sp.fired !== false);
     if (cSp?.length) setCSpellNotif({ spells: cSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost })), k: Date.now() });
     if (dSp?.length) setDSpellNotif({ spells: dSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost })), k: Date.now() + 1 });
     if (cSp?.length || dSp?.length) {
@@ -251,12 +256,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     if (leftGoesFirst) {
       // Left hits right → indicator + damage on right; right flashes
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
-      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf });
+      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf, attackFlat: round.attackerStatAttack, highDex: round.attackerHighDex });
       bump(setRAnim, 'baHF', 700 / speed);
     } else {
       // Right hits left → indicator + damage on left; left flashes
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
-      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf });
+      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf, attackFlat: round.defenderStatAttack, highDex: round.defenderHighDex });
       bump(setLAnim, 'baHF', 700 / speed);
     }
     await sleep(IMPACT_MS);
@@ -275,12 +280,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     if (leftGoesFirst) {
       // Right hits left → indicator + damage on left; left flashes
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
-      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf });
+      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf, attackFlat: round.defenderStatAttack, highDex: round.defenderHighDex });
       bump(setLAnim, 'baHF', 700 / speed);
     } else {
       // Left hits right → indicator + damage on right; right flashes
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
-      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf });
+      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf, attackFlat: round.attackerStatAttack, highDex: round.attackerHighDex });
       bump(setRAnim, 'baHF', 700 / speed);
     }
     await sleep(IMPACT_MS);
@@ -383,6 +388,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
 
   // ── Derived
   // Flat hero-name → xp lookup covering both sides
+  // xpData: hero name → BASE xp (before bonus)
   const xpData = useMemo(() => {
     const out: Record<string, number> = {};
     if (battleLog.xpGained) {
@@ -398,12 +404,55 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     return out;
   }, [battleLog.xpGained, battleLog.summonXp, battleLog.challenger.summon, battleLog.defender.summon]);
 
+  // xpBonusData: hero name → bonus %
+  const xpBonusData = useMemo(() => {
+    const out: Record<string, number> = {};
+    if (battleLog.xpBonusPercent) {
+      Object.entries(battleLog.xpBonusPercent.challenger).forEach(([h, p]) => { if (p > 0) out[h] = p; });
+      Object.entries(battleLog.xpBonusPercent.defender).forEach(([h, p]) => { if (p > 0) out[h] = p; });
+    }
+    return out;
+  }, [battleLog.xpBonusPercent]);
+
   const round = rounds[Math.min(roundIdx, rounds.length - 1)];
   const cDefeated = useMemo(() => getDefeated(rounds, roundIdx, 'attacker'), [rounds, roundIdx]);
   const dDefeated = useMemo(() => getDefeated(rounds, roundIdx, 'defender'), [rounds, roundIdx]);
   const cHero = cRoster.find(h => h.name === round?.attackerHero) ?? cRoster[0];
   const dHero = dRoster.find(h => h.name === round?.defenderHero) ?? dRoster[0];
   const isAtEnd = roundIdx >= rounds.length - 1;
+
+  // Animate XP count-up from base → total for heroes with bonus
+  useEffect(() => {
+    if (!isAtEnd || isPlaying || busy) return;
+    const base: Record<string, number> = {};
+    Object.keys(xpData).forEach(name => { base[name] = xpData[name]; });
+    setDisplayedXp(base);
+
+    // Only animate heroes that actually earned XP (won at least one clash)
+    const heroes = Object.keys(xpBonusData).filter(name => xpData[name] != null && xpData[name] > 0);
+    if (heroes.length === 0) { return; }
+
+    // Dynamic step duration: target ~1500ms total regardless of diff size, clamped 80–750ms
+    const maxDiff = Math.max(...heroes.map(name => Math.round(xpData[name] * (1 + xpBonusData[name] / 100)) - xpData[name]));
+    const STEP_MS = Math.max(80, Math.min(750, Math.round(1500 / maxDiff)));
+    const startTime = Date.now();
+    let raf: number;
+    const animate = () => {
+      const steps = Math.floor((Date.now() - startTime) / STEP_MS);
+      const next: Record<string, number> = { ...base };
+      let allDone = true;
+      heroes.forEach(name => {
+        const total = Math.round(xpData[name] * (1 + xpBonusData[name] / 100));
+        const current = Math.min(xpData[name] + steps, total);
+        next[name] = current;
+        if (current < total) { allDone = false; }
+      });
+      setDisplayedXp(next);
+      if (!allDone) { raf = requestAnimationFrame(animate); }
+    };
+    const timeout = setTimeout(() => { raf = requestAnimationFrame(animate); }, 400);
+    return () => { clearTimeout(timeout); cancelAnimationFrame(raf); };
+  }, [isAtEnd, isPlaying, busy]); // eslint-disable-line react-hooks/exhaustive-deps
   const finalWinner = battleLog.winner === 'challenger' ? battleLog.challenger.username : battleLog.defender.username;
 
   // ── Hit effect helpers (rendered inside portrait, clipped by overflow:hidden)
@@ -539,9 +588,10 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
     );
   };
 
-  const renderBloodSplatter = (sp: number, label: string, elemBonus?: number, elem?: string, rawAttack?: number, staminaLost?: number, crit?: boolean, magicProf?: boolean, isLeft?: boolean) => {
+  const renderBloodSplatter = (sp: number, label: string, elemBonus?: number, elem?: string, rawAttack?: number, staminaLost?: number, crit?: boolean, magicProf?: boolean, isLeft?: boolean, attackFlat?: number, highDex?: boolean) => {
     const poolDur = `${900 / sp}ms`;
     const hasStamina = staminaLost != null && staminaLost > 0;
+    const hasAttackFlat = attackFlat != null && attackFlat > 0;
     // Droplets scattered just outside the pool edges (pool is ~144×58)
     const droplets = [
       { w: 14, h: 9,  tOff: -34, lOff: -16, delay: '80ms'  },
@@ -628,8 +678,8 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
           )}
         </div>
 
-        {/* Proc icons — crit (runner) and magic proficiency (dice) */}
-        {(crit || magicProf) && (
+        {/* Proc icons — crit (runner), magic proficiency (dice), high dex (sword) */}
+        {(crit || magicProf || highDex) && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'center' }}>
             {crit && (
               <div title="Critical Hit" style={{
@@ -691,6 +741,33 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
                 </svg>
               </div>
             )}
+            {highDex && (
+              <div title="High DEX Consumption" style={{
+                width: 30, height: 30,
+                background: 'linear-gradient(135deg, rgba(34,197,94,0.22), rgba(16,185,129,0.12))',
+                border: '1.5px solid rgba(74,222,128,0.75)',
+                borderRadius: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 12px rgba(74,222,128,0.65), 0 0 24px rgba(16,185,129,0.3)',
+                animationName: 'baBadgePop', animationDuration: '0.3s',
+                animationFillMode: 'both', animationTimingFunction: 'ease-out',
+                animationDelay: (crit && magicProf) ? '0.16s' : (crit || magicProf) ? '0.08s' : '0s',
+              }}>
+                {/* Sword SVG */}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  {/* Blade */}
+                  <line x1="4" y1="20" x2="18" y2="4" stroke="#4ade80" strokeWidth="2" strokeLinecap="round"/>
+                  {/* Tip shine */}
+                  <circle cx="18.5" cy="3.5" r="1.2" fill="#86efac"/>
+                  {/* Crossguard */}
+                  <line x1="8" y1="16" x2="14" y2="10" stroke="#4ade80" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="6" y1="14" x2="8" y2="16" stroke="#86efac" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="14" y1="10" x2="16" y2="8" stroke="#86efac" strokeWidth="1.5" strokeLinecap="round"/>
+                  {/* Handle */}
+                  <line x1="4" y1="20" x2="6" y2="18" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"/>
+                </svg>
+              </div>
+            )}
           </div>
         )}
         </div>{/* end pool+icons row */}
@@ -714,6 +791,28 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
             </span>
             <span style={{ fontSize: 10, color: 'rgba(251,113,133,0.55)', fontWeight: 600, letterSpacing: '0.05em' }}>
               STAM
+            </span>
+          </div>
+        )}
+        {/* Flat attack bonus — shown below when applicable */}
+        {hasAttackFlat && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            backgroundColor: 'rgba(0,0,0,0.72)',
+            border: '1px solid rgba(249,115,22,0.35)',
+            borderRadius: 6,
+            padding: '2px 8px',
+          }}>
+            <span style={{ fontSize: 14, color: '#f97316', lineHeight: 1 }}>↑</span>
+            <span style={{
+              fontSize: 14, fontWeight: 800, color: '#f97316',
+              textShadow: '0 0 6px rgba(249,115,22,0.6)',
+              fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+            }}>
+              {attackFlat!.toFixed(1)}
+            </span>
+            <span style={{ fontSize: 10, color: 'rgba(249,115,22,0.55)', fontWeight: 600, letterSpacing: '0.05em' }}>
+              ATK
             </span>
           </div>
         )}
@@ -761,7 +860,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
             animationTimingFunction: 'ease-out',
             pointerEvents: 'none',
           }}>
-            {renderBloodSplatter(speed, dmg.v.toFixed(1), dmg.elemBonus, dmg.elem, dmg.rawAttack, dmg.staminaLost, dmg.crit, dmg.magicProf, isLeft)}
+            {renderBloodSplatter(speed, dmg.v.toFixed(1), dmg.elemBonus, dmg.elem, dmg.rawAttack, dmg.staminaLost, dmg.crit, dmg.magicProf, isLeft, dmg.attackFlat, dmg.highDex)}
           </div>
         )}
 
@@ -861,7 +960,10 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
       {roster.map((h, i) => {
         const isDead = defeated.has(h.name);
         const isActive = h.name === activeHeroName && !isDead;
-        const heroXp = isAtEnd && !isPlaying && !busy ? xpData[h.name] : undefined;
+        // Show XP when dead (during battle) OR for all at the end
+        const showXp = isDead || (isAtEnd && !isPlaying && !busy);
+        const heroXp = showXp ? (Object.keys(displayedXp).length > 0 ? (displayedXp[h.name] ?? xpData[h.name]) : xpData[h.name]) : undefined;
+        const hasBonus = !!xpBonusData[h.name];
         return (
           <div key={i} title={h.name} style={{
             position: 'relative',
@@ -889,12 +991,13 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
                 position: 'absolute', bottom: 0, left: 0, right: 0,
                 backgroundColor: 'rgba(0,0,0,0.72)',
                 textAlign: 'center',
-                color: '#4ade80',
+                color: hasBonus ? '#fbbf24' : '#4ade80',
                 fontSize: 11, fontWeight: 800,
                 padding: '3px 0',
-                textShadow: '0 0 6px rgba(74,222,128,.8)',
+                textShadow: hasBonus ? '0 0 6px rgba(251,191,36,.9)' : '0 0 6px rgba(74,222,128,.8)',
                 whiteSpace: 'nowrap',
-                animationName: 'baXP', animationDuration: '0.45s',
+                animationName: 'baXP',
+                animationDuration: '0.45s',
                 animationFillMode: 'both', animationTimingFunction: 'ease-out',
                 pointerEvents: 'none',
               }}>
@@ -941,7 +1044,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
         <div style={s.center}>
           {round && (
             <div key={roundIdx} style={{ animationName: 'baRN', animationDuration: '0.28s', animationFillMode: 'both', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <div style={s.roundLabel}>Round {round.roundNumber} / {rounds.length}</div>
+
               <div style={s.vsGlyph}>VS</div>
             </div>
           )}
@@ -958,7 +1061,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
                 {result === 'WIN' ? '🏆 Victory!' : result === 'LOSS' ? '💀 Defeat' : `🏆 ${finalWinner}`}
               </div>
               {goldEarned != null && goldEarned > 0 && (
-                <div style={{ color: '#fbbf24', fontSize: 12, marginTop: 3 }}>+{goldEarned} gold</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, color: '#fbbf24', fontSize: 12, marginTop: 3 }}>
+                  <span style={{ fontWeight: 700 }}>+{goldEarned} gold</span>
+                  {goldBonusPct != null && goldBonusPct > 0 && (
+                    <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 700 }}>↑ {goldBonusPct}%</span>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -993,9 +1101,6 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
           ))}
         </div>
 
-        <div style={{ color: '#444', fontSize: 11 }}>
-          {roundIdx + 1} / {rounds.length}
-        </div>
       </div>
 
       {/* ── End overlay ── */}
@@ -1048,19 +1153,13 @@ export default function BattleAnimator({ battleLog, result, goldEarned }: Props)
 
             {goldEarned != null && goldEarned > 0 && (
               <div style={s.overlayGoldRow}>
-                <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-                  {/* bottom coin */}
-                  <ellipse cx="13" cy="21" rx="8" ry="3" fill="#92400e" stroke="#fbbf24" strokeWidth="1.2"/>
-                  <ellipse cx="13" cy="20" rx="8" ry="3" fill="#d97706" stroke="#fbbf24" strokeWidth="1.2"/>
-                  {/* middle coin */}
-                  <ellipse cx="13" cy="16" rx="8" ry="3" fill="#92400e" stroke="#fbbf24" strokeWidth="1.2"/>
-                  <ellipse cx="13" cy="15" rx="8" ry="3" fill="#d97706" stroke="#fbbf24" strokeWidth="1.2"/>
-                  {/* top coin */}
-                  <ellipse cx="13" cy="11" rx="8" ry="3" fill="#92400e" stroke="#fbbf24" strokeWidth="1.2"/>
-                  <ellipse cx="13" cy="10" rx="8" ry="3" fill="#fbbf24" stroke="#fbbf24" strokeWidth="1.2"/>
-                  <ellipse cx="13" cy="10" rx="5" ry="1.8" fill="#fde68a" opacity="0.5"/>
-                </svg>
-                <span style={s.overlayGoldText}>+{goldEarned}</span>
+                <Coins size={26} color="#fbbf24" />
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={s.overlayGoldText}>+{goldEarned}</span>
+                  {goldBonusPct != null && goldBonusPct > 0 && (
+                    <span style={{ color: '#4ade80', fontSize: 13, fontWeight: 700 }}>↑ {goldBonusPct}%</span>
+                  )}
+                </span>
               </div>
             )}
 
@@ -1314,7 +1413,7 @@ const s: Record<string, React.CSSProperties> = {
   overlayBackdrop: {
     position: 'fixed' as const,
     inset: 0,
-    backgroundColor: 'rgba(0,0,0,0.52)',
+    backgroundColor: 'rgba(0,0,0,0.30)',
     backdropFilter: 'none',
     display: 'flex',
     alignItems: 'center',
@@ -1322,8 +1421,8 @@ const s: Record<string, React.CSSProperties> = {
     zIndex: 9999,
   },
   overlayCard: {
-    backgroundColor: '#0e0e22',
-    border: '1px solid #2a2a50',
+    backgroundColor: '#252545',
+    border: '1px solid #3a3a65',
     borderRadius: 18,
     padding: '40px 56px',
     display: 'flex',

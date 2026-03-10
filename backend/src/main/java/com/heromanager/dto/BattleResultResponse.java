@@ -9,6 +9,8 @@ public class BattleResultResponse {
     private Long battleId;
     private String result;
     private int goldEarned;
+    private int goldBase;
+    private int goldBonusPct;
     private int energyCost;
     private int arenaEnergyRemaining;
     private Object battleLog;
