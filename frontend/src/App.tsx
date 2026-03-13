@@ -24,8 +24,10 @@ import GameRulesPage from './pages/GameRulesPage';
 import LegalPage from './pages/LegalPage';
 import GuidePage from './pages/GuidePage';
 import BlacksmithPage from './pages/BlacksmithPage';
+import HomePage from './pages/HomePage';
 import Footer from './components/Layout/Footer';
 import ChatPanel from './components/chat/ChatPanel';
+import LevelUpNotification from './components/LevelUpNotification';
 
 /** Animated aurora blobs — logged-in game background */
 function GameBackground() {
@@ -84,6 +86,7 @@ function AppLayout() {
       </div>
       <Footer />
       <ChatPanel />
+      <LevelUpNotification />
     </div>
   );
 }
@@ -104,6 +107,7 @@ export default function App() {
 
       {/* Protected layout — AppLayout renders once, only Outlet content changes */}
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route path="/home"        element={<HomePage />} />
         <Route path="/team"        element={<TeamPage />} />
         <Route path="/shop"        element={<ShopPage />} />
         <Route path="/blacksmith"  element={<BlacksmithPage />} />
@@ -118,7 +122,8 @@ export default function App() {
         <Route path="/guide"       element={<GuidePage />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="/"   element={<Navigate to="/home" replace />} />
+      <Route path="*"   element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }

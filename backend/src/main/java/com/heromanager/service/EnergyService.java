@@ -22,10 +22,10 @@ public class EnergyService {
         return player.isEnergyPlusPurchased() ? 140 : 120;
     }
 
-    public int calculateCurrentEnergy(int storedEnergy, LocalDateTime lastUpdate) {
+    public double calculateCurrentEnergy(double storedEnergy, LocalDateTime lastUpdate) {
         long minutesPassed = Duration.between(lastUpdate, LocalDateTime.now()).toMinutes();
         long regenTicks = minutesPassed / REGEN_INTERVAL_MINUTES;
-        return (int) Math.min(120, storedEnergy + regenTicks);
+        return Math.min(120, storedEnergy + regenTicks);
     }
 
     public void refreshEnergy(Player player) {
@@ -35,8 +35,10 @@ public class EnergyService {
         int max = maxEnergy(player);
 
         if (regenTicks > 0) {
-            int newArena = (int) Math.min(max, player.getArenaEnergy() + regenTicks);
-            int newWorld = (int) Math.min(max, player.getWorldEnergy() + regenTicks);
+            double gainPerTick = player.isEnergyGainUpgraded() ? 1.5 : 1.0;
+            double energyGained = regenTicks * gainPerTick;
+            double newArena = Math.min(max, player.getArenaEnergy() + energyGained);
+            double newWorld = Math.min(max, player.getWorldEnergy() + energyGained);
             player.setArenaEnergy(newArena);
             player.setWorldEnergy(newWorld);
             // Advance lastEnergyUpdate by the ticks consumed (not to now, to preserve partial tick)
@@ -50,7 +52,7 @@ public class EnergyService {
         refreshEnergy(player);
         if (player.getArenaEnergy() < amount) {
             throw new IllegalStateException("Insufficient arena energy. Need " + amount
-                    + " but have " + player.getArenaEnergy());
+                    + " but have " + String.format("%.1f", player.getArenaEnergy()));
         }
         player.setArenaEnergy(player.getArenaEnergy() - amount);
         player.setLastEnergyUpdate(LocalDateTime.now());

@@ -64,7 +64,9 @@ export default function OpponentRow({ opponent, onChallenge, disabled, isSelf }:
   }
 
   const isOnline = opponent.isOnline;
-  const hasReturn = opponent.hasPendingReturn;
+  const returnCount = opponent.pendingReturnCount ?? 0;
+  const hasReturn = returnCount > 0;
+  const atDailyLimit = !hasReturn && (opponent.directChallengesToday ?? 0) >= (opponent.directChallengeLimit || 7);
 
   return (
     <div
@@ -236,7 +238,13 @@ export default function OpponentRow({ opponent, onChallenge, disabled, isSelf }:
               <span style={{
                 fontSize: 9, color: '#fbbf24', fontWeight: 700,
                 fontFamily: 'Inter, sans-serif', letterSpacing: '0.06em',
-              }}>RETURN</span>
+              }}>{returnCount} RETURN{returnCount > 1 ? 'S' : ''}</span>
+            )}
+            {!hasReturn && (
+              <span style={{
+                fontSize: 9, color: (opponent.directChallengesToday ?? 0) >= (opponent.directChallengeLimit || 7) ? '#e94560' : '#6b7280',
+                fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              }}>{opponent.directChallengesToday ?? 0}/{opponent.directChallengeLimit || 7}</span>
             )}
           </div>
         )}
@@ -245,18 +253,20 @@ export default function OpponentRow({ opponent, onChallenge, disabled, isSelf }:
         {!isSelf && (
           <button
             onClick={onChallenge}
-            disabled={disabled}
-            className={disabled ? '' : (hasReturn ? 'return-btn-glow' : 'fight-btn-glow')}
+            disabled={disabled || atDailyLimit}
+            className={(disabled || atDailyLimit) ? '' : (hasReturn ? 'return-btn-glow' : 'fight-btn-glow')}
             style={{
               ...styles.fightBtn,
-              background: hasReturn
-                ? 'linear-gradient(135deg, #a16207, #d97706)'
-                : 'linear-gradient(135deg, #b91c3a, #e94560)',
-              opacity: disabled ? 0.45 : 1,
-              cursor: disabled ? 'not-allowed' : 'pointer',
+              background: atDailyLimit
+                ? 'linear-gradient(135deg, #3f3f46, #52525b)'
+                : hasReturn
+                  ? 'linear-gradient(135deg, #a16207, #d97706)'
+                  : 'linear-gradient(135deg, #b91c3a, #e94560)',
+              opacity: (disabled || atDailyLimit) ? 0.45 : 1,
+              cursor: (disabled || atDailyLimit) ? 'not-allowed' : 'pointer',
             }}
           >
-            {hasReturn ? '↩ Return' : 'Fight'}
+            {atDailyLimit ? 'Limit' : hasReturn ? `↩ Return (${returnCount})` : 'Fight'}
           </button>
         )}
       </div>

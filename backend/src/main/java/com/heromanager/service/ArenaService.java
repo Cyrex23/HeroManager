@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,8 +46,17 @@ public class ArenaService {
         this.playerService = playerService;
     }
 
+    private static final int RETURN_CAP_BASE         = 5;
+    private static final int RETURN_CAP_UPGRADED      = 10;
+    private static final int CHALLENGE_LIMIT_BASE     = 7;
+    private static final int CHALLENGE_LIMIT_UPGRADED = 12;
+
     @Transactional(readOnly = true)
     public Map<String, Object> listOpponents(Long playerId, int page, int size) {
+        Player currentPlayer = playerRepository.findById(playerId).orElseThrow();
+        int returnCap = currentPlayer.isReturnCapUpgraded() ? RETURN_CAP_UPGRADED : RETURN_CAP_BASE;
+        int directLimit = currentPlayer.isChallengeLimitUpgraded() ? CHALLENGE_LIMIT_UPGRADED : CHALLENGE_LIMIT_BASE;
+
         List<Player> allPlayers = playerRepository.findAll();
 
         List<ArenaOpponentResponse> opponents = new ArrayList<>();
@@ -63,14 +73,20 @@ public class ArenaService {
             // Skip self if offline (only show self when online)
             if (isSelf && !isOnline) continue;
 
-            // Check for pending return challenge (not applicable for self)
-            boolean hasPendingReturn = !isSelf && !battleLogRepository
-                    .findPendingReturnChallenges(p.getId(), playerId).isEmpty();
+            // Count available return challenges (24h window, capped at returnCap):
+            // received from this opponent in last 24h (up to cap) minus returns already sent in last 24h
+            int pendingReturnCount = 0;
+            if (!isSelf) {
+                LocalDateTime last24h = LocalDateTime.now().minusHours(24);
+                long receivedInLast24h = battleLogRepository.countDirectChallengesTo(p.getId(), playerId, last24h);
+                long returnsSentInLast24h = battleLogRepository.countReturnsSentSince(playerId, p.getId(), last24h);
+                pendingReturnCount = (int) Math.max(0, Math.min(returnCap, receivedInLast24h) - returnsSentInLast24h);
+            }
 
             int energyCost;
             if (isSelf) {
                 energyCost = 0;
-            } else if (hasPendingReturn) {
+            } else if (pendingReturnCount > 0) {
                 energyCost = 4;
             } else if (isOnline) {
                 energyCost = 5;
@@ -92,18 +108,23 @@ public class ArenaService {
             long totalBattles = battleLogRepository.countBattles(p.getId());
             long losses = totalBattles - wins;
 
+            int directToday = isSelf ? 0 : (int) battleLogRepository.countDirectChallengesTo(
+                    playerId, p.getId(), LocalDateTime.now().minusHours(24));
+
             opponents.add(ArenaOpponentResponse.builder()
                     .playerId(p.getId())
                     .username(p.getUsername())
                     .teamPower(teamPower)
                     .isOnline(isOnline)
                     .heroCount((int) heroCount)
-                    .hasPendingReturn(hasPendingReturn)
+                    .pendingReturnCount(pendingReturnCount)
                     .energyCost(energyCost)
                     .profileImagePath(p.getProfileImagePath())
                     .teamName(p.getTeamName() != null ? p.getTeamName() : p.getUsername())
                     .wins(wins)
                     .losses(losses)
+                    .directChallengesToday(directToday)
+                    .directChallengeLimit(isSelf ? 0 : directLimit)
                     .build());
         }
 
@@ -125,7 +146,7 @@ public class ArenaService {
     }
 
     @Transactional
-    public BattleResultResponse initiateChallenge(Long challengerId, Long defenderId) {
+    public BattleResultResponse initiateChallenge(Long challengerId, Long defenderId, boolean isReturnIntent) {
         if (challengerId.equals(defenderId)) {
             throw new ArenaException("SELF_CHALLENGE", "You cannot challenge your own team.");
         }
@@ -141,9 +162,24 @@ public class ArenaService {
             throw new ArenaException("EMPTY_TEAM", "You need at least 1 hero in your team to battle.");
         }
 
-        // Check return challenge
-        boolean isReturn = !battleLogRepository
-                .findPendingReturnChallenges(defenderId, challengerId).isEmpty();
+        // Check return challenge eligibility (24h window, capped at challengerReturnCap)
+        int challengerReturnCap = challenger.isReturnCapUpgraded() ? RETURN_CAP_UPGRADED : RETURN_CAP_BASE;
+        LocalDateTime last24h = LocalDateTime.now().minusHours(24);
+        long receivedInLast24h = battleLogRepository.countDirectChallengesTo(defenderId, challengerId, last24h);
+        long returnsSentInLast24h = battleLogRepository.countReturnsSentSince(challengerId, defenderId, last24h);
+        boolean hasReturnAvailable = Math.min(challengerReturnCap, receivedInLast24h) > returnsSentInLast24h;
+        boolean isReturn = isReturnIntent && hasReturnAvailable;
+
+        // If not a return, enforce per-player direct challenge limit
+        int challengerDirectLimit = challenger.isChallengeLimitUpgraded() ? CHALLENGE_LIMIT_UPGRADED : CHALLENGE_LIMIT_BASE;
+        if (!isReturn) {
+            long directToday = battleLogRepository.countDirectChallengesTo(
+                    challengerId, defenderId, LocalDateTime.now().minusHours(24));
+            if (directToday >= challengerDirectLimit) {
+                throw new ArenaException("DAILY_LIMIT_REACHED",
+                        "You can only challenge the same opponent " + challengerDirectLimit + " times per 24 hours.");
+            }
+        }
 
         boolean defenderOnline = energyService.isOnline(defender);
         int energyCost;

@@ -24,7 +24,7 @@ export async function craftMaterial(materialRecipeId: number): Promise<void> {
   await apiClient.post('/blacksmith/craft-material', { materialRecipeId });
 }
 
-export interface SpinStatus { canSpin: boolean; nextResetMs: number }
+export interface SpinStatus { canSpin: boolean; nextResetMs: number; spinsRemaining: number }
 export interface SpinResult { materialId: number; name: string; iconKey: string; tier: number; wonQty: number; nextResetMs: number }
 
 export async function getSpinStatus(): Promise<SpinStatus> {

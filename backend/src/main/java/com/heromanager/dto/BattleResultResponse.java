@@ -12,6 +12,6 @@ public class BattleResultResponse {
     private int goldBase;
     private int goldBonusPct;
     private int energyCost;
-    private int arenaEnergyRemaining;
+    private double arenaEnergyRemaining;
     private Object battleLog;
 }

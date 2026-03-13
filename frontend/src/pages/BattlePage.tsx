@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { getBattle } from '../api/arenaApi';
 import type { BattleLog, BattleResultResponse } from '../types';
 import BattleAnimator from '../components/Battle/BattleAnimator';
+import { enqueueLevelUps } from '../components/LevelUpNotification';
+import { usePlayer } from '../context/PlayerContext';
 
 const ELEMENT_COLOR: Record<string, string> = {
   FIRE: '#f97316', WATER: '#38bdf8', WIND: '#86efac',
@@ -19,6 +21,7 @@ export default function BattlePage() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const passedResult = (location.state as { battleResult?: BattleResultResponse })?.battleResult;
+  const { player } = usePlayer();
 
   const [battleLog, setBattleLog] = useState<BattleLog | null>(
     passedResult?.battleLog as BattleLog | null
@@ -30,6 +33,21 @@ export default function BattlePage() {
   const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(!passedResult);
   const [fetchError, setFetchError] = useState(false);
+  const levelUpsQueued = useRef(false);
+
+  // Enqueue level up notifications once per battle result
+  useEffect(() => {
+    if (levelUpsQueued.current) return;
+    const log = passedResult?.battleLog ?? battleLog;
+    if (!log?.levelUps) return;
+    const all = [
+      ...Object.values(log.levelUps.challenger),
+    ];
+    if (all.length > 0) {
+      enqueueLevelUps(all);
+      levelUpsQueued.current = true;
+    }
+  }, [battleLog, passedResult]);
 
   useEffect(() => {
     if (!passedResult && id) {
@@ -57,15 +75,27 @@ export default function BattlePage() {
 
       {/* ── Toggle for detailed stats ── */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <button
-          onClick={() => setShowDetails(v => !v)}
-          style={styles.detailsToggle}
-        >
-          {showDetails ? '▲ Hide Battle Details' : '▼ Show Battle Details'}
-        </button>
+        {player?.battleLogUnlocked ? (
+          <button onClick={() => setShowDetails(v => !v)} style={styles.detailsToggle}>
+            {showDetails ? '▲ Hide Battle Details' : '▼ Show Battle Details'}
+          </button>
+        ) : (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 18px', borderRadius: 8,
+            background: 'rgba(255,255,255,0.03)', border: '1px solid #2a2a4a',
+            color: '#4b4b6a', fontSize: 12, cursor: 'default',
+          }}>
+            <span style={{ opacity: 0.5 }}>🔒</span>
+            <span>Battle Details locked — </span>
+            <Link to="/shop" style={{ color: '#fbbf24', fontWeight: 700, textDecoration: 'none' }}>
+              Unlock in Shop (500g)
+            </Link>
+          </div>
+        )}
       </div>
 
-      {showDetails && <>
+      {player?.battleLogUnlocked && showDetails && <>
 
       {result && (
         <div style={{

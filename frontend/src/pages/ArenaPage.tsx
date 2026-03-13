@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getOpponents, challenge, getBattleLog } from '../api/arenaApi';
 import { usePlayer } from '../context/PlayerContext';
@@ -83,11 +83,18 @@ export default function ArenaPage() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  async function handleChallenge(defenderId: number) {
+  // Auto-refresh every 20s so pending returns update when opponents send new challenges
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    refreshIntervalRef.current = setInterval(refresh, 20000);
+    return () => { if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current); };
+  }, [refresh]);
+
+  async function handleChallenge(defenderId: number, isReturn = false) {
     setError('');
     setFighting(true);
     try {
-      const result = await challenge({ defenderId });
+      const result = await challenge({ defenderId, returnChallenge: isReturn });
       await fetchPlayer();
       navigate(`/battle/${result.battleId}`, { state: { battleResult: result } });
     } catch (err) {
@@ -123,7 +130,7 @@ export default function ArenaPage() {
             <div style={styles.energyInner}>
               <span style={styles.energyLabel}>Arena Energy</span>
               <div style={styles.energyMain}>
-                <span style={styles.energyValue} className="ae-value-anim">{player?.arenaEnergy ?? 0}</span>
+                <span style={styles.energyValue} className="ae-value-anim">{Number(player?.arenaEnergy ?? 0).toFixed(1)}</span>
                 <span style={styles.energySlash}>/</span>
                 <span style={styles.energyMax}>{player?.arenaEnergyMax ?? 120}</span>
               </div>
@@ -133,7 +140,7 @@ export default function ArenaPage() {
             <div style={styles.energyWarning}>
               Not enough energy to challenge (min 4 AE)
               {player?.nextEnergyTickSeconds != null && player.nextEnergyTickSeconds > 0 && (
-                <span> · Next +1 in {Math.floor(player.nextEnergyTickSeconds / 60)}:{(player.nextEnergyTickSeconds % 60).toString().padStart(2, '0')}</span>
+                <span> · Next +{player.nextTickGain ?? 1} in {Math.floor(player.nextEnergyTickSeconds / 60)}:{(player.nextEnergyTickSeconds % 60).toString().padStart(2, '0')}</span>
               )}
             </div>
           )}
@@ -156,7 +163,7 @@ export default function ArenaPage() {
                 <OpponentRow
                   key={op.playerId}
                   opponent={op}
-                  onChallenge={() => handleChallenge(op.playerId)}
+                  onChallenge={() => handleChallenge(op.playerId, (op.pendingReturnCount ?? 0) > 0)}
                   disabled={fighting || (player?.arenaEnergy ?? 0) < op.energyCost}
                   isSelf={op.playerId === player?.id}
                 />
@@ -172,7 +179,7 @@ export default function ArenaPage() {
           <SectionHeader label="CHALLENGES RECEIVED" count={received.length} />
           <BattleLogList
             battles={received}
-            onReturnChallenge={(id) => handleChallenge(id)}
+            onReturnChallenge={(id) => handleChallenge(id, true)}
             onViewBattle={(id) => navigate(`/battle/${id}`)}
             emptyMessage="No challenges received yet."
           />
@@ -184,7 +191,7 @@ export default function ArenaPage() {
           <SectionHeader label="CHALLENGES SENT" />
           <BattleLogList
             battles={sent}
-            onReturnChallenge={(id) => handleChallenge(id)}
+            onReturnChallenge={(id) => handleChallenge(id, true)}
             onViewBattle={(id) => navigate(`/battle/${id}`)}
             emptyMessage="No challenges sent yet."
           />

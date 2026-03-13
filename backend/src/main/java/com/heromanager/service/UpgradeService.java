@@ -18,6 +18,11 @@ public class UpgradeService {
     private static final int CAPACITY_PLUS_MAX          = 1;
     private static final int STAT_RESET_UNLOCK_COST       = 15000;
     private static final int EXTRA_CRAFTING_SLOT_GOLD_COST = 4000;
+    private static final int DOUBLE_SPIN_DIAMOND_COST      = 50;
+    private static final int BATTLE_LOG_GOLD_COST          = 500;
+    private static final int RETURN_CAP_GOLD_COST          = 8000;
+    private static final int CHALLENGE_LIMIT_GOLD_COST     = 13000;
+    private static final int ENERGY_GAIN_GOLD_COST         = 200000;
 
     private final PlayerRepository playerRepository;
 
@@ -64,8 +69,8 @@ public class UpgradeService {
         player.setDiamonds(player.getDiamonds() - ENERGY_PLUS_DIAMOND_COST);
         player.setEnergyPlusPurchased(true);
         // Bonus energy refill
-        player.setArenaEnergy(Math.min(player.getArenaEnergy() + 40, 140));
-        player.setWorldEnergy(Math.min(player.getWorldEnergy() + 40, 140));
+        player.setArenaEnergy(Math.min(player.getArenaEnergy() + 40.0, 140.0));
+        player.setWorldEnergy(Math.min(player.getWorldEnergy() + 40.0, 140.0));
         playerRepository.save(player);
         return Map.of("message", "Energy Plus purchased! Max energy increased to 140.", "diamondsRemaining", player.getDiamonds());
     }
@@ -114,6 +119,34 @@ public class UpgradeService {
     }
 
     @Transactional
+    public Map<String, Object> buyBattleLog(Long playerId) {
+        Player player = get(playerId);
+        if (player.isBattleLogUnlocked())
+            throw new UpgradeException("ALREADY_PURCHASED", "Battle Log already unlocked.");
+        if (player.getGold() < BATTLE_LOG_GOLD_COST)
+            throw new UpgradeException("INSUFFICIENT_GOLD",
+                    "Need " + BATTLE_LOG_GOLD_COST + " gold, you have " + player.getGold() + ".");
+        player.setGold(player.getGold() - BATTLE_LOG_GOLD_COST);
+        player.setBattleLogUnlocked(true);
+        playerRepository.save(player);
+        return Map.of("message", "Battle Log unlocked! You can now view your full battle history.", "goldRemaining", player.getGold());
+    }
+
+    @Transactional
+    public Map<String, Object> buyDoubleSpin(Long playerId) {
+        Player player = get(playerId);
+        if (player.isDoubleSpinPurchased())
+            throw new UpgradeException("ALREADY_PURCHASED", "Double Daily Spin already purchased.");
+        if (player.getDiamonds() < DOUBLE_SPIN_DIAMOND_COST)
+            throw new UpgradeException("INSUFFICIENT_DIAMONDS",
+                    "Need " + DOUBLE_SPIN_DIAMOND_COST + " diamonds, you have " + player.getDiamonds() + ".");
+        player.setDiamonds(player.getDiamonds() - DOUBLE_SPIN_DIAMOND_COST);
+        player.setDoubleSpinPurchased(true);
+        playerRepository.save(player);
+        return Map.of("message", "Double Daily Spin unlocked! You now get 2 spins per day.", "diamondsRemaining", player.getDiamonds());
+    }
+
+    @Transactional
     public Map<String, Object> buyExtraCraftingSlot(Long playerId) {
         Player player = get(playerId);
         if (player.isExtraCraftingSlotPurchased())
@@ -125,6 +158,48 @@ public class UpgradeService {
         player.setExtraCraftingSlotPurchased(true);
         playerRepository.save(player);
         return Map.of("message", "Extra Crafting Slot unlocked! You can now have 2 active crafting jobs.", "goldRemaining", player.getGold());
+    }
+
+    @Transactional
+    public Map<String, Object> buyReturnCap(Long playerId) {
+        Player player = get(playerId);
+        if (player.isReturnCapUpgraded())
+            throw new UpgradeException("ALREADY_PURCHASED", "Return Queue+ already purchased.");
+        if (player.getGold() < RETURN_CAP_GOLD_COST)
+            throw new UpgradeException("INSUFFICIENT_GOLD",
+                    "Need " + RETURN_CAP_GOLD_COST + " gold, you have " + player.getGold() + ".");
+        player.setGold(player.getGold() - RETURN_CAP_GOLD_COST);
+        player.setReturnCapUpgraded(true);
+        playerRepository.save(player);
+        return Map.of("message", "Return Queue+ unlocked! You can now queue up to 10 return challenges per opponent.", "goldRemaining", player.getGold());
+    }
+
+    @Transactional
+    public Map<String, Object> buyChallengeLimitUpgrade(Long playerId) {
+        Player player = get(playerId);
+        if (player.isChallengeLimitUpgraded())
+            throw new UpgradeException("ALREADY_PURCHASED", "Challenge Limit+ already purchased.");
+        if (player.getGold() < CHALLENGE_LIMIT_GOLD_COST)
+            throw new UpgradeException("INSUFFICIENT_GOLD",
+                    "Need " + CHALLENGE_LIMIT_GOLD_COST + " gold, you have " + player.getGold() + ".");
+        player.setGold(player.getGold() - CHALLENGE_LIMIT_GOLD_COST);
+        player.setChallengeLimitUpgraded(true);
+        playerRepository.save(player);
+        return Map.of("message", "Challenge Limit+ unlocked! You can now challenge the same opponent up to 12 times per day.", "goldRemaining", player.getGold());
+    }
+
+    @Transactional
+    public Map<String, Object> buyEnergyGainUpgrade(Long playerId) {
+        Player player = get(playerId);
+        if (player.isEnergyGainUpgraded())
+            throw new UpgradeException("ALREADY_PURCHASED", "Energy Gain+ already purchased.");
+        if (player.getGold() < ENERGY_GAIN_GOLD_COST)
+            throw new UpgradeException("INSUFFICIENT_GOLD",
+                    "Need " + ENERGY_GAIN_GOLD_COST + " gold, you have " + player.getGold() + ".");
+        player.setGold(player.getGold() - ENERGY_GAIN_GOLD_COST);
+        player.setEnergyGainUpgraded(true);
+        playerRepository.save(player);
+        return Map.of("message", "Energy Gain+ unlocked! Energy now regenerates at 2x per tick.", "goldRemaining", player.getGold());
     }
 
     private Player get(Long playerId) {

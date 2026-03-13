@@ -958,7 +958,6 @@ export default function GuidePage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {[
             { title: 'Win vs Loss', desc: 'Winning grants 2 base gold; losing grants 1. Gold Bonus applies to both — so even losses are worth farming if your bonus is high.', color: '#fbbf24', rgb: '251,191,36' },
-            { title: 'Item Discovery', desc: 'Item Discovery is a separate stat that gives a random chance at +1 extra gold per battle. It stacks with Gold Bonus but is independent of it.', color: '#fb923c', rgb: '251,146,60' },
             { title: 'Gold Bonus Stacks Additively', desc: 'If your summon grants +20% and a weapon grants +15%, your total Gold Bonus is 35%. There is no hard cap.', color: '#4ade80', rgb: '74,222,128' },
             { title: 'Battle Result Breakdown', desc: 'After each arena battle the result screen shows: base gold + bonus amount (%) = total. Gold is awarded even if you lose.', color: '#a78bfa', rgb: '167,139,250' },
           ].map(({ title, desc, color, rgb }) => (

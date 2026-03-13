@@ -63,6 +63,12 @@ export interface PlayerResponse {
   capacityPlusCount: number;
   statResetUnlocked: boolean;
   extraCraftingSlotPurchased: boolean;
+  doubleSpinPurchased: boolean;
+  battleLogUnlocked: boolean;
+  returnCapUpgraded: boolean;
+  challengeLimitUpgraded: boolean;
+  energyGainUpgraded: boolean;
+  nextTickGain: number;
   lineupSlots: number;
   heroRosterMax: number;
   teamCapacityMax: number;
@@ -385,12 +391,14 @@ export interface ArenaOpponentResponse {
   teamPower: number;
   isOnline: boolean;
   heroCount: number;
-  hasPendingReturn: boolean;
+  pendingReturnCount: number;
   energyCost: number;
   profileImagePath: string | null;
   teamName: string;
   wins: number;
   losses: number;
+  directChallengesToday: number;
+  directChallengeLimit: number;
 }
 
 export interface ArenaOpponentListResponse {
@@ -402,6 +410,7 @@ export interface ArenaOpponentListResponse {
 
 export interface ChallengeRequest {
   defenderId: number;
+  returnChallenge?: boolean;
 }
 
 export interface BattleRound {
@@ -492,6 +501,19 @@ export interface BattleHeroInfo {
   element?: string;
 }
 
+export interface LevelUpInfo {
+  heroName: string;
+  imagePath: string | null;
+  newLevel: number;
+  oldLevel: number;
+  gainPa: number;
+  gainMp: number;
+  gainDex: number;
+  gainElem: number;
+  gainMana: number;
+  gainStam: number;
+}
+
 export interface BattleLog {
   challenger: {
     username: string;
@@ -507,6 +529,10 @@ export interface BattleLog {
   };
   rounds: BattleRound[];
   winner: 'challenger' | 'defender';
+  levelUps?: {
+    challenger: Record<string, LevelUpInfo>;
+    defender: Record<string, LevelUpInfo>;
+  };
   xpGained: {
     challenger: Record<string, number>;
     defender: Record<string, number>;
@@ -830,4 +856,39 @@ export interface MaterialRecipe {
   currentQuantity: number;
   craftHours: number;
   ingredients: MaterialRecipeIngredient[];
+}
+
+// ============================================================
+// Dashboard
+// ============================================================
+
+export interface DashboardPeriodStats {
+  battles: number;
+  wins: number;
+  losses: number;
+  goldEarned: number;
+  winRate: number;
+}
+
+export interface DashboardHeroSummary {
+  id: number;
+  name: string;
+  imagePath: string;
+  level: number;
+  currentXp: number;
+  xpToNextLevel: number;
+  tier: string | null;
+  element: string | null;
+  clashesWon: number;
+  clashesLost: number;
+  currentWinStreak: number;
+  maxDamageDealt: number;
+}
+
+export interface DashboardResponse {
+  today: DashboardPeriodStats;
+  week: DashboardPeriodStats;
+  month: DashboardPeriodStats;
+  allTime: DashboardPeriodStats;
+  heroes: DashboardHeroSummary[];
 }

@@ -6,10 +6,11 @@ interface EnergyBarProps {
   max: number;
   color: string;
   nextTickSeconds: number | null;
+  tickGain?: number;
   onTickComplete?: () => void | Promise<void>;
 }
 
-export default function EnergyBar({ label, current, max, color, nextTickSeconds, onTickComplete }: EnergyBarProps) {
+export default function EnergyBar({ label, current, max, color, nextTickSeconds, tickGain = 1, onTickComplete }: EnergyBarProps) {
   const [countdown, setCountdown] = useState<number | null>(nextTickSeconds);
 
   useEffect(() => {
@@ -94,7 +95,7 @@ export default function EnergyBar({ label, current, max, color, nextTickSeconds,
 
         {/* current / max */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 1, flexShrink: 0 }}>
-          <span style={{ color, fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{current}</span>
+          <span style={{ color, fontWeight: 800, fontSize: 13, lineHeight: 1 }}>{Number(current).toFixed(1)}</span>
           <span style={{ color: '#444466', fontSize: 11, fontWeight: 700 }}>/</span>
           <span style={{ color: '#9090b0', fontSize: 11, fontWeight: 600 }}>{max}</span>
         </div>
@@ -103,7 +104,7 @@ export default function EnergyBar({ label, current, max, color, nextTickSeconds,
         <div style={{ width: 52, flexShrink: 0 }}>
           {!isFull && countdown != null && countdown > 0 && (
             <span style={{ fontSize: 10, whiteSpace: 'nowrap' as const }}>
-              <span style={{ color: `rgba(${rgb},0.9)`, fontWeight: 800 }}>+1</span>
+              <span style={{ color: `rgba(${rgb},0.9)`, fontWeight: 800 }}>+{tickGain}</span>
               <span style={{ color: '#7070a0' }}> in </span>
               <span style={{ color: `rgba(${rgb},0.95)`, fontWeight: 700 }}>{minutes}:{seconds.toString().padStart(2, '0')}</span>
             </span>

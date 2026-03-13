@@ -11,9 +11,9 @@ public class PlayerResponse {
     private String username;
     private int gold;
     private int diamonds;
-    private int arenaEnergy;
+    private double arenaEnergy;
     private int arenaEnergyMax;
-    private int worldEnergy;
+    private double worldEnergy;
     private int worldEnergyMax;
     private Long nextEnergyTickSeconds;
     @JsonProperty("isOnline")
@@ -29,6 +29,12 @@ public class PlayerResponse {
     private int capacityPlusCount;
     private boolean statResetUnlocked;
     private boolean extraCraftingSlotPurchased;
+    private boolean doubleSpinPurchased;
+    private boolean battleLogUnlocked;
+    private boolean returnCapUpgraded;
+    private boolean challengeLimitUpgraded;
+    private boolean energyGainUpgraded;
+    private double nextTickGain;
     private int lineupSlots;
     private int heroRosterMax;
     private int teamCapacityMax;

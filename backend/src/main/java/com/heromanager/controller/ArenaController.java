@@ -32,9 +32,10 @@ public class ArenaController {
     public ResponseEntity<?> challenge(Authentication auth, @RequestBody Map<String, Object> body) {
         Long playerId = (Long) auth.getPrincipal();
         Long defenderId = ((Number) body.get("defenderId")).longValue();
+        boolean returnChallenge = Boolean.TRUE.equals(body.get("returnChallenge"));
 
         try {
-            return ResponseEntity.ok(arenaService.initiateChallenge(playerId, defenderId));
+            return ResponseEntity.ok(arenaService.initiateChallenge(playerId, defenderId, returnChallenge));
         } catch (ArenaService.ArenaException e) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", e.getErrorCode(), "message", e.getMessage()));

@@ -107,7 +107,7 @@ export default function BattleLogList({ battles, onReturnChallenge, onViewBattle
               {/* vs + name + timestamp */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ color: '#2e2e50', fontSize: 11, fontFamily: 'Inter, sans-serif' }}>vs</span>
+                  <span style={{ color: '#64648a', fontSize: 11, fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>vs</span>
                   <span
                     style={{
                       color: '#c0c0e0',
@@ -126,8 +126,18 @@ export default function BattleLogList({ battles, onReturnChallenge, onViewBattle
                   </span>
                 </div>
                 <div style={{
-                  color: '#2a2a4a', fontSize: 10, marginTop: 1,
+                  display: 'inline-block',
+                  marginTop: 3,
+                  color: '#94a3c8',
+                  fontSize: 10,
+                  fontWeight: 600,
                   fontFamily: 'Inter, sans-serif',
+                  background: 'rgba(148,163,200,0.1)',
+                  border: '1px solid rgba(148,163,200,0.18)',
+                  borderRadius: 4,
+                  padding: '1px 5px',
+                  letterSpacing: '0.03em',
+                  textShadow: '0 1px 4px rgba(148,163,200,0.35)',
                 }}>
                   {timeAgo(b.createdAt)}
                 </div>

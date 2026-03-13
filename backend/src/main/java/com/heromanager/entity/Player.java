@@ -42,10 +42,10 @@ public class Player {
     private int diamonds = 0;
 
     @Column(nullable = false)
-    private int arenaEnergy = 120;
+    private double arenaEnergy = 120.0;
 
     @Column(nullable = false)
-    private int worldEnergy = 120;
+    private double worldEnergy = 120.0;
 
     @Column(nullable = false)
     private LocalDateTime lastEnergyUpdate;
@@ -87,7 +87,23 @@ public class Player {
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean extraCraftingSlotPurchased = false;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean doubleSpinPurchased = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean battleLogUnlocked = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean returnCapUpgraded = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean challengeLimitUpgraded = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean energyGainUpgraded = false;
+
     private java.time.LocalDateTime lastBlacksmithSpin;
+    private java.time.LocalDateTime lastBlacksmithSpin2;
     private Long pendingSpinMaterialId;
     private int pendingSpinQty;
 

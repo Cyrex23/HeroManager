@@ -6,7 +6,7 @@ import {
 } from '../api/shopApi';
 import {
   buyExtraLineupGold, buyExtraLineupDiamonds,
-  buyEnergyPlus, buyHeroPlusCapacity, buyCapacityPlus, buyStatReset, buyExtraCraftingSlot,
+  buyEnergyPlus, buyHeroPlusCapacity, buyCapacityPlus, buyStatReset, buyExtraCraftingSlot, buyDoubleSpin, buyBattleLog, buyReturnCap, buyChallengeLimitUpgrade, buyEnergyGainUpgrade,
 } from '../api/upgradeApi';
 import { getHeroes } from '../api/playerApi';
 import { usePlayer } from '../context/PlayerContext';
@@ -604,6 +604,44 @@ export default function ShopPage() {
             onBuy={() => handleUpgrade(buyStatReset)}
           />
 
+          <div style={styles.upgradeSection}>ARENA</div>
+          <UpgradeCard
+            icon="📜"
+            name="Battle Log"
+            description="Unlock the battle log in the Arena. View your full history of challenges sent and received, and replay past battles."
+            cost={500} currency="gold"
+            purchased={player?.battleLogUnlocked ?? false}
+            canAfford={(player?.gold ?? 0) >= 500}
+            onBuy={() => handleUpgrade(buyBattleLog)}
+          />
+          <UpgradeCard
+            icon="↩"
+            name="Return Queue+"
+            description="Increase your return challenge queue from 5 to 10 per opponent. When an opponent floods you with challenges, you can return more of them."
+            cost={8000} currency="gold"
+            purchased={player?.returnCapUpgraded ?? false}
+            canAfford={(player?.gold ?? 0) >= 8000}
+            onBuy={() => handleUpgrade(buyReturnCap)}
+          />
+          <UpgradeCard
+            icon="⚔"
+            name="Challenge Limit+"
+            description="Increase the daily challenge limit against the same opponent from 7 to 12 per 24 hours."
+            cost={13000} currency="gold"
+            purchased={player?.challengeLimitUpgraded ?? false}
+            canAfford={(player?.gold ?? 0) >= 13000}
+            onBuy={() => handleUpgrade(buyChallengeLimitUpgrade)}
+          />
+          <UpgradeCard
+            icon="⚡"
+            name="Energy Gain+"
+            description="Increase your energy regeneration from 1 to 1.5 per tick (every 10 minutes). Recover faster and fight more."
+            cost={200000} currency="gold"
+            purchased={player?.energyGainUpgraded ?? false}
+            canAfford={(player?.gold ?? 0) >= 200000}
+            onBuy={() => handleUpgrade(buyEnergyGainUpgrade)}
+          />
+
           <div style={styles.upgradeSection}>BLACKSMITH</div>
           <UpgradeCard
             icon="⚒️"
@@ -613,6 +651,15 @@ export default function ShopPage() {
             purchased={player?.extraCraftingSlotPurchased ?? false}
             canAfford={(player?.gold ?? 0) >= 4000}
             onBuy={() => handleUpgrade(buyExtraCraftingSlot)}
+          />
+          <UpgradeCard
+            icon="🎰"
+            name="Double Daily Spin"
+            description="Get 2 spins on the Blacksmith material wheel every day instead of 1. Double your chances at rare crafting materials."
+            cost={50} currency="diamonds"
+            purchased={player?.doubleSpinPurchased ?? false}
+            canAfford={(player?.diamonds ?? 0) >= 50}
+            onBuy={() => handleUpgrade(buyDoubleSpin)}
           />
         </div>
       )}

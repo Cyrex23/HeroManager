@@ -58,4 +58,34 @@ public class UpgradeController {
         Long playerId = (Long) auth.getPrincipal();
         return ResponseEntity.ok(upgradeService.buyExtraCraftingSlot(playerId));
     }
+
+    @PostMapping("/battle-log")
+    public ResponseEntity<Map<String, Object>> buyBattleLog(Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(upgradeService.buyBattleLog(playerId));
+    }
+
+    @PostMapping("/double-spin")
+    public ResponseEntity<Map<String, Object>> buyDoubleSpin(Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(upgradeService.buyDoubleSpin(playerId));
+    }
+
+    @PostMapping("/return-cap")
+    public ResponseEntity<Map<String, Object>> buyReturnCap(Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(upgradeService.buyReturnCap(playerId));
+    }
+
+    @PostMapping("/challenge-limit")
+    public ResponseEntity<Map<String, Object>> buyChallengeLimitUpgrade(Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(upgradeService.buyChallengeLimitUpgrade(playerId));
+    }
+
+    @PostMapping("/energy-gain")
+    public ResponseEntity<Map<String, Object>> buyEnergyGainUpgrade(Authentication auth) {
+        Long playerId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(upgradeService.buyEnergyGainUpgrade(playerId));
+    }
 }

@@ -541,13 +541,22 @@ public class BattleService {
         String winner = cIdx < cSlots.size() ? "challenger" : "defender";
 
         // ── Award XP with Exp Bonus ───────────────────────────────────────────
+        Map<String, Map<String, Object>> challengerLevelUps = new LinkedHashMap<>();
+        Map<String, Map<String, Object>> defenderLevelUps   = new LinkedHashMap<>();
+
         for (HeroSlot hs : challengerTeam.heroSlots()) {
             Hero hero = hs.hero();
             int baseXp = challengerXp.getOrDefault(hero.getTemplate().getDisplayName(), 0);
             if (baseXp > 0) {
+                int oldLevel = hero.getLevel();
                 double expMult = 1.0 + cHeroExpBonus.getOrDefault(hero.getId(), 0.0);
                 hero.setCurrentXp(hero.getCurrentXp() + (int) Math.round(baseXp * expMult));
                 checkLevelUp(hero);
+                int levelsGained = hero.getLevel() - oldLevel;
+                if (levelsGained > 0) {
+                    challengerLevelUps.put(hero.getTemplate().getDisplayName(),
+                        buildLevelUpInfo(hero, oldLevel, levelsGained));
+                }
             }
             heroRepository.save(hero);
         }
@@ -555,9 +564,15 @@ public class BattleService {
             Hero hero = hs.hero();
             int baseXp = defenderXp.getOrDefault(hero.getTemplate().getDisplayName(), 0);
             if (baseXp > 0) {
+                int oldLevel = hero.getLevel();
                 double expMult = 1.0 + dHeroExpBonus.getOrDefault(hero.getId(), 0.0);
                 hero.setCurrentXp(hero.getCurrentXp() + (int) Math.round(baseXp * expMult));
                 checkLevelUp(hero);
+                int levelsGained = hero.getLevel() - oldLevel;
+                if (levelsGained > 0) {
+                    defenderLevelUps.put(hero.getTemplate().getDisplayName(),
+                        buildLevelUpInfo(hero, oldLevel, levelsGained));
+                }
             }
             heroRepository.save(hero);
         }
@@ -567,15 +582,21 @@ public class BattleService {
 
         if (challengerTeam.summon() != null && challengerSummonXp > 0) {
             Summon s = challengerTeam.summon();
+            int oldSummonLevel = s.getLevel();
             s.setCurrentXp(s.getCurrentXp() + challengerSummonXp);
             checkSummonLevelUp(s);
             summonRepository.save(s);
+            int gained = s.getLevel() - oldSummonLevel;
+            if (gained > 0) challengerLevelUps.put(s.getTemplate().getDisplayName(), buildSummonLevelUpInfo(s, oldSummonLevel, gained));
         }
         if (defenderTeam.summon() != null && defenderSummonXp > 0) {
             Summon s = defenderTeam.summon();
+            int oldSummonLevel = s.getLevel();
             s.setCurrentXp(s.getCurrentXp() + defenderSummonXp);
             checkSummonLevelUp(s);
             summonRepository.save(s);
+            int gained = s.getLevel() - oldSummonLevel;
+            if (gained > 0) defenderLevelUps.put(s.getTemplate().getDisplayName(), buildSummonLevelUpInfo(s, oldSummonLevel, gained));
         }
 
         // ── Build result ──────────────────────────────────────────────────────
@@ -633,6 +654,7 @@ public class BattleService {
             if (bonus > 0) dXpBonusPct.put(hs.hero().getTemplate().getDisplayName(), (int) Math.round(bonus * 100));
         }
 
+        result.put("levelUps",               Map.of("challenger", challengerLevelUps, "defender", defenderLevelUps));
         result.put("xpGained",               Map.of("challenger", challengerXp, "defender", defenderXp));
         result.put("xpBonusPercent",          Map.of("challenger", cXpBonusPct, "defender", dXpBonusPct));
         result.put("summonXp",               Map.of("challenger", challengerSummonXp, "defender", defenderSummonXp));
@@ -791,6 +813,38 @@ public class BattleService {
             case WIND      -> defender == HeroElement.LIGHTNING;
             case EARTH     -> defender == HeroElement.WATER;
         };
+    }
+
+    private Map<String, Object> buildLevelUpInfo(Hero hero, int oldLevel, int levelsGained) {
+        HeroTemplate t = hero.getTemplate();
+        Map<String, Object> info = new LinkedHashMap<>();
+        info.put("newLevel",   hero.getLevel());
+        info.put("oldLevel",   oldLevel);
+        info.put("heroName",   t.getDisplayName());
+        info.put("imagePath",  t.getImagePath());
+        info.put("gainPa",     Math.round(t.getGrowthPa()   * levelsGained * 10.0) / 10.0);
+        info.put("gainMp",     Math.round(t.getGrowthMp()   * levelsGained * 10.0) / 10.0);
+        info.put("gainDex",    Math.round(t.getGrowthDex()  * levelsGained * 10.0) / 10.0);
+        info.put("gainElem",   Math.round(t.getGrowthElem() * levelsGained * 10.0) / 10.0);
+        info.put("gainMana",   Math.round(t.getGrowthMana() * levelsGained * 10.0) / 10.0);
+        info.put("gainStam",   Math.round(t.getGrowthStam() * levelsGained * 10.0) / 10.0);
+        return info;
+    }
+
+    private Map<String, Object> buildSummonLevelUpInfo(Summon summon, int oldLevel, int levelsGained) {
+        SummonTemplate t = summon.getTemplate();
+        Map<String, Object> info = new LinkedHashMap<>();
+        info.put("newLevel",  summon.getLevel());
+        info.put("oldLevel",  oldLevel);
+        info.put("heroName",  t.getDisplayName());
+        info.put("imagePath", t.getImagePath());
+        info.put("gainPa",    Math.round(t.getGrowthPhysicalAttack() * levelsGained * 10.0) / 10.0);
+        info.put("gainMp",    Math.round(t.getGrowthMp()             * levelsGained * 10.0) / 10.0);
+        info.put("gainDex",   Math.round(t.getGrowthDex()            * levelsGained * 10.0) / 10.0);
+        info.put("gainElem",  0.0);
+        info.put("gainMana",  Math.round(t.getGrowthMana()           * levelsGained * 10.0) / 10.0);
+        info.put("gainStam",  Math.round(t.getGrowthStamina()        * levelsGained * 10.0) / 10.0);
+        return info;
     }
 
     private void checkLevelUp(Hero hero) {

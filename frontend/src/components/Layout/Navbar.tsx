@@ -247,7 +247,7 @@ export default function Navbar() {
       <style>{XP_STRIP_CSS}</style>
       {/* Left: Brand */}
       <div style={{ flexShrink: 0 }}>
-        <HeroManagerLogo size="md" linkTo="/team" />
+        <HeroManagerLogo size="md" linkTo="/home" />
       </div>
 
       {/* Online pill — sits between logo and energy bars */}
@@ -262,9 +262,9 @@ export default function Navbar() {
       {player && (
         <div style={styles.energyBlock}>
           <EnergyBar label="Arena" current={player.arenaEnergy} max={player.arenaEnergyMax}
-            color="#4ade80" nextTickSeconds={player.nextEnergyTickSeconds} onTickComplete={fetchPlayer} />
+            color="#4ade80" nextTickSeconds={player.nextEnergyTickSeconds} tickGain={player.nextTickGain ?? 1} onTickComplete={fetchPlayer} />
           <EnergyBar label="World" current={player.worldEnergy} max={player.worldEnergyMax}
-            color="#fbbf24" nextTickSeconds={player.nextEnergyTickSeconds} onTickComplete={fetchPlayer} />
+            color="#fbbf24" nextTickSeconds={player.nextEnergyTickSeconds} tickGain={player.nextTickGain ?? 1} onTickComplete={fetchPlayer} />
         </div>
       )}
 
@@ -386,6 +386,68 @@ export default function Navbar() {
 
       {/* Right: Nav links */}
       <div style={styles.links}>
+        {/* Home icon button */}
+        {(() => {
+          const isHome = location.pathname === '/home';
+          return (
+            <Link
+              to="/home"
+              title="Home"
+              className="nav-link"
+              style={{
+                ...styles.link,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px 10px',
+                color: isHome ? '#ffffff' : '#c0c0d8',
+                backgroundColor: isHome ? 'rgba(233,69,96,0.14)' : 'rgba(255,255,255,0.06)',
+                borderColor: isHome ? 'rgba(233,69,96,0.5)' : 'rgba(255,255,255,0.18)',
+                boxShadow: isHome ? '0 0 14px rgba(233,69,96,0.22), inset 0 1px 0 rgba(255,255,255,0.06)' : 'none',
+              }}
+            >
+              {/* Log Pose — One Piece */}
+              <svg width="18" height="20" viewBox="0 0 54 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Outer frame — stone/wood rectangle with rounded corners */}
+                <rect x="1" y="1" width="52" height="58" rx="7" ry="7"
+                  fill="#5a3e28" stroke="#8a6040" strokeWidth="2"/>
+                {/* Frame inner bevel */}
+                <rect x="4" y="4" width="46" height="52" rx="5" ry="5"
+                  fill="#3d2a18" stroke="#6b4a2a" strokeWidth="1"/>
+                {/* Corner rivets */}
+                <circle cx="9" cy="9" r="3" fill="#c8a060" stroke="#e8c080" strokeWidth="0.8"/>
+                <circle cx="45" cy="9" r="3" fill="#c8a060" stroke="#e8c080" strokeWidth="0.8"/>
+                <circle cx="9" cy="51" r="3" fill="#c8a060" stroke="#e8c080" strokeWidth="0.8"/>
+                <circle cx="45" cy="51" r="3" fill="#c8a060" stroke="#e8c080" strokeWidth="0.8"/>
+                {/* Glowing teal orb — outer glow halo */}
+                <circle cx="27" cy="30" r="16" fill="rgba(0,210,200,0.12)"/>
+                {/* Orb glass body */}
+                <circle cx="27" cy="30" r="13" fill="url(#orbGrad)" stroke="#00d4c8" strokeWidth="1.2"/>
+                {/* Orb inner shimmer */}
+                <ellipse cx="23" cy="24" rx="5" ry="3.5" fill="rgba(255,255,255,0.22)" transform="rotate(-20 23 24)"/>
+                {/* Cardinal tick marks */}
+                <line x1="27" y1="18" x2="27" y2="21" stroke="#00ffe0" strokeWidth="1.2" strokeLinecap="round"/>
+                <line x1="27" y1="39" x2="27" y2="42" stroke="#00ffe0" strokeWidth="1.2" strokeLinecap="round"/>
+                <line x1="15" y1="30" x2="18" y2="30" stroke="#00ffe0" strokeWidth="1.2" strokeLinecap="round"/>
+                <line x1="36" y1="30" x2="39" y2="30" stroke="#00ffe0" strokeWidth="1.2" strokeLinecap="round"/>
+                {/* Compass needle — red half pointing up-right */}
+                <path d="M27 30 L30 19 L27 22 Z" fill="#e94560"/>
+                <path d="M27 30 L24 41 L27 38 Z" fill="rgba(255,255,255,0.4)"/>
+                {/* Needle center pin */}
+                <circle cx="27" cy="30" r="2" fill="#ffe090" stroke="#fff" strokeWidth="0.6"/>
+                {/* Orb rim highlight */}
+                <circle cx="27" cy="30" r="13" fill="none" stroke="rgba(0,255,240,0.35)" strokeWidth="0.7"/>
+                <defs>
+                  <radialGradient id="orbGrad" cx="40%" cy="35%" r="60%">
+                    <stop offset="0%" stopColor="#00ffe0" stopOpacity="0.9"/>
+                    <stop offset="50%" stopColor="#00a8a0" stopOpacity="0.85"/>
+                    <stop offset="100%" stopColor="#004845" stopOpacity="1"/>
+                  </radialGradient>
+                </defs>
+              </svg>
+            </Link>
+          );
+        })()}
         {navItems.map((item) => {
           if (item.locked) {
             return (

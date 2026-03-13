@@ -191,17 +191,25 @@ public class BlacksmithService {
     public Map<String, Object> getSpinStatus(Long playerId) {
         Player player = playerRepo.findById(playerId).orElseThrow();
         LocalDateTime lastSpin = player.getLastBlacksmithSpin();
-        boolean canSpin = lastSpin == null || !lastSpin.toLocalDate().equals(LocalDate.now());
+        boolean spin1Available = lastSpin == null || !lastSpin.toLocalDate().equals(LocalDate.now());
+        boolean spin2Available = player.isDoubleSpinPurchased() &&
+            (player.getLastBlacksmithSpin2() == null || !player.getLastBlacksmithSpin2().toLocalDate().equals(LocalDate.now()));
+        boolean canSpin = spin1Available || spin2Available;
+        int spinsRemaining = (spin1Available ? 1 : 0) + (spin2Available ? 1 : 0);
         long nextResetMs = LocalDate.now().plusDays(1).atStartOfDay()
             .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-        return Map.of("canSpin", canSpin, "nextResetMs", nextResetMs);
+        return Map.of("canSpin", canSpin, "nextResetMs", nextResetMs, "spinsRemaining", spinsRemaining);
     }
 
     @Transactional
     public DailySpinResult claimDailySpin(Long playerId) {
         Player player = playerRepo.findById(playerId).orElseThrow();
         LocalDateTime lastSpin = player.getLastBlacksmithSpin();
-        if (lastSpin != null && lastSpin.toLocalDate().equals(LocalDate.now())) {
+        boolean spin1UsedToday = lastSpin != null && lastSpin.toLocalDate().equals(LocalDate.now());
+        // Use spin 2 slot if spin 1 already used today and player owns double spin
+        boolean useSlot2 = spin1UsedToday && player.isDoubleSpinPurchased() &&
+            (player.getLastBlacksmithSpin2() == null || !player.getLastBlacksmithSpin2().toLocalDate().equals(LocalDate.now()));
+        if (spin1UsedToday && !useSlot2) {
             throw new IllegalStateException("Already spun today");
         }
         List<MaterialTemplate> pool = materialTemplateRepo.findByTierLessThanEqual(2);
@@ -211,7 +219,11 @@ public class BlacksmithService {
         // Store pending — don't award yet; player must choose
         player.setPendingSpinMaterialId(won.getId());
         player.setPendingSpinQty(qty);
-        player.setLastBlacksmithSpin(LocalDateTime.now());
+        if (useSlot2) {
+            player.setLastBlacksmithSpin2(LocalDateTime.now());
+        } else {
+            player.setLastBlacksmithSpin(LocalDateTime.now());
+        }
         playerRepo.save(player);
         long nextResetMs = LocalDate.now().plusDays(1).atStartOfDay()
             .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();

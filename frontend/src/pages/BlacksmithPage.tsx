@@ -538,7 +538,10 @@ function DailyWheel({ materials, onSpun }: { materials: MaterialTemplate[]; onSp
       setAnimating(false);
       setSpinning(false);
       setPendingResult(result);
-      setStatus({ canSpin: false, nextResetMs: result.nextResetMs });
+      setStatus(prev => {
+        const remaining = Math.max(0, (prev?.spinsRemaining ?? 1) - 1);
+        return { canSpin: remaining > 0, nextResetMs: result.nextResetMs, spinsRemaining: remaining };
+      });
     }, 9400);
   };
 
@@ -573,26 +576,59 @@ function DailyWheel({ materials, onSpun }: { materials: MaterialTemplate[]; onSp
             Visit the Forge daily and spin the material wheel! Win rare crafting materials.
           </div>
         </div>
-        {!status?.canSpin && remaining > 0 && (
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 9, color: '#78350f', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' }}>Next spin in</div>
-            <div style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 900, color: '#fbbf24' }}>{fmtCountdownShort(remaining)}</div>
-          </div>
-        )}
+        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          {(status?.spinsRemaining ?? 0) > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5,
+              background: 'rgba(251,191,36,0.12)', border: '1px solid #fbbf2466',
+              borderRadius: 6, padding: '3px 8px',
+            }}>
+              <span style={{ fontSize: 13 }}>🎰</span>
+              <span style={{ fontSize: 12, fontWeight: 900, color: '#fbbf24' }}>
+                {status!.spinsRemaining} spin{status!.spinsRemaining > 1 ? 's' : ''} left
+              </span>
+            </div>
+          )}
+          {!status?.canSpin && remaining > 0 && (
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 9, color: '#78350f', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' }}>Next spin in</div>
+              <div style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 900, color: '#fbbf24' }}>{fmtCountdownShort(remaining)}</div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
         {/* Reel */}
-        <div ref={reelRef} style={{ position: 'relative', width: '100%', maxWidth: VISIBLE * CELL_W, overflow: 'hidden', height: CELL_W }}>
-          {/* Center highlight */}
+        <div style={{ position: 'relative', width: '100%', maxWidth: VISIBLE * CELL_W }}>
+          {/* Pointer row: lines + triangle */}
           <div style={{
-            position: 'absolute', top: 0, bottom: 0, zIndex: 2, pointerEvents: 'none',
-            left: `calc(50% - ${CELL_W / 2}px)`, width: CELL_W,
-            border: `2px solid ${claimed ? TIER_COLOR[claimed.result.tier] : '#fbbf24'}`,
-            borderRadius: 8,
-            boxShadow: `0 0 ${claimed ? '20px' : '8px'} ${claimed ? TIER_COLOR[claimed.result.tier] : '#fbbf2444'}`,
-            transition: 'box-shadow 0.5s, border-color 0.5s',
-          }} />
+            position: 'absolute', top: -10, left: 0, right: 0,
+            zIndex: 10, pointerEvents: 'none',
+            display: 'flex', alignItems: 'center',
+          }}>
+            {/* Left line */}
+            <div style={{
+              flex: 1, height: 1,
+              background: `linear-gradient(90deg, transparent, ${claimed ? TIER_COLOR[claimed.result.tier] : '#fbbf24'})`,
+              transition: 'background 0.5s',
+            }} />
+            {/* Triangle */}
+            <div style={{
+              width: 0, height: 0, flexShrink: 0,
+              borderLeft: '10px solid transparent',
+              borderRight: '10px solid transparent',
+              borderTop: `10px solid ${claimed ? TIER_COLOR[claimed.result.tier] : '#fbbf24'}`,
+              filter: `drop-shadow(0 0 5px ${claimed ? TIER_COLOR[claimed.result.tier] : 'rgba(251,191,36,0.9)'})`,
+              transition: 'border-top-color 0.5s, filter 0.5s',
+            }} />
+            {/* Right line */}
+            <div style={{
+              flex: 1, height: 1,
+              background: `linear-gradient(90deg, ${claimed ? TIER_COLOR[claimed.result.tier] : '#fbbf24'}, transparent)`,
+              transition: 'background 0.5s',
+            }} />
+          </div>
+        <div ref={reelRef} style={{ position: 'relative', width: '100%', overflow: 'hidden', height: CELL_W }}>
           {/* Fade masks */}
           <div style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none',
             background: 'linear-gradient(90deg,#0d0900 0%,transparent 18%,transparent 82%,#0d0900 100%)' }} />
@@ -618,19 +654,62 @@ function DailyWheel({ materials, onSpun }: { materials: MaterialTemplate[]; onSp
             ))}
           </div>
         </div>
+        </div>
 
         {/* Spin button */}
-        <button onClick={handleSpin} disabled={!canSpin} style={{
-          padding: '10px 36px', borderRadius: 8, fontSize: 13, fontWeight: 900,
-          letterSpacing: 1, cursor: canSpin ? 'pointer' : 'not-allowed',
-          background: canSpin ? 'linear-gradient(180deg,#16a34a,#15803d)' : '#1a1a2a',
-          color: canSpin ? '#fff' : '#374151',
+        <button className="spin-btn" onClick={handleSpin} disabled={!canSpin} style={{
+          position: 'relative', overflow: 'hidden',
+          padding: '0', borderRadius: 10, fontSize: 14, fontWeight: 900,
+          letterSpacing: 2, cursor: canSpin ? 'pointer' : 'not-allowed',
+          background: canSpin
+            ? 'linear-gradient(180deg,#1a7a3a 0%,#16a34a 35%,#15803d 65%,#0f5e2c 100%)'
+            : 'linear-gradient(180deg,#1a1a2a,#111118)',
+          color: canSpin ? '#e2ffe8' : '#374151',
           border: `2px solid ${canSpin ? '#4ade80' : '#1e1e3a'}`,
-          boxShadow: canSpin ? '0 0 12px #16a34a66' : 'none',
-          transition: 'all 0.2s',
+          textShadow: canSpin ? '0 0 12px rgba(74,222,128,0.8), 0 1px 2px rgba(0,0,0,0.9)' : 'none',
+          animation: canSpin ? (spinning ? 'spinPulse 0.8s ease-in-out infinite' : 'btnReady 2.5s ease-in-out infinite') : 'none',
+          transition: 'filter 0.15s, transform 0.1s',
           whiteSpace: 'nowrap',
+          minWidth: 200,
         }}>
-          {spinning ? '⟳  SPINNING...' : '⚄  SPIN THE WHEEL'}
+          {/* Top shine layer */}
+          {canSpin && <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: '45%',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.13) 0%, transparent 100%)',
+            borderRadius: '8px 8px 0 0', pointerEvents: 'none',
+          }} />}
+          {/* Bottom shadow layer */}
+          {canSpin && <div style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%',
+            background: 'linear-gradient(0deg, rgba(0,0,0,0.35) 0%, transparent 100%)',
+            pointerEvents: 'none',
+          }} />}
+          {/* Content */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 32px', position: 'relative' }}>
+            {/* SVG wheel icon */}
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+              style={{ animation: spinning ? 'spinWheel 0.5s linear infinite' : 'none', flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="10" stroke={canSpin ? '#4ade80' : '#374151'} strokeWidth="1.5" fill="none"/>
+              <circle cx="12" cy="12" r="3" fill={canSpin ? '#4ade80' : '#374151'}/>
+              {[0,60,120,180,240,300].map((deg, i) => {
+                const r = deg * Math.PI / 180;
+                return <line key={i}
+                  x1={12 + 3.5 * Math.cos(r)} y1={12 + 3.5 * Math.sin(r)}
+                  x2={12 + 9.5 * Math.cos(r)} y2={12 + 9.5 * Math.sin(r)}
+                  stroke={canSpin ? (i % 2 === 0 ? '#4ade80' : '#86efac') : '#374151'}
+                  strokeWidth={i % 2 === 0 ? '2' : '1.5'} strokeLinecap="round"/>;
+              })}
+              {/* Segment fill hints */}
+              {[30,90,150,210,270,330].map((deg, i) => {
+                const r = deg * Math.PI / 180;
+                return <circle key={i} cx={12 + 6.5 * Math.cos(r)} cy={12 + 6.5 * Math.sin(r)}
+                  r="1.2" fill={canSpin ? (i % 3 === 0 ? '#fbbf24' : i % 3 === 1 ? '#4ade80' : '#60a5fa') : '#2a2a3a'}/>;
+              })}
+            </svg>
+            <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: 2 }}>
+              {spinning ? 'SPINNING...' : 'SPIN THE WHEEL'}
+            </span>
+          </div>
         </button>
 
         {/* Claimed summary */}
@@ -672,7 +751,7 @@ function DailyWheel({ materials, onSpun }: { materials: MaterialTemplate[]; onSp
             {/* Choices */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {/* Material */}
-              <button onClick={() => handleClaim('material')} style={{
+              <button className="reward-btn" onClick={() => handleClaim('material')} style={{
                 flex: 1, padding: '12px 8px', borderRadius: 10, cursor: 'pointer', fontWeight: 900,
                 background: `${TIER_COLOR[pendingResult.tier]}18`,
                 border: `2px solid ${TIER_COLOR[pendingResult.tier]}`,
@@ -687,12 +766,12 @@ function DailyWheel({ materials, onSpun }: { materials: MaterialTemplate[]; onSp
               <div style={{ color: '#4b5563', fontWeight: 700, fontSize: 12 }}>or</div>
 
               {/* Gold */}
-              <button onClick={() => handleClaim('gold')} style={{
+              <button className="reward-btn" onClick={() => handleClaim('gold')} style={{
                 flex: 1, padding: '12px 8px', borderRadius: 10, cursor: 'pointer', fontWeight: 900,
                 background: '#fbbf2415', border: '2px solid #fbbf24', color: '#fbbf24', fontSize: 11,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
               }}>
-                <Coins size={28} color="#fbbf24" />
+                <Coins size={40} color="#fbbf24" />
                 <div>TAKE GOLD</div>
                 <div style={{ fontSize: 13, fontWeight: 900 }}>20g</div>
               </button>
@@ -700,12 +779,22 @@ function DailyWheel({ materials, onSpun }: { materials: MaterialTemplate[]; onSp
               <div style={{ color: '#4b5563', fontWeight: 700, fontSize: 12 }}>or</div>
 
               {/* Diamond */}
-              <button onClick={() => handleClaim('diamond')} style={{
+              <button className="reward-btn" onClick={() => handleClaim('diamond')} style={{
                 flex: 1, padding: '12px 8px', borderRadius: 10, cursor: 'pointer', fontWeight: 900,
-                background: '#67e8f915', border: '2px solid #67e8f9', color: '#67e8f9', fontSize: 11,
+                background: '#a78bfa18', border: '2px solid #a78bfa', color: '#a78bfa', fontSize: 11,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                boxShadow: '0 0 12px rgba(167,139,250,0.2)',
               }}>
-                <div style={{ fontSize: 28 }}>&#128142;</div>
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <polygon points="20,4 36,16 20,37 4,16" fill="#a78bfa22" stroke="#a78bfa" strokeWidth="1.5" strokeLinejoin="round"/>
+                  <polygon points="20,4 36,16 20,16 4,16" fill="#c4b5fd33" stroke="#c4b5fd" strokeWidth="1" strokeLinejoin="round"/>
+                  <line x1="4" y1="16" x2="20" y2="37" stroke="#7c3aed" strokeWidth="1"/>
+                  <line x1="36" y1="16" x2="20" y2="37" stroke="#7c3aed" strokeWidth="1"/>
+                  <line x1="20" y1="16" x2="20" y2="37" stroke="#a78bfa88" strokeWidth="1"/>
+                  <line x1="4" y1="16" x2="12" y2="4" stroke="#c4b5fd66" strokeWidth="1"/>
+                  <line x1="36" y1="16" x2="28" y2="4" stroke="#c4b5fd66" strokeWidth="1"/>
+                  <polygon points="20,7 14,16 20,13 26,16" fill="#e9d5ff44"/>
+                </svg>
                 <div>TAKE DIAMOND</div>
                 <div style={{ fontSize: 13, fontWeight: 900 }}>×1</div>
               </button>
@@ -772,6 +861,14 @@ export default function BlacksmithPage() {
     el.textContent = `
       @keyframes legGlow { 0%,100%{box-shadow:0 0 15px #fbbf2422} 50%{box-shadow:0 0 40px #fbbf2466} }
       @keyframes wonPop { 0%{transform:scale(0.6);opacity:0} 70%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+      @keyframes spinWheel { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+      @keyframes spinPulse { 0%,100%{box-shadow:0 0 18px #16a34a66,0 0 40px #16a34a22,inset 0 1px 0 rgba(255,255,255,0.18)} 50%{box-shadow:0 0 32px #4ade8099,0 0 70px #16a34a44,inset 0 1px 0 rgba(255,255,255,0.25)} }
+      @keyframes btnReady { 0%,100%{box-shadow:0 0 14px #16a34a55,0 0 30px #16a34a18,inset 0 1px 0 rgba(255,255,255,0.15)} 50%{box-shadow:0 0 22px #4ade8077,0 0 50px #16a34a33,inset 0 1px 0 rgba(255,255,255,0.2)} }
+      .spin-btn:hover:not(:disabled) { filter: brightness(1.15) !important; transform: translateY(-1px) !important; }
+      .spin-btn:active:not(:disabled) { transform: translateY(1px) !important; filter: brightness(0.95) !important; }
+      .reward-btn { transition: transform 0.15s, filter 0.15s, box-shadow 0.15s !important; }
+      .reward-btn:hover { transform: translateY(-3px) scale(1.04) !important; filter: brightness(1.18) !important; }
+      .reward-btn:active { transform: translateY(1px) scale(0.97) !important; filter: brightness(0.92) !important; }
       .bs-weapon-row:hover { background: #0d1117 !important; }
       .bs-refine-row:hover { background: #0d1117 !important; }
     `;
@@ -879,8 +976,8 @@ export default function BlacksmithPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, color: '#fbbf24', letterSpacing: 1 }}>Blacksmith</h1>
-          <p style={{ margin: '3px 0 0', fontSize: 12, color: '#6b7280' }}>Forge legendary weapons &middot; Refine ancient materials</p>
+          <h2 className="gradient-title" style={{ margin: '0 0 4px', fontSize: 24 }}>Blacksmith</h2>
+          <p style={{ margin: 0, fontSize: 12, color: '#6b6b90', fontFamily: 'Inter, sans-serif' }}>Forge legendary weapons &middot; Refine ancient materials</p>
         </div>
         <div style={{ display: 'flex', gap: 24, alignItems: 'flex-end' }}>
           {[

@@ -1,4 +1,6 @@
 -- Schema migrations (idempotent, continue-on-error=true handles reruns)
+ALTER TABLE player ALTER COLUMN arena_energy DOUBLE NOT NULL DEFAULT 120;
+ALTER TABLE player ALTER COLUMN world_energy DOUBLE NOT NULL DEFAULT 120;
 ALTER TABLE player ADD COLUMN IF NOT EXISTS last_blacksmith_spin TIMESTAMP;
 ALTER TABLE player ADD COLUMN IF NOT EXISTS pending_spin_material_id BIGINT;
 ALTER TABLE player ADD COLUMN IF NOT EXISTS pending_spin_qty INT NOT NULL DEFAULT 0;

@@ -13,10 +13,12 @@ public class ArenaOpponentResponse {
     @JsonProperty("isOnline")
     private boolean isOnline;
     private int heroCount;
-    private boolean hasPendingReturn;
+    private int pendingReturnCount;
     private int energyCost;
     private String profileImagePath;
     private String teamName;
     private long wins;
     private long losses;
+    private int directChallengesToday;
+    private int directChallengeLimit;
 }

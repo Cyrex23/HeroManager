@@ -61,7 +61,12 @@
       "Bash(xargs grep -l \"CraftQueueEntry\\\\|CraftQueue\")",
       "Bash(iconv -f UTF-8 -t ASCII//TRANSLIT)",
       "Bash(curl -s -X GET \"http://localhost:8080/api/team/1/lineup\" -H \"Content-Type: application/json\")",
-      "Bash(curl -sv \"http://localhost:8080/api/team/1/lineup\")"
+      "Bash(curl -sv \"http://localhost:8080/api/team/1/lineup\")",
+      "Bash(find d:/HeroManager/frontend/src -name *.png)",
+      "Bash(find d:/HeroManager -maxdepth 3 -name *akatsuki*)",
+      "Bash(xargs grep:*)",
+      "Bash(find d:/HeroManager -name *Madara* -o -name '*lvl up*' -o -name '*level up*')",
+      "Bash(find D:HeroManagerbackend -name *HeroTemplate* -o -name *ResponseBuilder*)"
     ]
   }
 }

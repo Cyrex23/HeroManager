@@ -11,7 +11,7 @@ const ELEM_SYM: Record<string, string> = {
 };
 
 const ELEM_COLOR: Record<string, string> = {
-  FIRE: '#f97316', WATER: '#38bdf8', WIND: '#4ade80', EARTH: '#a16207', LIGHTNING: '#facc15',
+  FIRE: '#f97316', WATER: '#38bdf8', WIND: '#7dd3fc', EARTH: '#a16207', LIGHTNING: '#facc15',
 };
 
 // Keyframes injected once into <head>
@@ -47,11 +47,12 @@ const ANIM_CSS = `
 @keyframes baBloodDrop { 0%{opacity:0;transform:translate(-50%,-50%) scale(0)} 38%{opacity:1;transform:translate(-50%,-50%) scale(1.3)} 65%{transform:translate(-50%,-50%) scale(0.85)} 100%{opacity:1;transform:translate(-50%,-50%) scale(1)} }
 @keyframes baXP { 0%{opacity:0;transform:translateY(10px) scale(.75)} 55%{opacity:1;transform:translateY(-2px) scale(1.08)} 100%{opacity:1;transform:translateY(0) scale(1)} }
 @keyframes baXPJump { 0%{transform:scale(1);filter:brightness(1)} 25%{transform:scale(1.6);filter:brightness(1.8)} 55%{transform:scale(1.4);filter:brightness(1.4)} 75%{transform:scale(1.1);filter:brightness(1.1)} 100%{transform:scale(1);filter:brightness(1)} }
-@keyframes baSpell { 0%{opacity:0;transform:translateY(18px) scale(0.68);filter:brightness(1)} 7%{opacity:1;transform:translateY(-7px) scale(1.22);filter:brightness(3) saturate(2.2)} 15%{transform:translateX(-8px) scale(1.14);filter:brightness(2.4)} 23%{transform:translateX(8px) scale(1.17);filter:brightness(2.8)} 31%{transform:translateX(-6px) scale(1.10);filter:brightness(2.1)} 39%{transform:translateX(6px) scale(1.08);filter:brightness(1.8)} 47%{transform:translateX(-4px) scale(1.05);filter:brightness(1.5)} 55%{transform:translateX(3px) scale(1.03);filter:brightness(1.3)} 63%{transform:translateX(0) scale(1.01);filter:brightness(1.1)} 100%{opacity:1;transform:scale(1);filter:brightness(1)} }
+@keyframes baSpell { 0%{opacity:0;transform:translateY(12px) scale(0.72) rotate(0deg)} 7%{opacity:1;transform:translateY(0) scale(1.1) rotate(0deg);filter:brightness(2.8) saturate(2)} 16%{transform:scale(1.06) rotate(22deg);filter:brightness(2)} 25%{transform:scale(1.03) rotate(-17deg);filter:brightness(1.6)} 33%{transform:scale(1.01) rotate(12deg);filter:brightness(1.35)} 41%{transform:scale(1) rotate(-8deg);filter:brightness(1.2)} 49%{transform:rotate(5deg);filter:brightness(1.1)} 57%{transform:rotate(-3deg)} 64%{transform:rotate(1.8deg)} 71%{transform:rotate(-1deg)} 78%{transform:rotate(0.5deg)} 100%{opacity:1;transform:scale(1) rotate(0deg);filter:brightness(1)} }
 @keyframes baManaGlow { 0%,100%{box-shadow:0 0 8px rgba(59,130,246,0.55),0 0 0 rgba(96,165,250,0)} 50%{box-shadow:0 0 28px rgba(59,130,246,1),0 0 56px rgba(96,165,250,0.7),0 0 90px rgba(147,197,253,0.35)} }
 @keyframes baOverlayIn { 0%{opacity:0;transform:scale(0.92)} 100%{opacity:1;transform:scale(1)} }
 @keyframes baTitleIn { 0%{opacity:0;transform:translateY(-18px)} 100%{opacity:1;transform:translateY(0)} }
 @keyframes baSwordsIn { 0%{opacity:0;transform:scale(0.5) rotate(-20deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }
+@keyframes baDexFloat { 0%{opacity:0;transform:translateY(2px) scale(0.75)} 16%{opacity:1;transform:translateY(-10px) scale(1.25)} 60%{opacity:1;transform:translateY(-20px) scale(1.05)} 100%{opacity:0;transform:translateY(-32px) scale(0.85)} }
 `;
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -156,6 +157,16 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
   const [dSpellNotif, setDSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number }>; k: number } | null>(null);
   // -1 = show full mana (before any round plays); >= 0 = show mana after that round index
   const [manaDisplayIdx, setManaDisplayIdx] = useState(-1);
+  // DEX display — null means show full (max); number = tracked current value
+  const [dexValL, setDexValL] = useState<number | null>(null);
+  const [dexValR, setDexValR] = useState<number | null>(null);
+  // dexRecovering: true = slow 1.0s transition (recovering), false = fast 0.35s (expenditure)
+  const [dexRecoveringL, setDexRecoveringL] = useState(false);
+  const [dexRecoveringR, setDexRecoveringR] = useState(false);
+  const [dexExpDeltaL, setDexExpDeltaL] = useState<{ net: number; k: number } | null>(null);
+  const [dexExpDeltaR, setDexExpDeltaR] = useState<{ net: number; k: number } | null>(null);
+  const [dexRecDeltaL, setDexRecDeltaL] = useState<{ net: number; k: number } | null>(null);
+  const [dexRecDeltaR, setDexRecDeltaR] = useState<{ net: number; k: number } | null>(null);
 
   const [showEndOverlay, setShowEndOverlay] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -197,6 +208,14 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     setCSpellNotif(null);
     setDSpellNotif(null);
     setManaDisplayIdx(-1);
+    setDexValL(null);
+    setDexValR(null);
+    setDexRecoveringL(false);
+    setDexRecoveringR(false);
+    setDexExpDeltaL(null);
+    setDexExpDeltaR(null);
+    setDexRecDeltaL(null);
+    setDexRecDeltaR(null);
   }, []);
 
   const doRound = useCallback(async (idx: number) => {
@@ -215,8 +234,8 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     const prevRound = idx > 0 ? rounds[idx - 1] : null;
     const leftEntering  = prevRound != null && prevRound.attackerHero !== round.attackerHero;
     const rightEntering = prevRound != null && prevRound.defenderHero !== round.defenderHero;
-    if (leftEntering)  bump(setLAnim, 'baEnterL', 950 / speed);
-    if (rightEntering) bump(setRAnim, 'baEnterR', 950 / speed);
+    if (leftEntering)  { bump(setLAnim, 'baEnterL', 950 / speed); setDexValL(null); }
+    if (rightEntering) { bump(setRAnim, 'baEnterR', 950 / speed); setDexValR(null); }
     if (leftEntering || rightEntering) {
       await sleep(950);
       if (cancelRef.current) { setBusy(false); return; }
@@ -258,11 +277,17 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
       setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf, attackFlat: round.attackerStatAttack, highDex: round.attackerHighDex });
       bump(setRAnim, 'baHF', 700 / speed);
+      // DEX expenditure for Phase-1 attacker (left = attacker)
+      { const used = round.attackerDexUsed ?? 0; const rec = round.attackerDexRecovered ?? 0; const rem = round.attackerDexRemaining;
+        if (used > 0 && rem != null) { setDexValL(rem - rec); setDexExpDeltaL({ net: -used, k: Date.now() + 2 }); } }
     } else {
       // Right hits left → indicator + damage on left; left flashes
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
       setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf, attackFlat: round.defenderStatAttack, highDex: round.defenderHighDex });
       bump(setLAnim, 'baHF', 700 / speed);
+      // DEX expenditure for Phase-1 attacker (right = defender)
+      { const used = round.defenderDexUsed ?? 0; const rec = round.defenderDexRecovered ?? 0; const rem = round.defenderDexRemaining;
+        if (used > 0 && rem != null) { setDexValR(rem - rec); setDexExpDeltaR({ net: -used, k: Date.now() + 2 }); } }
     }
     await sleep(IMPACT_MS);
     if (cancelRef.current) { setBusy(false); return; }
@@ -282,11 +307,17 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
       setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf, attackFlat: round.defenderStatAttack, highDex: round.defenderHighDex });
       bump(setLAnim, 'baHF', 700 / speed);
+      // DEX expenditure for Phase-2 attacker (right = defender)
+      { const used = round.defenderDexUsed ?? 0; const rec = round.defenderDexRecovered ?? 0; const rem = round.defenderDexRemaining;
+        if (used > 0 && rem != null) { setDexValR(rem - rec); setDexExpDeltaR({ net: -used, k: Date.now() + 2 }); } }
     } else {
       // Left hits right → indicator + damage on right; right flashes
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
       setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf, attackFlat: round.attackerStatAttack, highDex: round.attackerHighDex });
       bump(setRAnim, 'baHF', 700 / speed);
+      // DEX expenditure for Phase-2 attacker (left = attacker)
+      { const used = round.attackerDexUsed ?? 0; const rec = round.attackerDexRecovered ?? 0; const rem = round.attackerDexRemaining;
+        if (used > 0 && rem != null) { setDexValL(rem - rec); setDexExpDeltaL({ net: -used, k: Date.now() + 2 }); } }
     }
     await sleep(IMPACT_MS);
     if (cancelRef.current) { setBusy(false); return; }
@@ -296,6 +327,21 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
 
     // ── Phase 3: Resolution — winner glow + loser shake ───────────────────────
     setRoundRes(round.winner);
+    // DEX recovery — set slow-transition flag, then defer value update via rAF (no blocking)
+    { const cRec = round.attackerDexRecovered ?? 0; const dRec = round.defenderDexRecovered ?? 0;
+      const hasRecL = cRec > 0 && round.attackerDexRemaining != null;
+      const hasRecR = dRec > 0 && round.defenderDexRemaining != null;
+      const remL = round.attackerDexRemaining;
+      const remR = round.defenderDexRemaining;
+      if (hasRecL) setDexRecoveringL(true);
+      if (hasRecR) setDexRecoveringR(true);
+      // rAF fires after browser paints the slow-transition state — no await, no blocking
+      requestAnimationFrame(() => {
+        if (remL != null) setDexValL(remL);
+        if (remR != null) setDexValR(remR);
+        if (hasRecL) setTimeout(() => setDexRecoveringL(false), 1100);
+        if (hasRecR) setTimeout(() => setDexRecoveringR(false), 1100);
+      }); }
     if (round.winner === 'attacker') {
       bump(setLAnim, 'baWP', 1100 / speed);
       bump(setRAnim, 'baSR', 800 / speed);
@@ -325,6 +371,8 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     setHitInd(null);
     setCSpellNotif(null);
     setDSpellNotif(null);
+    // DEX deltas are NOT cleared here — they fade out naturally via animation (1.4s)
+    // and get replaced by the next round's delta. Clearing them early cuts the recovery anim short.
     await sleep(280);
     setBusy(false);
   }, [rounds, speed, bump]);
@@ -352,6 +400,11 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     setRoundIdx(clamped);
     // Show accumulated mana state: mana after the previous round (idx-1), or full at start (idx=0)
     setManaDisplayIdx(clamped - 1);
+    // DEX: show final value of previous round for current hero (reset to null=full if hero changed)
+    const prevR = clamped > 0 ? rounds[clamped - 1] : null;
+    const curR = rounds[clamped];
+    setDexValL(prevR && prevR.attackerHero === curR?.attackerHero ? (prevR.attackerDexRemaining ?? null) : null);
+    setDexValR(prevR && prevR.defenderHero === curR?.defenderHero ? (prevR.defenderDexRemaining ?? null) : null);
   }, [rounds.length, resetVisuals]);
 
   const handlePlay = () => {
@@ -420,6 +473,21 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
   const cHero = cRoster.find(h => h.name === round?.attackerHero) ?? cRoster[0];
   const dHero = dRoster.find(h => h.name === round?.defenderHero) ?? dRoster[0];
   const isAtEnd = roundIdx >= rounds.length - 1;
+
+  // DEX helpers
+  const getMaxDex = (heroName: string | undefined, side: 'attacker' | 'defender') => {
+    if (!heroName) return 0;
+    const fr = rounds.find(r => (side === 'attacker' ? r.attackerHero : r.defenderHero) === heroName);
+    if (!fr) return 0;
+    const rem = (side === 'attacker' ? fr.attackerDexRemaining : fr.defenderDexRemaining) ?? 0;
+    const used = (side === 'attacker' ? fr.attackerDexUsed : fr.defenderDexUsed) ?? 0;
+    const rec = (side === 'attacker' ? fr.attackerDexRecovered : fr.defenderDexRecovered) ?? 0;
+    return rem + used - rec;
+  };
+  const cMaxDex = getMaxDex(cHero?.name, 'attacker');
+  const dMaxDex = getMaxDex(dHero?.name, 'defender');
+  const cCurDex = dexValL ?? cMaxDex;
+  const dCurDex = dexValR ?? dMaxDex;
 
   // Animate XP count-up from base → total for heroes with bonus
   useEffect(() => {
@@ -836,6 +904,11 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     manaTotal: number,
     manaCurrent: number,
     spellNotif: { spells: Array<{ name: string; manaCost: number }>; k: number } | null,
+    dexMax: number,
+    dexCur: number,
+    _dexExpDelta: { net: number; k: number } | null,
+    _dexRecDelta: { net: number; k: number } | null,
+    dexRecovering: boolean,
   ) => {
     if (!hero) return <div style={{ flex: 1 }} />;
     const isWinner = roundRes && ((isLeft && roundRes === 'attacker') || (!isLeft && roundRes === 'defender'));
@@ -864,56 +937,225 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
           </div>
         )}
 
-        {/* Animated portrait wrapper — key change restarts animation */}
-        <div key={anim.key} style={{ position: 'relative', display: 'inline-block', ...animStyle(anim) }}>
-          {/* Glow ring behind portrait */}
-          {(isWinner || isLoser) && (
-            <div style={{
-              position: 'absolute',
-              inset: -6,
-              borderRadius: 12,
-              background: isWinner
-                ? 'radial-gradient(ellipse, rgba(74,222,128,.25) 0%, transparent 70%)'
-                : 'radial-gradient(ellipse, rgba(233,69,96,.2) 0%, transparent 70%)',
-              animation: `${isWinner ? 'baWP' : 'baHF'} ${600 / speed}ms ease-out`,
-              pointerEvents: 'none',
-              zIndex: 0,
-            }} />
-          )}
+        {/* Portrait outer — holds animated wrapper + DEX delta (no overflow clip here) */}
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          {/* Animated portrait wrapper — key change restarts animation */}
+          <div key={anim.key} style={{ position: 'relative', display: 'inline-block', ...animStyle(anim) }}>
+            {/* Glow ring behind portrait */}
+            {(isWinner || isLoser) && (
+              <div style={{
+                position: 'absolute',
+                inset: -6,
+                borderRadius: 12,
+                background: isWinner
+                  ? 'radial-gradient(ellipse, rgba(74,222,128,.25) 0%, transparent 70%)'
+                  : 'radial-gradient(ellipse, rgba(233,69,96,.2) 0%, transparent 70%)',
+                animation: `${isWinner ? 'baWP' : 'baHF'} ${600 / speed}ms ease-out`,
+                pointerEvents: 'none',
+                zIndex: 0,
+              }} />
+            )}
 
-          {hero.imagePath ? (
-            <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', boxShadow: isWinner ? '0 0 32px rgba(74,222,128,.55), 0 0 60px rgba(74,222,128,.2)' : isLoser ? '0 0 20px rgba(233,69,96,.4)' : '0 6px 30px rgba(0,0,0,.7)', transition: 'box-shadow 0.4s ease' }}>
-              <HeroPortrait imagePath={hero.imagePath} name={hero.name} size={PORTRAIT_SIZE} />
-              {/* Level badge — bottom right */}
-              <div style={{ position: 'absolute', bottom: 6, right: 6, backgroundColor: 'rgba(0,0,0,.75)', color: '#fff', fontSize: 15, fontWeight: 900, padding: '2px 6px', borderRadius: 4, textShadow: '0 1px 4px #000' }}>
-                {hero.level}
+            {hero.imagePath ? (
+              <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '2.5px solid #4b5563', boxShadow: isWinner ? '0 0 32px rgba(74,222,128,.55), 0 0 60px rgba(74,222,128,.2)' : isLoser ? '0 0 20px rgba(233,69,96,.4)' : '0 6px 30px rgba(0,0,0,.8)', transition: 'box-shadow 0.4s ease' }}>
+                <HeroPortrait imagePath={hero.imagePath} name={hero.name} size={PORTRAIT_SIZE} />
+                {/* Level badge — above DEX bar */}
+                {/* Level badge — epic styled, sits just above DEX bar */}
+                <div style={{
+                  position: 'absolute', bottom: 20, right: 5,
+                  background: 'linear-gradient(160deg, #2a1a04 0%, #3d2509 40%, #2a1a04 100%)',
+                  border: '1.5px solid #92400e',
+                  borderRadius: 6,
+                  padding: '3px 7px 4px',
+                  display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 3,
+                  boxShadow: '0 0 10px rgba(251,191,36,0.5), 0 0 22px rgba(251,191,36,0.18), 0 2px 8px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,210,80,0.22), inset 0 -1px 0 rgba(0,0,0,0.6)',
+                  zIndex: 5,
+                }}>
+                  {/* Top shine */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '42%', background: 'linear-gradient(to bottom, rgba(255,220,100,0.13), transparent)', borderRadius: '5px 5px 0 0', pointerEvents: 'none' }} />
+                  <span style={{ fontSize: 8, fontWeight: 800, color: '#d97706', letterSpacing: '0.12em', lineHeight: 1, textShadow: '0 1px 3px rgba(0,0,0,1)', fontFamily: 'Inter, sans-serif', marginTop: 1 }}>LV</span>
+                  <span style={{
+                    fontSize: 19, fontWeight: 900, color: '#fde68a', lineHeight: 1,
+                    fontFamily: 'Inter, sans-serif',
+                    textShadow: '0 0 8px rgba(251,191,36,0.95), 0 0 18px rgba(251,191,36,0.5), -1px -1px 0 rgba(0,0,0,1), 1px -1px 0 rgba(0,0,0,1), -1px 1px 0 rgba(0,0,0,1), 1px 1px 0 rgba(0,0,0,1), 0 2px 6px rgba(0,0,0,1)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    {hero.level}
+                  </span>
+                </div>
+                {/* Element symbol with color square behind it */}
+                {elemSym && hero.element && (
+                  <div style={{ position: 'absolute', top: 4, left: 5, pointerEvents: 'none', zIndex: 5 }}>
+                    <div style={{ position: 'absolute', inset: 0, borderRadius: 4, background: hero.element === 'WIND' ? 'linear-gradient(135deg, #7dd3fc, #e0f2fe, #7dd3fc)' : (ELEM_COLOR[hero.element] ?? '#888'), boxShadow: `0 0 10px ${ELEM_COLOR[hero.element] ?? '#888'}, 0 0 20px ${ELEM_COLOR[hero.element] ?? '#888'}55`, opacity: 0.55, zIndex: 0 }} />
+                    <span style={{ position: 'relative', fontSize: 20, lineHeight: 1, zIndex: 1, textShadow: '0 1px 6px rgba(0,0,0,.95), 0 0 10px rgba(0,0,0,.8)' }}>{elemSym}</span>
+                  </div>
+                )}
+                {/* Hit effect — clipped to portrait bounds */}
+                {showHit && (
+                  <div key={hitInd!.k} style={{ position: 'absolute', inset: 0, zIndex: 40, pointerEvents: 'none' }}>
+                    {hitInd!.type === 'PA' && renderScratch(speed)}
+                    {hitInd!.type === 'MP' && renderRasengan(speed)}
+                    {hitInd!.type === 'DEX' && renderSlash(speed)}
+                  </div>
+                )}
+                {/* DEX bar — bottom of portrait */}
+                {dexMax > 0 && (() => {
+                  const pct = Math.max(0, Math.min(1, dexCur / dexMax));
+                  const fill = `linear-gradient(90deg, #052e16 0%, #0f3d20 25%, #14532d 55%, #166534 80%, #15803d 100%)`;
+                  const glow = 'rgba(21,128,61,0.6)';
+                  return (
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 22, backgroundColor: '#3a3a4a', zIndex: 10, borderTop: '1px solid rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.6)' }}>
+                      {/* Fill */}
+                      <div style={{
+                        position: 'absolute', top: 0, left: 0, bottom: 0,
+                        width: `${pct * 100}%`,
+                        background: fill,
+                        boxShadow: `0 0 10px ${glow}, inset 0 1px 0 rgba(255,255,255,0.18)`,
+                        transition: `width ${dexRecovering ? '1.0s' : '0.35s'} ${dexRecovering ? 'ease-in-out' : 'ease-out'}`,
+                        borderRight: pct > 0 && pct < 1 ? `1px solid ${glow}` : 'none',
+                      }}>
+                        {/* Top shine */}
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 6, background: 'linear-gradient(to bottom, rgba(255,255,255,0.22), transparent)', pointerEvents: 'none' }} />
+                      </div>
+                      {/* Dragon Slayer — diagonal, overflows upward into portrait */}
+                      <svg width="115" height="46" viewBox="0 0 115 46"
+                        style={{ position: 'absolute', left: 3, bottom: 0, pointerEvents: 'none', zIndex: 15, overflow: 'visible', filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.9))', transform: 'scale(0.41)', transformOrigin: 'left bottom' }}>
+                        {/* Wado Ichimonji — crosses Dragon Slayer, handle lower-right blade upper-left */}
+                        <g transform="translate(108,42) rotate(202)">
+                          {/* Kashira (pommel) — small rounded silver cap */}
+                          <ellipse cx="0" cy="0" rx="3.2" ry="2.8" fill="#c8c8d4" />
+                          <ellipse cx="0" cy="0" rx="3.2" ry="2.8" fill="none" stroke="#9090a8" strokeWidth="0.7" />
+                          <ellipse cx="-0.8" cy="-0.8" rx="1.4" ry="1" fill="rgba(255,255,255,0.3)" />
+                          {/* Tsuka (handle) — black with white ito wrap */}
+                          <rect x="3.2" y="-2.8" width="19" height="5.6" rx="1.5" fill="#0d0d14" />
+                          <rect x="3.2" y="-2.8" width="19" height="1.4" rx="1" fill="rgba(255,255,255,0.06)" />
+                          {/* Diamond ito wrap — white silk */}
+                          <line x1="5.5"  y1="-2.8" x2="7"   y2="2.8"  stroke="rgba(230,230,245,0.7)" strokeWidth="0.9" />
+                          <line x1="8.5"  y1="-2.8" x2="10"  y2="2.8"  stroke="rgba(230,230,245,0.7)" strokeWidth="0.9" />
+                          <line x1="11.5" y1="-2.8" x2="13"  y2="2.8"  stroke="rgba(230,230,245,0.7)" strokeWidth="0.9" />
+                          <line x1="14.5" y1="-2.8" x2="16"  y2="2.8"  stroke="rgba(230,230,245,0.7)" strokeWidth="0.9" />
+                          <line x1="17.5" y1="-2.8" x2="19"  y2="2.8"  stroke="rgba(230,230,245,0.7)" strokeWidth="0.9" />
+                          <line x1="5.5"  y1="2.8"  x2="7"   y2="-2.8" stroke="rgba(200,200,225,0.4)" strokeWidth="0.6" />
+                          <line x1="8.5"  y1="2.8"  x2="10"  y2="-2.8" stroke="rgba(200,200,225,0.4)" strokeWidth="0.6" />
+                          <line x1="11.5" y1="2.8"  x2="13"  y2="-2.8" stroke="rgba(200,200,225,0.4)" strokeWidth="0.6" />
+                          <line x1="14.5" y1="2.8"  x2="16"  y2="-2.8" stroke="rgba(200,200,225,0.4)" strokeWidth="0.6" />
+                          <line x1="17.5" y1="2.8"  x2="19"  y2="-2.8" stroke="rgba(200,200,225,0.4)" strokeWidth="0.6" />
+                          {/* Tsuba — circular iron guard, Wado's signature */}
+                          <circle cx="22.2" cy="0" r="5.8" fill="#72728a" />
+                          <circle cx="22.2" cy="0" r="5.8" fill="none" stroke="#505068" strokeWidth="0.9" />
+                          <circle cx="22.2" cy="0" r="4.2" fill="none" stroke="rgba(180,180,210,0.35)" strokeWidth="0.5" />
+                          <circle cx="22.2" cy="0" r="1.8" fill="rgba(200,200,230,0.15)" />
+                          <ellipse cx="20.8" cy="-1.4" rx="1.8" ry="1.1" fill="rgba(255,255,255,0.18)" />
+                          {/* Habaki (blade collar) — silver */}
+                          <rect x="28" y="-2.2" width="3.5" height="4.4" rx="0.5" fill="#b8b8cc" />
+                          <rect x="28" y="-2.2" width="3.5" height="4.4" rx="0.5" fill="none" stroke="#9090a8" strokeWidth="0.5" />
+                          {/* Blade — pure white, slender and elegant */}
+                          <polygon points="31.5,-2.2 100,0 31.5,2.2" fill="#eeeef8" />
+                          {/* Blade top edge — bright white cutting edge */}
+                          <line x1="31.5" y1="-2.2" x2="100" y2="0" stroke="rgba(255,255,255,0.95)" strokeWidth="0.7" />
+                          {/* Shinogi-ji (flat of blade) sheen */}
+                          <polygon points="31.5,-2.2 95,-0.4 95,0 31.5,-1.2" fill="rgba(255,255,255,0.18)" />
+                          {/* Bo-hi (fuller groove) */}
+                          <line x1="32" y1="-0.9" x2="88" y2="-0.35" stroke="rgba(140,150,190,0.55)" strokeWidth="0.7" />
+                          {/* Mune (spine) */}
+                          <line x1="31.5" y1="2.2" x2="96" y2="0.3" stroke="rgba(160,165,200,0.45)" strokeWidth="0.5" />
+                          {/* Yokote line */}
+                          <line x1="93" y1="-1.8" x2="93" y2="1.5" stroke="rgba(170,175,210,0.6)" strokeWidth="0.6" />
+                          {/* Kissaki (tip) — elegant curved point */}
+                          <polygon points="93,-1.8 100,0 93,1.5" fill="#f4f4ff" />
+                          <line x1="96" y1="-1" x2="100" y2="0" stroke="rgba(255,255,255,0.8)" strokeWidth="0.5" />
+                        </g>
+                        <g transform="translate(4,42) rotate(-22)">
+                          {/* Pommel — heavy iron disc */}
+                          <ellipse cx="0" cy="0" rx="5.5" ry="5" fill="#2c2c35" />
+                          <ellipse cx="0" cy="0" rx="5.5" ry="5" fill="none" stroke="#444455" strokeWidth="1" />
+                          <ellipse cx="-1" cy="-1.5" rx="2.5" ry="1.8" fill="rgba(255,255,255,0.1)" />
+                          {/* Handle — thick wrapped grip */}
+                          <rect x="5" y="-3.8" width="22" height="7.5" rx="2" fill="#1e0e04" />
+                          <rect x="5" y="-3.8" width="22" height="2" rx="1.5" fill="rgba(255,255,255,0.07)" />
+                          <line x1="8"  y1="-3.8" x2="7"  y2="3.7" stroke="rgba(160,120,50,0.55)" strokeWidth="1.1" />
+                          <line x1="12" y1="-3.8" x2="11" y2="3.7" stroke="rgba(160,120,50,0.55)" strokeWidth="1.1" />
+                          <line x1="16" y1="-3.8" x2="15" y2="3.7" stroke="rgba(160,120,50,0.55)" strokeWidth="1.1" />
+                          <line x1="20" y1="-3.8" x2="19" y2="3.7" stroke="rgba(160,120,50,0.55)" strokeWidth="1.1" />
+                          <line x1="24" y1="-3.8" x2="23" y2="3.7" stroke="rgba(160,120,50,0.55)" strokeWidth="1.1" />
+                          {/* Crossguard — wide asymmetric slab */}
+                          <rect x="26" y="-9" width="6" height="18" rx="1.5" fill="#252530" />
+                          <rect x="26" y="-9" width="6" height="18" rx="1.5" fill="none" stroke="#3a3a48" strokeWidth="0.8" />
+                          <rect x="26.5" y="-9" width="2" height="8" rx="1" fill="rgba(255,255,255,0.08)" />
+                          {/* Blade — Dragon Slayer massive iron slab */}
+                          <polygon points="31,-7 108,-3.5 108,3.5 31,7" fill="#18181f" />
+                          {/* Blade bevel — top face */}
+                          <polygon points="31,-7 108,-3.5 108,-1.5 31,-5" fill="#252532" />
+                          {/* Spine highlight */}
+                          <line x1="32" y1="-6.2" x2="107" y2="-3.2" stroke="rgba(140,155,185,0.5)" strokeWidth="0.9" />
+                          {/* Secondary edge sheen */}
+                          <line x1="32" y1="-4.5" x2="107" y2="-2" stroke="rgba(100,115,145,0.3)" strokeWidth="0.6" />
+                          {/* Fuller groove */}
+                          <line x1="32" y1="-1.2" x2="106" y2="-0.6" stroke="rgba(0,0,0,0.55)" strokeWidth="1.4" />
+                          {/* Bottom rough edge */}
+                          <line x1="31" y1="7" x2="108" y2="3.5" stroke="#111118" strokeWidth="0.8" />
+                          {/* Battle notches — Dragon Slayer is heavily used */}
+                          <polygon points="48,7 50,5 52,7"   fill="#18181f" />
+                          <polygon points="65,6.5 67,4.5 69,6.5" fill="#18181f" />
+                          <polygon points="83,5.8 85,4 87,5.8" fill="#18181f" />
+                          <polygon points="97,5.2 99,3.5 101,5.2" fill="#18181f" />
+                          {/* Tip — flat brutish end */}
+                          <polygon points="106,-3.5 112,0 106,3.5" fill="#1e1e28" />
+                          <line x1="109" y1="-2" x2="112" y2="0" stroke="rgba(130,145,175,0.35)" strokeWidth="0.7" />
+                          {/* BLOOD — dark dried stains */}
+                          <ellipse cx="50" cy="1" rx="9" ry="5" fill="rgba(140,5,5,0.72)" />
+                          <ellipse cx="49" cy="0" rx="5.5" ry="3" fill="rgba(180,10,10,0.55)" />
+                          <ellipse cx="53" cy="2.5" rx="3" ry="1.8" fill="rgba(120,0,0,0.5)" />
+                          <ellipse cx="78" cy="-0.5" rx="7" ry="4" fill="rgba(130,5,5,0.65)" />
+                          <ellipse cx="77" cy="-1.5" rx="4" ry="2.2" fill="rgba(170,8,8,0.5)" />
+                          {/* Blood drip 1 */}
+                          <path d="M52 6 Q52.5 10 52 13 Q51.5 15 52 17" stroke="rgba(160,5,5,0.75)" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+                          <ellipse cx="52" cy="18" rx="1.5" ry="1.1" fill="rgba(150,5,5,0.65)" />
+                          {/* Blood drip 2 */}
+                          <path d="M76 5.5 Q76.5 9 76 12" stroke="rgba(140,5,5,0.7)" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+                          <ellipse cx="76" cy="12.8" rx="1.2" ry="0.9" fill="rgba(140,5,5,0.6)" />
+                          {/* Scattered drops */}
+                          <circle cx="60" cy="-3" r="1.8" fill="rgba(130,5,5,0.55)" />
+                          <circle cx="67" cy="4"  r="1.3" fill="rgba(140,5,5,0.5)" />
+                          <circle cx="88" cy="-2" r="1.5" fill="rgba(120,5,5,0.5)" />
+                          <circle cx="95" cy="3"  r="1"   fill="rgba(135,5,5,0.45)" />
+                          <circle cx="44" cy="-4" r="1"   fill="rgba(140,5,5,0.45)" />
+                        </g>
+                      </svg>
+                      {/* DEX label — next to sword (left), value on right */}
+                      <div style={{ position: 'absolute', left: 62, top: 0, bottom: 0, display: 'flex', alignItems: 'center', gap: 2, pointerEvents: 'none' }}>
+                        <span style={{
+                          fontSize: 11, fontWeight: 900, color: '#4ade80', letterSpacing: '0.18em', lineHeight: 1,
+                          textTransform: 'uppercase',
+                          textShadow: '0 0 8px rgba(74,222,128,0.95), 0 0 18px rgba(74,222,128,0.6), 0 0 32px rgba(74,222,128,0.35), -1px -1px 0 rgba(0,0,0,1), 1px -1px 0 rgba(0,0,0,1), -1px 1px 0 rgba(0,0,0,1), 1px 1px 0 rgba(0,0,0,1)',
+                        }}>DEX</span>
+                      </div>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 7, gap: 1, pointerEvents: 'none' }}>
+                        <span style={{
+                          fontSize: 12, fontWeight: 900, color: '#d1fae5', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                          textShadow: '0 0 10px rgba(74,222,128,0.9), 0 0 22px rgba(74,222,128,0.5), -1px -1px 0 rgba(0,0,0,1), 1px -1px 0 rgba(0,0,0,1), -1px 1px 0 rgba(0,0,0,1), 1px 1px 0 rgba(0,0,0,1), 0 2px 8px rgba(0,0,0,1)',
+                        }}>{Math.round(dexCur)}</span>
+                        <span style={{
+                          fontSize: 12, fontWeight: 700, color: 'rgba(134,239,172,0.55)', lineHeight: 1,
+                          textShadow: '-1px -1px 0 rgba(0,0,0,0.8), 1px 1px 0 rgba(0,0,0,0.8)',
+                        }}>/</span>
+                        <span style={{
+                          fontSize: 12, fontWeight: 700, color: 'rgba(134,239,172,0.65)', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                          textShadow: '-1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9), 1px 1px 0 rgba(0,0,0,0.9)',
+                        }}>{Math.round(dexMax)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
-              {/* Element symbol — top left */}
-              {elemSym && (
-                <div style={{ position: 'absolute', top: 4, left: 5, fontSize: 20, lineHeight: 1, textShadow: '0 1px 6px rgba(0,0,0,.95), 0 0 10px rgba(0,0,0,.8)', pointerEvents: 'none' }}>
-                  {elemSym}
-                </div>
-              )}
-              {/* Hit effect — clipped to portrait bounds */}
-              {showHit && (
-                <div key={hitInd!.k} style={{ position: 'absolute', inset: 0, zIndex: 40, pointerEvents: 'none' }}>
-                  {hitInd!.type === 'PA' && renderScratch(speed)}
-                  {hitInd!.type === 'MP' && renderRasengan(speed)}
-                  {hitInd!.type === 'DEX' && renderSlash(speed)}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div style={{ width: PORTRAIT_SIZE, height: Math.round(PORTRAIT_SIZE * 200 / 180), backgroundColor: '#16213e', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a0a0b0', fontSize: 13, fontWeight: 600, border: '2px solid #2a2a4a', padding: 8, textAlign: 'center' }}>
-              {elemSym && <span style={{ position: 'absolute', top: 4, left: 5, fontSize: 20 }}>{elemSym}</span>}
-              {hero.name}
-            </div>
-          )}
-        </div>
+            ) : (
+              <div style={{ width: PORTRAIT_SIZE, height: Math.round(PORTRAIT_SIZE * 200 / 180), backgroundColor: '#16213e', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a0a0b0', fontSize: 13, fontWeight: 600, border: '2px solid #2a2a4a', padding: 8, textAlign: 'center' }}>
+                {elemSym && <span style={{ position: 'absolute', top: 4, left: 5, fontSize: 20 }}>{elemSym}</span>}
+                {hero.name}
+              </div>
+            )}
+          </div>
 
-        {/* Hero label — name only, element is on portrait */}
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ color: '#e0e0e0', fontWeight: 700, fontSize: 15, textShadow: '0 1px 6px rgba(0,0,0,.8)' }}>{hero.name}</div>
         </div>
 
         {/* Mana bar — below the name, only if team has mana */}
@@ -928,7 +1170,9 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
                   animationName: spellNotif ? 'baManaGlow' : 'none',
                   animationDuration: '0.9s',
                   animationIterationCount: 'infinite',
-                }} />
+                }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 7, background: 'linear-gradient(to bottom, rgba(255,255,255,0.2), transparent)', pointerEvents: 'none' }} />
+                </div>
               </div>
               <span style={s.manaBarLabel}>{Math.round(manaCurrent)}/{Math.round(manaTotal)} Mana Pool</span>
             </div>
@@ -1031,6 +1275,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
       {/* ── Arena ── */}
       <div style={s.arena}>
 
+        {/* Akatsuki battle background */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          <img src="/akatsuki-bg.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', opacity: 0.35, filter: 'blur(4px) saturate(0.7)', transform: 'scale(1.05)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.35) 100%)' }} />
+        </div>
+
         {/* Subtle arena floor lines */}
         <div style={s.arenaFloor} />
 
@@ -1038,6 +1288,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
           battleLog.challengerManaTotal ?? 0,
           manaDisplayIdx >= 0 ? (rounds[manaDisplayIdx]?.challengerManaAfter ?? (battleLog.challengerManaTotal ?? 0)) : (battleLog.challengerManaTotal ?? 0),
           cSpellNotif,
+          cMaxDex, cCurDex, dexExpDeltaL, dexRecDeltaL, dexRecoveringL,
         )}
 
         {/* Center panel */}
@@ -1076,6 +1327,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
           battleLog.defenderManaTotal ?? 0,
           manaDisplayIdx >= 0 ? (rounds[manaDisplayIdx]?.defenderManaAfter ?? (battleLog.defenderManaTotal ?? 0)) : (battleLog.defenderManaTotal ?? 0),
           dSpellNotif,
+          dMaxDex, dCurDex, dexExpDeltaR, dexRecDeltaR, dexRecoveringR,
         )}
       </div>
 
@@ -1219,7 +1471,7 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     padding: '36px 28px',
     minHeight: 440,
-    background: 'radial-gradient(ellipse at 50% 60%, #1a1a3e 0%, #0d0d22 55%, #080814 100%)',
+    background: '#08000a',
     position: 'relative',
     gap: 8,
     overflow: 'hidden',
@@ -1230,7 +1482,7 @@ const s: Record<string, React.CSSProperties> = {
     left: 0,
     right: 0,
     height: 60,
-    background: 'linear-gradient(to top, rgba(233,69,96,.06), transparent)',
+    background: 'linear-gradient(to top, rgba(120,0,0,.12), transparent)',
     pointerEvents: 'none',
   },
   center: {
@@ -1333,28 +1585,30 @@ const s: Record<string, React.CSSProperties> = {
   },
   manaBarTrack: {
     flex: 1,
-    height: 13,
-    backgroundColor: 'rgba(20,20,50,0.95)',
-    borderRadius: 7,
-    border: '1px solid rgba(59,130,246,0.35)',
+    height: 18,
+    backgroundColor: '#080818',
+    borderRadius: 3,
+    border: '1.5px solid #1e3a8a',
     overflow: 'hidden',
     position: 'relative',
+    boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.8), 0 0 10px rgba(37,99,235,0.2)',
   },
   manaBarFill: {
     height: '100%',
-    background: 'linear-gradient(to right, #1e3a8a, #2563eb, #3b82f6, #60a5fa)',
-    borderRadius: 7,
-    transition: 'width 0.6s ease',
-    boxShadow: '0 0 8px rgba(59,130,246,0.5)',
+    background: 'linear-gradient(to right, #0f1f6e 0%, #1d4ed8 35%, #2563eb 60%, #3b82f6 80%, #60a5fa 100%)',
+    borderRadius: 0,
+    transition: 'width 1.4s ease-in-out',
+    boxShadow: '0 0 14px rgba(59,130,246,0.7), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.4)',
+    position: 'relative',
   },
   manaBarLabel: {
-    color: '#93c5fd',
-    fontSize: 12,
-    fontWeight: 800,
+    color: '#bfdbfe',
+    fontSize: 11,
+    fontWeight: 900,
     whiteSpace: 'nowrap',
     fontVariantNumeric: 'tabular-nums',
-    letterSpacing: 0.3,
-    textShadow: '0 0 6px rgba(59,130,246,0.5)',
+    letterSpacing: 0.4,
+    textShadow: '0 0 8px rgba(59,130,246,0.9), -1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9), 1px 1px 0 rgba(0,0,0,0.9)',
   },
   spellNotifWrap: {
     display: 'flex',
@@ -1371,9 +1625,10 @@ const s: Record<string, React.CSSProperties> = {
     border: '1px solid rgba(96,165,250,0.6)',
     borderRadius: 8,
     animationName: 'baSpell',
-    animationDuration: '3.5s',
+    animationDuration: '2.8s',
     animationFillMode: 'both',
-    animationTimingFunction: 'ease-out',
+    animationTimingFunction: 'linear',
+    transformOrigin: 'center top',
     boxShadow: '0 0 22px rgba(59,130,246,0.55), 0 0 50px rgba(96,165,250,0.2)',
   },
   spellNotifIcon: {
