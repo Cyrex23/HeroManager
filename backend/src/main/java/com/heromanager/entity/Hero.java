@@ -44,11 +44,41 @@ public class Hero {
     @Column(columnDefinition = "int default 0")
     private int currentLossStreak = 0;
 
+    @Column(columnDefinition = "int default 0")
+    private int bestWinStreak = 0;
+
+    @Column(columnDefinition = "int default 0")
+    private int bestLossStreak = 0;
+
     @Column(columnDefinition = "double default 0")
     private double maxDamageDealt = 0;
 
     @Column(columnDefinition = "double default 0")
     private double maxDamageReceived = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double maxPaDamage = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double maxMpDamage = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double maxDexDamage = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double maxElemDamage = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double totalPaDamage = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double totalMpDamage = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double totalDexDamage = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double totalElemDamage = 0;
 
     @Column(columnDefinition = "int default 0")
     private int statPurchaseCount = 0;

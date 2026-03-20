@@ -65,7 +65,7 @@ export interface FullInventoryAbility {
   heroId: number;
   heroName: string;
   slotNumber: number | null;
-  spell?: { name: string; manaCost: number; trigger: 'ENTRANCE' | 'ATTACK'; chance: number; bonuses: Record<string, number> } | null;
+  spells?: import('../types').SpellInfo[];
 }
 
 export interface FullInventoryResponse {

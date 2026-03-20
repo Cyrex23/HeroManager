@@ -190,6 +190,7 @@ export default function TeamInspectBody({ team }: Props) {
                         bonuses={gs.bonuses ?? {}}
                         tier={gs.type === 'ability' ? (gs.tier ?? null) : null}
                         copies={gs.copies ?? undefined}
+                        spells={gs.spells ?? []}
                       >
                         {(() => {
                           const c = gs.type === 'ability' ? abilityColor(gs.tier) : itemColor(gs.cost);

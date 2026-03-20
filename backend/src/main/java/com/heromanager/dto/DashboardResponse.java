@@ -40,5 +40,9 @@ public class DashboardResponse {
         private int clashesLost;
         private int currentWinStreak;
         private double maxDamageDealt;
+        private long xpGainedToday;
+        private long xpGainedWeek;
+        private long xpGainedMonth;
+        private long xpGainedAllTime;
     }
 }

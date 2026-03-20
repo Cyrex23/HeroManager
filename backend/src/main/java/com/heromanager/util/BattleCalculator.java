@@ -64,7 +64,7 @@ public class BattleCalculator {
         double dex = stats.getOrDefault("dexterity",      0.0);
 
         // ── PA contribution ────────────────────────────────────────────────────
-        double paRaw = pa * 0.5 * (1.0 - Math.min(defPhysImmunity, 0.9));
+        double paRaw = pa * 0.5 * (1.0 - defPhysImmunity);
 
         // ── MP contribution (Magic Proficiency = reroll) ──────────────────────
         double roll1 = rng.nextDouble(0.1, 1.0);
@@ -76,11 +76,11 @@ public class BattleCalculator {
             mpRoll = Math.max(roll1, roll2);
             didMagicProf = true;
         }
-        double mpRaw = mp * mpRoll * (1.0 - Math.min(defMagicImmunity, 0.9));
+        double mpRaw = mp * mpRoll * (1.0 - defMagicImmunity);
 
         // ── DEX contribution (Dex Proficiency + Dex Posture) ─────────────────
         double dexFactor = 0.33 + attackerMods.dexProficiency();
-        double dexRaw = dex * dexFactor * (1.0 - Math.min(defDexEvasiveness, 0.9));
+        double dexRaw = dex * dexFactor * (1.0 - defDexEvasiveness);
 
         // Attack bonus is flat raw damage — immune to stamina, not tied to any stat
         double attackFlat = attackerMods.attackBonus();

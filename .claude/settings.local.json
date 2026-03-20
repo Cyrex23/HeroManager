@@ -66,7 +66,8 @@
       "Bash(find d:/HeroManager -maxdepth 3 -name *akatsuki*)",
       "Bash(xargs grep:*)",
       "Bash(find d:/HeroManager -name *Madara* -o -name '*lvl up*' -o -name '*level up*')",
-      "Bash(find D:HeroManagerbackend -name *HeroTemplate* -o -name *ResponseBuilder*)"
+      "Bash(find D:HeroManagerbackend -name *HeroTemplate* -o -name *ResponseBuilder*)",
+      "Bash(grep -r \"BattleRound\\\\|attackerCapacity\\\\|consecWins\" d:/HeroManager/frontend/src --include=*.ts --include=*.tsx -l)"
     ]
   }
 }

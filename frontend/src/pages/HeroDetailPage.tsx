@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Swords, Skull, Zap, ShieldAlert, TrendingUp, TrendingDown, ChevronLeft } from 'lucide-react';
+import { ChevronLeft, ChevronDown } from 'lucide-react';
 import { getHero, sellHero, halveCapacity, buyStats, allocateStats, resetHeroStats, changeSeal, changeElement } from '../api/playerApi';
 import { getHeroEquipment, unequipItemFromSlot, sellInventoryItem, unequipAbilityFromSlot, equipItemToSlot, equipAbilityToSlot } from '../api/equipmentApi';
 import { getTeamSetups, switchTeamSetup, renameTeamSetup } from '../api/teamApi';
@@ -59,6 +59,26 @@ if (typeof document !== 'undefined') {
         50%       { box-shadow: 0 0 10px rgba(233,69,96,0.35); }
       }
       .hd-setup-tab-active { animation: setupTabPulse 2.8s ease-in-out infinite; }
+      @keyframes hdStatGlowWhite  { 0%,100%{text-shadow:0 0 6px rgba(200,200,255,.15)} 50%{text-shadow:0 0 18px rgba(200,200,255,.65),0 0 36px rgba(200,200,255,.18)} }
+      @keyframes hdStatGlowGreen  { 0%,100%{text-shadow:0 0 6px rgba(74,222,128,.2)}   50%{text-shadow:0 0 18px rgba(74,222,128,.8),0 0 36px rgba(74,222,128,.28)} }
+      @keyframes hdStatGlowRed    { 0%,100%{text-shadow:0 0 6px rgba(233,69,96,.2)}    50%{text-shadow:0 0 18px rgba(233,69,96,.8),0 0 36px rgba(233,69,96,.28)} }
+      @keyframes hdStatGlowGold   { 0%,100%{text-shadow:0 0 6px rgba(251,191,36,.2)}   50%{text-shadow:0 0 18px rgba(251,191,36,.85),0 0 36px rgba(251,191,36,.28)} }
+      @keyframes hdStatGlowOrange { 0%,100%{text-shadow:0 0 6px rgba(249,115,22,.2)}   50%{text-shadow:0 0 18px rgba(249,115,22,.8),0 0 36px rgba(249,115,22,.28)} }
+      @keyframes hdStatGlowIndigo { 0%,100%{text-shadow:0 0 6px rgba(129,140,248,.2)}  50%{text-shadow:0 0 18px rgba(129,140,248,.8),0 0 36px rgba(129,140,248,.28)} }
+      @keyframes hdStatGlowYellow { 0%,100%{text-shadow:0 0 6px rgba(216,212,85,.2)}   50%{text-shadow:0 0 18px rgba(216,212,85,.8),0 0 36px rgba(216,212,85,.28)} }
+      @keyframes hdStatGlowTeal   { 0%,100%{text-shadow:0 0 6px rgba(52,211,153,.2)}   50%{text-shadow:0 0 18px rgba(52,211,153,.8),0 0 36px rgba(52,211,153,.28)} }
+      @keyframes hdStatGlowPurple { 0%,100%{text-shadow:0 0 6px rgba(167,139,250,.2)}  50%{text-shadow:0 0 18px rgba(167,139,250,.8),0 0 36px rgba(167,139,250,.28)} }
+      @keyframes hdWinRateFlow { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.3)} }
+      .hd-sv-white  { animation: hdStatGlowWhite  3.4s ease-in-out infinite; }
+      .hd-sv-green  { animation: hdStatGlowGreen  3.4s ease-in-out infinite; }
+      .hd-sv-red    { animation: hdStatGlowRed    3.4s ease-in-out infinite; }
+      .hd-sv-gold   { animation: hdStatGlowGold   3.4s ease-in-out infinite; }
+      .hd-sv-orange { animation: hdStatGlowOrange 3.4s ease-in-out infinite; }
+      .hd-sv-indigo { animation: hdStatGlowIndigo 3.4s ease-in-out infinite; }
+      .hd-sv-yellow { animation: hdStatGlowYellow 3.4s ease-in-out infinite; }
+      .hd-sv-teal   { animation: hdStatGlowTeal   3.4s ease-in-out infinite; }
+      .hd-sv-purple { animation: hdStatGlowPurple 3.4s ease-in-out infinite; }
+      .hd-wr-fill   { animation: hdWinRateFlow    2.8s ease-in-out infinite; }
     `;
     document.head.appendChild(el);
   }
@@ -138,6 +158,7 @@ const SUB_STATS: { key: string; label: string; color: string }[] = [
   { key: 'spellActivation',  label: 'Spell Activation',  color: '#e879f9' },
   { key: 'dexProficiency',   label: 'Dex Proficiency',   color: '#4ade80' },
   { key: 'dexPosture',       label: 'Dex Posture',       color: '#34d399' },
+  { key: 'dexMaxPosture',    label: 'Dex Max Posture',   color: '#6ee7b7' },
   { key: 'criticalChance',   label: 'Critical Chance',   color: '#fb923c' },
   { key: 'critDamage',       label: 'Critical Damage',   color: '#fbbf24' },
   { key: 'expBonus',         label: 'Exp Bonus',         color: '#a78bfa' },
@@ -146,6 +167,16 @@ const SUB_STATS: { key: string; label: string; color: string }[] = [
   { key: 'physicalImmunity', label: 'Physical Immunity', color: '#94a3b8' },
   { key: 'magicImmunity',    label: 'Magic Immunity',    color: '#818cf8' },
   { key: 'dexEvasiveness',      label: 'Dex Evasiveness',      color: '#86efac' },
+  { key: 'manaRecharge',        label: 'Mana Recharge',        color: '#38bdf8' },
+  { key: 'spellLearn',          label: 'Spell Learn',          color: '#a78bfa' },
+  { key: 'spellCopy',           label: 'Spell Copy',           color: '#f87171' },
+  { key: 'spellAbsorb',         label: 'Spell Absorb',         color: '#34d399' },
+  { key: 'rot',                 label: 'Rot',                  color: '#4ade80' },
+  { key: 'tenacity',            label: 'Tenacity',             color: '#06b6d4' },
+  { key: 'fatigueRecovery',     label: 'Fatigue Recovery',     color: '#34d399' },
+  { key: 'cleanse',             label: 'Cleanse',              color: '#a5f3fc' },
+  { key: 'offPositioning',      label: 'Off-Positioning',      color: '#fbbf24' },
+  { key: 'offSlotPenalty',      label: 'Off-slot Penalty',     color: '#f87171' },
   { key: 'staminaEffectiveness', label: 'Stamina Effectiveness', color: '#fb7185' },
 ];
 
@@ -168,6 +199,7 @@ export default function HeroDetailPage() {
   const [hoveredSeal, setHoveredSeal] = useState<number | null>(null);
   const [sealBtnHovered, setSealBtnHovered] = useState(false);
   const [showAllocate, setShowAllocate] = useState(false);
+  const [showSubStats, setShowSubStats] = useState(false);
   const [statAlloc, setStatAlloc] = useState<Record<string, number>>({
     physicalAttack: 0, magicPower: 0, dexterity: 0, element: 0, mana: 0, stamina: 0,
   });
@@ -837,58 +869,88 @@ export default function HeroDetailPage() {
         {/* ── LEFT COLUMN: combat record + stats ── */}
         <div style={styles.leftCol}>
 
-          {/* Combat Record header */}
-          <div style={styles.battleHeader}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-              <span style={styles.battleTitle}>Combat Record</span>
+          {/* ── Combat Record ── */}
+          <div style={styles.combatSection}>
+            <div style={styles.hdCombatHeader}>
+              <span style={styles.hdCombatTitle}>⚔ Combat Record</span>
+              <div style={styles.hdCombatLine} />
               <span style={styles.battleTotalTag}>{totalBattles} battles</span>
             </div>
-            <div style={styles.winRateBlock}>
-              <span style={{ ...styles.winRatePct, color: winRate >= 50 ? '#4ade80' : '#e94560' }}>
-                {winRate}%
-              </span>
-              <span style={styles.winRateTag}>win rate</span>
-            </div>
-          </div>
 
-          {/* Win rate bar */}
-          <div style={styles.winRateTrack}>
-            <div style={{
-              ...styles.winRateFill,
-              width: `${winRate}%`,
-              background: winRate >= 60
-                ? 'linear-gradient(90deg, #15803d, #4ade80)'
-                : winRate >= 40
-                ? 'linear-gradient(90deg, #b45309, #fbbf24)'
-                : 'linear-gradient(90deg, #991b1b, #e94560)',
-            }} />
-          </div>
-
-          {/* Stats grid */}
-          <div style={styles.battleStatsGrid}>
-            {([
-              { icon: <Swords size={16} />, value: hero.clashesWon,                    label: 'Wins',             color: '#4ade80', rgb: '74,222,128' },
-              { icon: <Skull size={16} />,  value: hero.clashesLost,                   label: 'Losses',           color: '#e94560', rgb: '233,69,96' },
-              { icon: <Zap size={16} />,    value: hero.maxDamageDealt.toFixed(1),     label: 'Max DMG Dealt',    color: '#fbbf24', rgb: '251,191,36' },
-              { icon: <ShieldAlert size={16} />, value: hero.maxDamageReceived.toFixed(1), label: 'Max DMG Taken', color: '#a78bfa', rgb: '167,139,250' },
-              { icon: <TrendingUp size={16} />,  value: hero.currentWinStreak,         label: 'Win Streak',       color: '#4ade80', rgb: '74,222,128' },
-              { icon: <TrendingDown size={16} />, value: hero.currentLossStreak,       label: 'Loss Streak',      color: '#e94560', rgb: '233,69,96' },
-            ] as const).map(({ icon, value, label, color, rgb }) => (
-              <div
-                key={label}
-                style={{
-                  ...styles.battleStat,
-                  borderTopColor: color,
-                  boxShadow: `0 0 16px rgba(${rgb},0.08), inset 0 0 24px rgba(${rgb},0.025)`,
-                }}
-              >
-                <div style={{ ...styles.battleStatIcon, backgroundColor: `rgba(${rgb},0.12)`, color }}>
-                  {icon}
+            {/* Overview */}
+            <div style={styles.hdGroupLabel}>Overview</div>
+            <div style={styles.hdStatCardsRow}>
+              {([
+                { value: String(hero.clashesWon),                                     label: 'Wins',        color: '#4ade80', glow: 'hd-sv-green',  barPct: null },
+                { value: String(hero.clashesLost),                                    label: 'Losses',      color: '#e94560', glow: 'hd-sv-red',    barPct: null },
+                { value: `${winRate}%`,                                               label: 'Win Rate',    color: '#fbbf24', glow: 'hd-sv-gold',   barPct: winRate },
+                { value: String(totalBattles),                                        label: 'Battles',     color: '#a0a0cc', glow: 'hd-sv-white',  barPct: null },
+              ] as const).map(({ value, label, color, glow, barPct }) => (
+                <div key={label} style={{ ...styles.hdStatCard, borderTop: `3px solid ${color}`, background: `linear-gradient(160deg,rgba(0,0,0,0) 0%,${color}09 100%)`, boxShadow: `0 2px 16px rgba(0,0,0,.35),inset 0 1px 0 ${color}18` }}>
+                  <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: `linear-gradient(90deg,transparent,${color}88,transparent)` }} />
+                  <span style={{ ...styles.hdStatCardLabel, color: `${color}aa` }}>{label}</span>
+                  <span className={glow} style={{ ...styles.hdStatCardValue, color }}>{value}</span>
+                  {barPct !== null && (
+                    <div style={styles.hdWrBarBg}>
+                      <div className="hd-wr-fill" style={{ ...styles.hdWrBarFill, width: `${barPct}%` }} />
+                    </div>
+                  )}
                 </div>
-                <div style={{ ...styles.battleStatValue, color }}>{value}</div>
-                <div style={styles.battleStatLabel}>{label}</div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Streaks */}
+            <div style={styles.hdGroupLabel}>Streaks</div>
+            <div style={styles.hdStatCardsRow}>
+              {([
+                { value: String(hero.currentWinStreak),  label: 'Win Streak',       color: '#4ade80', glow: 'hd-sv-green' },
+                { value: String(hero.bestWinStreak),     label: 'Best Win Streak',  color: '#4ade80', glow: 'hd-sv-green' },
+                { value: String(hero.currentLossStreak), label: 'Loss Streak',      color: '#e94560', glow: 'hd-sv-red'   },
+                { value: String(hero.bestLossStreak),    label: 'Best Loss Streak', color: '#e94560', glow: 'hd-sv-red'   },
+              ] as const).map(({ value, label, color, glow }) => (
+                <div key={label} style={{ ...styles.hdStatCard, borderTop: `3px solid ${color}`, background: `linear-gradient(160deg,rgba(0,0,0,0) 0%,${color}09 100%)`, boxShadow: `0 2px 16px rgba(0,0,0,.35),inset 0 1px 0 ${color}18` }}>
+                  <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: `linear-gradient(90deg,transparent,${color}88,transparent)` }} />
+                  <span style={{ ...styles.hdStatCardLabel, color: `${color}aa` }}>{label}</span>
+                  <span className={glow} style={{ ...styles.hdStatCardValue, color }}>{value}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Best Hits */}
+            <div style={styles.hdGroupLabel}>Best Hits</div>
+            <div style={styles.hdStatCardsRow}>
+              {([
+                { value: hero.maxDamageDealt.toFixed(1),    label: 'Max Dealt',   color: '#fbbf24', glow: 'hd-sv-gold'   },
+                { value: hero.maxDamageReceived.toFixed(1), label: 'Max Taken',   color: '#a78bfa', glow: 'hd-sv-purple' },
+                { value: hero.maxPaDamage.toFixed(1),       label: 'Best PA',     color: '#f97316', glow: 'hd-sv-orange' },
+                { value: hero.maxMpDamage.toFixed(1),       label: 'Best MP',     color: '#818cf8', glow: 'hd-sv-indigo' },
+                { value: hero.maxDexDamage.toFixed(1),      label: 'Best DEX',    color: '#d8d455', glow: 'hd-sv-yellow' },
+                { value: hero.maxElemDamage.toFixed(1),     label: 'Best Elem',   color: '#34d399', glow: 'hd-sv-teal'   },
+              ] as const).map(({ value, label, color, glow }) => (
+                <div key={label} style={{ ...styles.hdStatCard, borderTop: `3px solid ${color}`, background: `linear-gradient(160deg,rgba(0,0,0,0) 0%,${color}09 100%)`, boxShadow: `0 2px 16px rgba(0,0,0,.35),inset 0 1px 0 ${color}18` }}>
+                  <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: `linear-gradient(90deg,transparent,${color}88,transparent)` }} />
+                  <span style={{ ...styles.hdStatCardLabel, color: `${color}aa` }}>{label}</span>
+                  <span className={glow} style={{ ...styles.hdStatCardValue, color }}>{value}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Total Damage */}
+            <div style={styles.hdGroupLabel}>Total Damage</div>
+            <div style={styles.hdStatCardsRow}>
+              {([
+                { value: hero.totalPaDamage.toFixed(1),   label: 'Total PA',    color: '#f97316', glow: 'hd-sv-orange' },
+                { value: hero.totalMpDamage.toFixed(1),   label: 'Total MP',    color: '#818cf8', glow: 'hd-sv-indigo' },
+                { value: hero.totalDexDamage.toFixed(1),  label: 'Total DEX',   color: '#d8d455', glow: 'hd-sv-yellow' },
+                { value: hero.totalElemDamage.toFixed(1), label: 'Total Elem',  color: '#34d399', glow: 'hd-sv-teal'   },
+              ] as const).map(({ value, label, color, glow }) => (
+                <div key={label} style={{ ...styles.hdStatCard, borderTop: `3px solid ${color}`, background: `linear-gradient(160deg,rgba(0,0,0,0) 0%,${color}09 100%)`, boxShadow: `0 2px 16px rgba(0,0,0,.35),inset 0 1px 0 ${color}18` }}>
+                  <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: `linear-gradient(90deg,transparent,${color}88,transparent)` }} />
+                  <span style={{ ...styles.hdStatCardLabel, color: `${color}aa` }}>{label}</span>
+                  <span className={glow} style={{ ...styles.hdStatCardValue, color }}>{value}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Stats Breakdown section header */}
@@ -936,12 +998,17 @@ export default function HeroDetailPage() {
           </div>
 
           {/* ── Sub Stats ── */}
-          <div style={styles.statsSectionHeader}>
+          <div
+            style={{ ...styles.statsSectionHeader, cursor: 'pointer', userSelect: 'none' }}
+            onClick={() => setShowSubStats(prev => !prev)}
+          >
             <span style={styles.statsSectionDiamond}>◆</span>
             <span style={styles.statsSectionTitle}>Sub Stats</span>
             <div style={styles.statsSectionLine} />
+            <ChevronDown size={14} style={{ color: '#6060a0', flexShrink: 0, transition: 'transform 0.25s', transform: showSubStats ? 'rotate(180deg)' : 'rotate(0deg)' }} />
           </div>
 
+          <div style={{ overflow: 'hidden', maxHeight: showSubStats ? '2000px' : '0px', transition: 'max-height 0.35s ease', }}>
           <div style={styles.statsTable}>
             {/* Sub stats header */}
             <div style={styles.tableHeader}>
@@ -964,7 +1031,39 @@ export default function HeroDetailPage() {
               // Compute base / equip / summon / total per stat
               let base = '—', equip = '—', summon = '—', total = '—';
 
-              if (key === 'staminaEffectiveness') {
+              if (key === 'tenacity') {
+                const eVal = Math.round(bs.tenacity ?? 0);
+                const sVal = Math.round(ss.tenacity ?? 0);
+                equip  = eVal > 0 ? `+${eVal}` : '—';
+                summon = sVal > 0 ? `+${sVal}` : '—';
+                const t = eVal + sVal;
+                if (t > 0) total = `+${t}`;
+              } else if (key === 'fatigueRecovery') {
+                equip  = fmtPct(bs.fatigueRecovery ?? 0);
+                summon = fmtPct(ss.fatigueRecovery ?? 0);
+                const t = (bs.fatigueRecovery ?? 0) + (ss.fatigueRecovery ?? 0);
+                if (t > 0) total = `+${Math.round(t * 100)}%`;
+              } else if (key === 'cleanse') {
+                equip  = fmtPct(bs.cleanse ?? 0);
+                summon = fmtPct(ss.cleanse ?? 0);
+                const t = (bs.cleanse ?? 0) + (ss.cleanse ?? 0);
+                if (t > 0) total = `+${Math.round(t * 100)}%`;
+              } else if (key === 'offSlotPenalty') {
+                const slot = hero.teamSlot;
+                const slotTier = !slot ? null : slot <= 3 ? 'COMMONER' : slot <= 5 ? 'ELITE' : 'LEGENDARY';
+                if (slotTier && hero.tier && hero.tier !== slotTier) {
+                  const stamina = hero.stats.stamina ?? 0;
+                  const bs2 = hero.bonusStats as unknown as Record<string, number>;
+                  const ss2 = (hero.summonStats ?? {}) as Record<string, number>;
+                  const offPos = (bs2.offPositioning ?? 0) + (ss2.offPositioning ?? 0);
+                  const req = slotTier === 'COMMONER' ? 50 + hero.level * 3 : slotTier === 'ELITE' ? 100 + hero.level * 3 : 150 + hero.level * 3;
+                  const rawMax = slotTier === 'COMMONER' ? 0.80 : slotTier === 'ELITE' ? 0.65 : 0.50;
+                  const effMax = rawMax * Math.max(0, 1 - offPos);
+                  const penalty = stamina >= req ? 0 : effMax * (1 - stamina / req);
+                  base  = `${slotTier[0]}${slotTier.slice(1).toLowerCase()} slot`;
+                  total = penalty <= 0 ? '✓ None' : `−${(penalty * 100).toFixed(1)}%`;
+                }
+              } else if (key === 'staminaEffectiveness') {
                 base  = `${Math.min(100, (hero.stats.stamina / (60 + hero.level * 2.5)) * 100).toFixed(1)}%`;
                 total = base;
               } else if (key === 'magicProficiency') {
@@ -994,6 +1093,11 @@ export default function HeroDetailPage() {
                 equip  = fmtPct(equipVal);
                 summon = fmtPct(ss.dexPosture ?? 0);
                 total  = `${Math.round(((bs.dexPosture ?? 0.20) + (ss.dexPosture ?? 0)) * 100)}%`;
+              } else if (key === 'dexMaxPosture') {
+                equip  = fmtPct(bs.dexMaxPosture ?? 0);
+                summon = fmtPct(ss.dexMaxPosture ?? 0);
+                const dmp = (bs.dexMaxPosture ?? 0) + (ss.dexMaxPosture ?? 0);
+                if (dmp > 0) total = `${Math.round(dmp * 100)}%`;
               } else if (key === 'critDamage') {
                 base   = '25%';
                 const equipVal = (bs.critDamage ?? 0.25) - 0.25;
@@ -1040,6 +1144,7 @@ export default function HeroDetailPage() {
               );
             })}
           </div>
+          </div>{/* end collapse wrapper */}
 
         </div>{/* end leftCol */}
 
@@ -1751,6 +1856,87 @@ const styles: Record<string, React.CSSProperties> = {
     minWidth: 0,
     paddingTop: 4,
   },
+  combatSection: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 10,
+    padding: '18px 20px',
+    backgroundColor: '#1a1a2e',
+    borderRadius: 10,
+    border: '1px solid #16213e',
+    marginTop: 16,
+  },
+  hdCombatHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  },
+  hdCombatTitle: {
+    color: '#4a4a7a',
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase' as const,
+    whiteSpace: 'nowrap' as const,
+    flexShrink: 0,
+  },
+  hdCombatLine: {
+    flex: 1,
+    height: 1,
+    background: 'linear-gradient(90deg, rgba(74,74,122,0.4), transparent)',
+  },
+  hdGroupLabel: {
+    color: '#3a3a5a',
+    fontSize: 9,
+    fontWeight: 800,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    marginTop: 4,
+  },
+  hdStatCardsRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 8,
+  },
+  hdStatCard: {
+    position: 'relative' as const,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: 6,
+    padding: '14px 8px 12px',
+    border: '1px solid rgba(255,255,255,0.05)',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  hdStatCardLabel: {
+    fontSize: 9,
+    fontWeight: 800,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase' as const,
+    lineHeight: 1,
+  },
+  hdStatCardValue: {
+    fontSize: 26,
+    fontWeight: 900,
+    lineHeight: 1,
+    fontVariantNumeric: 'tabular-nums',
+    fontFamily: 'Inter, sans-serif',
+    letterSpacing: '-0.02em',
+  },
+  hdWrBarBg: {
+    width: '70%',
+    height: 3,
+    backgroundColor: 'rgba(251,191,36,0.12)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  hdWrBarFill: {
+    height: '100%',
+    background: 'linear-gradient(90deg, #d97706, #fbbf24)',
+    borderRadius: 2,
+    boxShadow: '0 0 4px rgba(251,191,36,0.7)',
+  },
   battleHeader: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -1766,7 +1952,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'Inter, sans-serif',
   },
   battleTotalTag: {
-    color: '#4a4a6a',
+    color: '#8080a8',
     fontSize: 12,
     fontFamily: 'Inter, sans-serif',
   },

@@ -90,6 +90,23 @@ function isOffSlot(heroTier: string | null, slotTier: string | null): boolean {
   return heroTier !== slotTier;
 }
 
+function calcOffSlotPenalty(
+  heroTier: string | null,
+  slotTier: string | null,
+  stamina: number,
+  level: number,
+  offPositioning: number
+): number {
+  if (!heroTier || !slotTier || heroTier === slotTier) return 0;
+  const req = slotTier === 'COMMONER' ? 50 + level * 3
+            : slotTier === 'ELITE'    ? 100 + level * 3
+            :                           150 + level * 3;
+  const rawMax = slotTier === 'COMMONER' ? 0.80 : slotTier === 'ELITE' ? 0.65 : 0.50;
+  const effMax = rawMax * Math.max(0, 1 - offPositioning);
+  if (stamina >= req) return 0;
+  return effMax * (1 - stamina / req);
+}
+
 function SlotCard({ tc, children, isTarget, isOffTarget }: {
   tc: typeof TIER_CFG[TierKey];
   children: React.ReactNode;
@@ -227,6 +244,15 @@ export default function TeamSlotComponent({ slot, onUnequip, onHeroClick, onSumm
   const isSelectTarget = !!onEmptySlotClick && !slot.hero;
   const wouldBeOffSlot = isSelectTarget && isOffSlot(selectedHeroTier ?? null, slot.slotTier);
   const offSlot = slot.hero ? isOffSlot(slot.hero.tier, slot.slotTier) : false;
+  const offPenalty = offSlot
+    ? calcOffSlotPenalty(
+        slot.hero!.tier, slot.slotTier,
+        slot.hero!.totalStats.stamina ?? 0,
+        slot.hero!.level,
+        slot.hero!.totalStats.offPositioning ?? 0
+      )
+    : 0;
+  const offPenaltyPct = `−${Math.round(offPenalty * 100)}%`;
 
   return (
     <SlotCard tc={tc} isTarget={isSelectTarget && !wouldBeOffSlot} isOffTarget={isSelectTarget && wouldBeOffSlot}>
@@ -258,7 +284,7 @@ export default function TeamSlotComponent({ slot, onUnequip, onHeroClick, onSumm
                     <HeroPortrait imagePath={slot.hero.imagePath} name={slot.hero.name} size={50} tier={slot.hero.tier} />
                     {offSlot && (
                       <div style={styles.offSlotOverlay}>
-                        <span style={styles.offSlotText}>-20%</span>
+                        <span style={styles.offSlotText}>{offPenaltyPct}</span>
                       </div>
                     )}
                     <div style={styles.portraitXpBg}>
@@ -296,7 +322,7 @@ export default function TeamSlotComponent({ slot, onUnequip, onHeroClick, onSumm
                 <div style={{ alignSelf: 'flex-start' }}><CapBadge value={slot.hero.capacity} /></div>
                 {offSlot && (
                   <div style={{ color: '#f87171', fontSize: 9, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <span>⚠</span><span>Off-slot · -20% dmg</span>
+                    <span>⚠</span><span>Off-slot · {offPenaltyPct} stamina</span>
                   </div>
                 )}
                 {/* Gear chips */}

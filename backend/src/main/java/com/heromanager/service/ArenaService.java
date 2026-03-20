@@ -4,9 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.heromanager.dto.ArenaOpponentResponse;
 import com.heromanager.dto.BattleResultResponse;
 import com.heromanager.entity.BattleLog;
+import com.heromanager.entity.Hero;
+import com.heromanager.entity.HeroXpLog;
 import com.heromanager.entity.Player;
 import com.heromanager.entity.TeamSlot;
 import com.heromanager.repository.BattleLogRepository;
+import com.heromanager.repository.HeroXpLogRepository;
 import com.heromanager.repository.PlayerRepository;
 import com.heromanager.repository.TeamSlotRepository;
 import org.springframework.data.domain.Page;
@@ -25,6 +28,7 @@ public class ArenaService {
     private final PlayerRepository playerRepository;
     private final TeamSlotRepository teamSlotRepository;
     private final BattleLogRepository battleLogRepository;
+    private final HeroXpLogRepository heroXpLogRepository;
     private final BattleService battleService;
     private final EnergyService energyService;
     private final ObjectMapper objectMapper;
@@ -33,6 +37,7 @@ public class ArenaService {
     public ArenaService(PlayerRepository playerRepository,
                         TeamSlotRepository teamSlotRepository,
                         BattleLogRepository battleLogRepository,
+                        HeroXpLogRepository heroXpLogRepository,
                         BattleService battleService,
                         EnergyService energyService,
                         ObjectMapper objectMapper,
@@ -40,6 +45,7 @@ public class ArenaService {
         this.playerRepository = playerRepository;
         this.teamSlotRepository = teamSlotRepository;
         this.battleLogRepository = battleLogRepository;
+        this.heroXpLogRepository = heroXpLogRepository;
         this.battleService = battleService;
         this.energyService = energyService;
         this.objectMapper = objectMapper;
@@ -232,8 +238,13 @@ public class ArenaService {
 
         // Award gold
         challenger.setGold(challenger.getGold() + challengerGold);
-        playerRepository.save(challenger);
         defender.setGold(defender.getGold() + defenderGold);
+
+        // Update streaks
+        updateStreaks(challenger, challengerWon);
+        updateStreaks(defender, !challengerWon);
+
+        playerRepository.save(challenger);
         playerRepository.save(defender);
 
         // Save battle log
@@ -252,6 +263,34 @@ public class ArenaService {
             log.setBattleLog("{}");
         }
         battleLogRepository.save(log);
+
+        // Save per-hero XP log entries
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, Integer>> xpGained = (Map<String, Map<String, Integer>>) battleLog.getOrDefault("xpGained", Map.of());
+        Map<String, Integer> cXpMap = xpGained.getOrDefault("challenger", Map.of());
+        Map<String, Integer> dXpMap = xpGained.getOrDefault("defender",   Map.of());
+        for (BattleService.HeroSlot hs : challengerTeam.heroSlots()) {
+            Hero hero = hs.hero();
+            int xp = cXpMap.getOrDefault(hero.getTemplate().getDisplayName(), 0);
+            if (xp > 0) {
+                HeroXpLog entry = new HeroXpLog();
+                entry.setHeroId(hero.getId());
+                entry.setPlayerId(challengerId);
+                entry.setXpGained(xp);
+                heroXpLogRepository.save(entry);
+            }
+        }
+        for (BattleService.HeroSlot hs : defenderTeam.heroSlots()) {
+            Hero hero = hs.hero();
+            int xp = dXpMap.getOrDefault(hero.getTemplate().getDisplayName(), 0);
+            if (xp > 0) {
+                HeroXpLog entry = new HeroXpLog();
+                entry.setHeroId(hero.getId());
+                entry.setPlayerId(defenderId);
+                entry.setXpGained(xp);
+                heroXpLogRepository.save(entry);
+            }
+        }
 
         // Mark return challenge as used (mark the most recent one)
         if (isReturn) {
@@ -332,6 +371,22 @@ public class ArenaService {
 
         public String getErrorCode() {
             return errorCode;
+        }
+    }
+
+    private void updateStreaks(com.heromanager.entity.Player player, boolean won) {
+        if (won) {
+            player.setCurrentWinStreak(player.getCurrentWinStreak() + 1);
+            player.setCurrentLossStreak(0);
+            if (player.getCurrentWinStreak() > player.getBestWinStreak()) {
+                player.setBestWinStreak(player.getCurrentWinStreak());
+            }
+        } else {
+            player.setCurrentLossStreak(player.getCurrentLossStreak() + 1);
+            player.setCurrentWinStreak(0);
+            if (player.getCurrentLossStreak() > player.getBestLossStreak()) {
+                player.setBestLossStreak(player.getCurrentLossStreak());
+            }
         }
     }
 }

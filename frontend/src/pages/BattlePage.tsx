@@ -6,6 +6,28 @@ import BattleAnimator from '../components/Battle/BattleAnimator';
 import { enqueueLevelUps } from '../components/LevelUpNotification';
 import { usePlayer } from '../context/PlayerContext';
 
+const SPELL_STAT_LABELS: Record<string, string> = {
+  physicalAttack: 'PA', magicPower: 'MP', dexterity: 'DEX', element: 'Elem',
+  mana: 'Mana', stamina: 'Stam', attack: 'Atk%', magicProficiency: 'MagP%',
+  spellMastery: 'SpellM%', spellActivation: 'SpellAct%', dexProficiency: 'DexP%',
+  dexPosture: 'DexPost%', dexMaxPosture: 'DexMaxPost%', critChance: 'Crit%', critDamage: 'CritDmg%',
+  expBonus: 'EXP%', goldBonus: 'Gold%', itemDiscovery: 'ItemDisc%',
+  physicalImmunity: 'PhysImm%', magicImmunity: 'MagImm%', dexEvasiveness: 'DEXEvas%',
+};
+const SPELL_STAT_COLORS: Record<string, string> = {
+  physicalAttack: '#f97316', magicPower: '#a78bfa', dexterity: '#fbbf24',
+  element: '#60a5fa', mana: '#38bdf8', stamina: '#4ade80',
+  attack: '#f97316', magicProficiency: '#a78bfa', spellMastery: '#c084fc',
+  spellActivation: '#e879f9', dexProficiency: '#fbbf24', dexPosture: '#6ee7b7', dexMaxPosture: '#6ee7b7',
+  critChance: '#ef4444', critDamage: '#ef4444', expBonus: '#4ade80',
+  goldBonus: '#fbbf24', itemDiscovery: '#38bdf8', physicalImmunity: '#94a3b8',
+  magicImmunity: '#a78bfa', dexEvasiveness: '#fbbf24',
+};
+const TRIGGER_LABELS: Record<string, string> = {
+  ATTACK: 'ON ATTACK', ENTRANCE: 'ON ENTRANCE', OPPONENT_ENTRANCE: 'VS ENTRANCE',
+  BEFORE_TURN_X: 'BEFORE TURN', AFTER_TURN_X: 'AFTER TURN',
+};
+
 const ELEMENT_COLOR: Record<string, string> = {
   FIRE: '#f97316', WATER: '#38bdf8', WIND: '#86efac',
   EARTH: '#a16207', LIGHTNING: '#facc15',
@@ -34,6 +56,11 @@ export default function BattlePage() {
   const [loading, setLoading] = useState(!passedResult);
   const [fetchError, setFetchError] = useState(false);
   const levelUpsQueued = useRef(false);
+  const [spellTooltip, setSpellTooltip] = useState<{
+    name: string; manaCost?: number; trigger?: string; chance?: number;
+    bonuses?: Record<string, number>; lastsTurns?: number;
+    x: number; y: number;
+  } | null>(null);
 
   // Enqueue level up notifications once per battle result
   useEffect(() => {
@@ -63,6 +90,14 @@ export default function BattlePage() {
   if (loading) return <div style={{ color: '#a0a0b0' }}>Loading battle...</div>;
   if (fetchError) return <div style={{ color: '#e94560' }}>Failed to load battle. It may not exist or you don't have access.</div>;
   if (!battleLog) return <div style={{ color: '#e94560' }}>Battle not found.</div>;
+
+  const showSpellTip = (sp: import('../types').SpellEvent, e: React.MouseEvent) => {
+    setSpellTooltip({ name: sp.spellName, manaCost: sp.manaCost, trigger: sp.trigger, chance: sp.chance, bonuses: sp.bonuses, lastsTurns: sp.lastsTurns, x: e.clientX, y: e.clientY });
+  };
+  const moveSpellTip = (e: React.MouseEvent) => {
+    setSpellTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
+  };
+  const hideSpellTip = () => setSpellTooltip(null);
 
   return (
     <div>
@@ -184,11 +219,16 @@ export default function BattlePage() {
                 {round.challengerSpells?.map((sp, i) => {
                   const fired = sp.fired !== false;
                   const saved = fired && sp.originalManaCost != null ? sp.originalManaCost - sp.manaCost : 0;
+                  const spColor = sp.absorbed ? '#6b7280' : sp.copied ? '#f87171' : sp.fromLearned ? '#a78bfa' : sp.justLearned ? '#c084fc' : undefined;
+                  const spIcon = sp.absorbed ? '⊘' : sp.copied ? '✦' : sp.fromLearned ? '◈' : sp.justLearned ? '★' : fired ? '✦' : '✗';
                   return (
-                    <span key={i} style={{ ...styles.spellTag, opacity: fired ? 1 : 0.45, borderColor: fired ? undefined : 'rgba(255,255,255,0.1)' }}>
-                      {fired ? '✦' : '✗'} {sp.heroName}: <strong>{sp.spellName}</strong>
+                    <span key={i} onMouseEnter={(e) => showSpellTip(sp, e)} onMouseMove={moveSpellTip} onMouseLeave={hideSpellTip} style={{ ...styles.spellTag, opacity: fired || sp.absorbed || sp.justLearned ? 1 : 0.45, borderColor: spColor ? `${spColor}55` : fired ? undefined : 'rgba(255,255,255,0.1)' }}>
+                      <span style={spColor ? { color: spColor } : undefined}>{spIcon}</span>{' '}{sp.heroName}: <strong style={spColor ? { color: spColor } : undefined}>{sp.spellName}</strong>
+                      {sp.justLearned && <span style={{ color: '#c084fc', marginLeft: 4, fontSize: 10, fontWeight: 800 }}>LEARNED</span>}
+                      {sp.absorbed && <span style={{ color: '#6b7280', marginLeft: 4, fontSize: 10 }}>blocked</span>}
+                      {sp.absorbed && sp.manaCost != null && sp.manaCost > 0 && <span style={{ color: '#34d399', marginLeft: 4, fontSize: 10 }}>+{sp.manaCost} MP</span>}
                       {sp.chance != null && <span style={{ color: '#a0a0b0', marginLeft: 4, fontSize: 10 }}>{sp.chance}%</span>}
-                      {fired && <span style={styles.spellTagCost}> −{sp.manaCost} MP</span>}
+                      {fired && !sp.absorbed && !sp.justLearned && <span style={styles.spellTagCost}> −{sp.manaCost} MP</span>}
                       {saved > 0.05 && <span style={{ color: '#4ade80', marginLeft: 4, fontSize: 10 }}>(saved {saved.toFixed(1)})</span>}
                     </span>
                   );
@@ -196,15 +236,29 @@ export default function BattlePage() {
                 {round.defenderSpells?.map((sp, i) => {
                   const fired = sp.fired !== false;
                   const saved = fired && sp.originalManaCost != null ? sp.originalManaCost - sp.manaCost : 0;
+                  const spColor = sp.absorbed ? '#6b7280' : sp.copied ? '#f87171' : sp.fromLearned ? '#a78bfa' : sp.justLearned ? '#c084fc' : undefined;
+                  const spIcon = sp.absorbed ? '⊘' : sp.copied ? '✦' : sp.fromLearned ? '◈' : sp.justLearned ? '★' : fired ? '✦' : '✗';
                   return (
-                    <span key={`d${i}`} style={{ ...styles.spellTag, borderColor: fired ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.1)', opacity: fired ? 1 : 0.45 }}>
-                      {fired ? '✦' : '✗'} {sp.heroName}: <strong>{sp.spellName}</strong>
+                    <span key={`d${i}`} onMouseEnter={(e) => showSpellTip(sp, e)} onMouseMove={moveSpellTip} onMouseLeave={hideSpellTip} style={{ ...styles.spellTag, borderColor: spColor ? `${spColor}55` : fired ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.1)', opacity: fired || sp.absorbed ? 1 : 0.45 }}>
+                      <span style={spColor ? { color: spColor } : undefined}>{spIcon}</span>{' '}{sp.heroName}: <strong style={spColor ? { color: spColor } : undefined}>{sp.spellName}</strong>
+                      {sp.justLearned && <span style={{ color: '#c084fc', marginLeft: 4, fontSize: 10, fontWeight: 800 }}>LEARNED</span>}
+                      {sp.absorbed && <span style={{ color: '#6b7280', marginLeft: 4, fontSize: 10 }}>blocked</span>}
+                      {sp.absorbed && sp.manaCost != null && sp.manaCost > 0 && <span style={{ color: '#34d399', marginLeft: 4, fontSize: 10 }}>+{sp.manaCost} MP</span>}
                       {sp.chance != null && <span style={{ color: '#a0a0b0', marginLeft: 4, fontSize: 10 }}>{sp.chance}%</span>}
-                      {fired && <span style={styles.spellTagCost}> −{sp.manaCost} MP</span>}
+                      {fired && !sp.absorbed && !sp.justLearned && <span style={styles.spellTagCost}> −{sp.manaCost} MP</span>}
                       {saved > 0.05 && <span style={{ color: '#4ade80', marginLeft: 4, fontSize: 10 }}>(saved {saved.toFixed(1)})</span>}
                     </span>
                   );
                 })}
+              </div>
+            )}
+            {/* Rot events compact */}
+            {(round.attackerAppliedRot || round.defenderAppliedRot || round.attackerRotActive || round.defenderRotActive) && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 2 }}>
+                {round.attackerAppliedRot && <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.35)', borderRadius: 4, padding: '1px 6px' }}>☠ Rot applied to defender</span>}
+                {round.defenderAppliedRot && <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.35)', borderRadius: 4, padding: '1px 6px' }}>☠ Rot applied to attacker</span>}
+                {round.attackerRotActive && round.attackerRotReduction != null && round.attackerRotReduction > 0 && <span style={{ fontSize: 11, color: '#4ade80', background: 'rgba(74,222,128,0.07)', borderRadius: 4, padding: '1px 6px' }}>☠ Attacker rotting −{round.attackerRotReduction.toFixed(1)}% of imm ({round.attackerRotRemaining}/{round.attackerRotTotal})</span>}
+                {round.defenderRotActive && round.defenderRotReduction != null && round.defenderRotReduction > 0 && <span style={{ fontSize: 11, color: '#4ade80', background: 'rgba(74,222,128,0.07)', borderRadius: 4, padding: '1px 6px' }}>☠ Defender rotting −{round.defenderRotReduction.toFixed(1)}% of imm ({round.defenderRotRemaining}/{round.defenderRotTotal})</span>}
               </div>
             )}
           </div>
@@ -321,12 +375,13 @@ export default function BattlePage() {
                   </div>
                   {/* Stats reference */}
                   <div style={styles.statsRef}>
-                    <span>PA <strong>{(round.attackerStatPa ?? 0).toFixed(1)}</strong></span>
-                    <span>MP <strong>{(round.attackerStatMp ?? 0).toFixed(1)}</strong></span>
-                    <span>Dex <strong>{(round.attackerStatDex ?? 0).toFixed(1)}</strong></span>
-                    <span>Elem <strong>{(round.attackerStatElem ?? 0).toFixed(1)}</strong></span>
-                    <span>Mana <strong>{(round.attackerStatMana ?? 0).toFixed(1)}</strong></span>
-                    <span>Stam <strong>{(round.attackerStatStam ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#f87171' }}>PA <strong>{(round.attackerStatPa ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#60a5fa' }}>MP <strong>{(round.attackerStatMp ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#4ade80' }}>Dex <strong>{(round.attackerStatDex ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#a78bfa' }}>Elem <strong>{(round.attackerStatElem ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#38bdf8' }}>Mana <strong>{(round.attackerStatMana ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#fbbf24' }}>Stam <strong>{(round.attackerStatStam ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#f97316' }}>Stam Eff. <strong>{((round.attackerStaminaModifier ?? 1) * 100).toFixed(0)}%</strong></span>
                     {round.attackerStatAttack != null && round.attackerStatAttack > 0 && (
                       <span style={{ color: '#f97316' }}>Attack <strong>+{round.attackerStatAttack.toFixed(1)}</strong></span>
                     )}
@@ -335,11 +390,52 @@ export default function BattlePage() {
                     <span style={{ color: '#60a5fa' }}>MagP <strong>{((round.attackerMagicProfChance ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#34d399' }}>Dex Prof <strong>{((round.attackerDexProficiency ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#6ee7b7' }}>Dex Posture <strong>{((round.attackerDexPosture ?? 0) * 100).toFixed(1)}%</strong></span>
+                    {round.attackerDexMaxPosture != null && round.attackerDexMaxPosture > 0 && (
+                      <span style={{ color: '#6ee7b7' }}>Dex Max Posture <strong>+{(round.attackerDexMaxPosture * 100).toFixed(1)}%</strong></span>
+                    )}
+                    {round.attackerOffPositioning != null && round.attackerOffPositioning > 0 && (
+                      <span style={{ color: '#fbbf24' }}>Off-Pos. <strong>{(round.attackerOffPositioning * 100).toFixed(0)}%</strong>
+                        {round.attackerOffSlotPenalty != null && <span style={{ color: '#9ca3af', fontSize: 10 }}> (penalty cap {(round.attackerOffSlotRawMax! * 100).toFixed(0)}%→{(round.attackerOffSlotEffMax! * 100).toFixed(0)}%)</span>}
+                      </span>
+                    )}
+                    {round.attackerOffSlotPenalty != null && round.attackerOffSlotPenalty > 0 && round.attackerOffPositioning == null && (
+                      <span style={{ color: '#f87171' }}>Off-slot <strong>−{(round.attackerOffSlotPenalty * 100).toFixed(1)}%</strong> stam</span>
+                    )}
                     {round.attackerSpellMastery != null && round.attackerSpellMastery > 0 && (
                       <span style={{ color: '#c084fc' }}>Spell Mastery <strong>+{(round.attackerSpellMastery * 100).toFixed(0)}%</strong></span>
                     )}
                     {round.attackerStatSpellActivation != null && round.attackerStatSpellActivation > 0 && (
                       <span style={{ color: '#e879f9' }}>Spell Act. <strong>+{(round.attackerStatSpellActivation * 100).toFixed(1)}%</strong></span>
+                    )}
+                    {round.attackerPhysImmunity  != null && round.attackerPhysImmunity  > 0 && <span style={{ color: '#60a5fa' }}>🛡 Phys Imm. <strong>{round.attackerPhysImmunity.toFixed(1)}%</strong></span>}
+                    {round.attackerMagicImmunity != null && round.attackerMagicImmunity > 0 && <span style={{ color: '#a78bfa' }}>🛡 Magic Imm. <strong>{round.attackerMagicImmunity.toFixed(1)}%</strong></span>}
+                    {round.attackerDexEvasiveness!= null && round.attackerDexEvasiveness > 0 && <span style={{ color: '#34d399' }}>🛡 Dex Evas. <strong>{round.attackerDexEvasiveness.toFixed(1)}%</strong></span>}
+                    {round.attackerSpellLearn  != null && round.attackerSpellLearn  > 0 && <span style={{ color: '#a78bfa' }}>★ Spell Learn <strong>{round.attackerSpellLearn.toFixed(1)}%</strong></span>}
+                    {round.attackerSpellCopy   != null && round.attackerSpellCopy   > 0 && <span style={{ color: '#f87171' }}>✦ Spell Copy <strong>{round.attackerSpellCopy.toFixed(1)}%</strong></span>}
+                    {round.attackerSpellAbsorb != null && round.attackerSpellAbsorb > 0 && <span style={{ color: '#34d399' }}>⊘ Spell Absorb <strong>{round.attackerSpellAbsorb.toFixed(1)}%</strong></span>}
+                    {round.attackerTenacity != null && round.attackerTenacity > 0 && (
+                      <span style={{ color: '#06b6d4' }}>
+                        ⚡ Tenacity <strong>{round.attackerTenacity}</strong>
+                        {round.attackerCapacityRaw != null && (
+                          <span style={{ color: '#9ca3af', fontSize: 10 }}> (cap {(round.attackerCapacityRaw * 100).toFixed(0)}%→{(((round.attackerCapacityBeforeFR ?? round.attackerStaminaModifier) ?? 1) * 100).toFixed(0)}%)</span>
+                        )}
+                      </span>
+                    )}
+                    {round.attackerFatigueRec != null && round.attackerFatigueRec > 0 && (
+                      <span style={{ color: '#34d399' }}>
+                        ✦ Fat. Rec. <strong>+{round.attackerFatigueRec.toFixed(1)}%</strong>
+                        {round.attackerCapacityBeforeFR != null && (
+                          <span style={{ color: '#9ca3af', fontSize: 10 }}> (cap {(round.attackerCapacityBeforeFR * 100).toFixed(0)}%→{((round.attackerStaminaModifier ?? 1) * 100).toFixed(0)}%)</span>
+                        )}
+                      </span>
+                    )}
+                    {round.attackerCleanseChance != null && round.attackerCleanseChance > 0 && <span style={{ color: '#a5f3fc' }}>✨ Cleanse <strong>{round.attackerCleanseChance.toFixed(1)}%</strong></span>}
+                    {round.attackerCleansed && <span style={{ color: '#a5f3fc', background: 'rgba(165,243,252,0.12)', border: '1px solid rgba(165,243,252,0.4)', borderRadius: 4, padding: '1px 6px', fontWeight: 700 }}>✨ CLEANSED</span>}
+                    {round.attackerRotChance != null && round.attackerRotChance > 0 && <span style={{ color: '#4ade80' }}>☠ Rot <strong>{round.attackerRotChance.toFixed(1)}%</strong></span>}
+                    {round.attackerRotActive && round.attackerRotReduction != null && round.attackerRotReduction > 0 && (
+                      <span style={{ color: '#4ade80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.35)', borderRadius: 4, padding: '1px 5px' }}>
+                        ☠ Rotting −<strong>{round.attackerRotReduction.toFixed(1)}%</strong> of imm <span style={{ color: '#9ca3af', fontSize: 10 }}>({round.attackerRotRemaining}/{round.attackerRotTotal})</span>
+                      </span>
                     )}
                   </div>
                   {/* Spell attempts */}
@@ -347,14 +443,24 @@ export default function BattlePage() {
                     <div style={{ marginBottom: 6 }}>
                       {round.challengerSpells.map((sp, i) => {
                         const fired = sp.fired !== false;
+                        const spColor = sp.absorbed ? '#6b7280' : sp.copied ? '#f87171' : sp.fromLearned ? '#a78bfa' : sp.justLearned ? '#c084fc' : fired ? '#e879f9' : '#a0a0b0';
+                        const spIcon = sp.absorbed ? '⊘' : sp.copied ? '✦' : sp.fromLearned ? '◈' : sp.justLearned ? '★' : fired ? '✦' : '✗';
                         return (
-                          <div key={i} style={{ fontSize: 10, opacity: fired ? 1 : 0.5, color: fired ? '#e879f9' : '#a0a0b0', marginBottom: 1 }}>
-                            {fired ? '✦' : '✗'} <strong>{sp.spellName}</strong>
+                          <div key={i} onMouseEnter={(e) => showSpellTip(sp, e)} onMouseMove={moveSpellTip} onMouseLeave={hideSpellTip} style={{ fontSize: 10, opacity: fired || sp.absorbed || sp.justLearned ? 1 : 0.5, color: spColor, marginBottom: 1 }}>
+                            {spIcon} <strong>{sp.spellName}</strong>
+                            {sp.justLearned && <span style={{ color: '#c084fc', marginLeft: 4, fontWeight: 800 }}>LEARNED</span>}
+                            {sp.absorbed && <span style={{ color: '#6b7280', marginLeft: 4 }}>blocked</span>}
                             {sp.chance != null && <span style={{ color: '#a0a0b0' }}> {sp.chance}%</span>}
-                            {fired && sp.manaCost != null && <span style={{ color: '#60a5fa' }}> −{sp.manaCost} MP</span>}
+                            {fired && !sp.absorbed && !sp.justLearned && sp.manaCost != null && <span style={{ color: '#60a5fa' }}> −{sp.manaCost} MP</span>}
                           </div>
                         );
                       })}
+                      {/* Mana gained by challenger from absorbing defender's spells */}
+                      {round.defenderSpells?.filter(sp => sp.absorbed && sp.manaCost != null && sp.manaCost > 0).map((sp, i) => (
+                        <div key={`ca${i}`} style={{ fontSize: 10, color: '#34d399', marginBottom: 1 }}>
+                          ⊕ absorbed {sp.spellName} <span style={{ color: '#34d399', fontWeight: 700 }}>+{sp.manaCost} MP</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                   {/* Calculation */}
@@ -362,6 +468,12 @@ export default function BattlePage() {
                     <span style={styles.mathKey}>PA ×0.5</span>
                     <span style={styles.mathVal}>{(round.attackerPaContrib ?? 0).toFixed(2)}</span>
                   </div>
+                  {round.defenderPhysDenied != null && round.defenderPhysDenied > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 12 }}>
+                      <span style={{ ...styles.mathKey, color: '#60a5fa', fontSize: 9 }}>🛡 {round.defenderPhysImmunity?.toFixed(1)}% Phys Imm. blocked</span>
+                      <span style={{ ...styles.mathVal, color: '#60a5fa', fontSize: 10 }}>−{round.defenderPhysDenied.toFixed(2)}</span>
+                    </div>
+                  )}
                   {round.attackerCrit && (
                     <div style={{ ...styles.mathRow, paddingLeft: 12 }}>
                       <span style={{ ...styles.mathKey, color: '#fb923c', fontSize: 10 }}>↳ Crit PA +{((round.attackerCritDamagePct ?? 0) * 100).toFixed(0)}%</span>
@@ -376,6 +488,12 @@ export default function BattlePage() {
                     <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
                       <span style={{ ...styles.mathKey, color: '#60a5fa', fontSize: 9 }}>↺ rolled {(round.attackerMpFirstRoll).toFixed(3)} → {(round.attackerMpRoll ?? 0).toFixed(3)}</span>
                       <span />
+                    </div>
+                  )}
+                  {round.defenderMagicDenied != null && round.defenderMagicDenied > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 12 }}>
+                      <span style={{ ...styles.mathKey, color: '#a78bfa', fontSize: 9 }}>🛡 {round.defenderMagicImmunity?.toFixed(1)}% Magic Imm. blocked</span>
+                      <span style={{ ...styles.mathVal, color: '#a78bfa', fontSize: 10 }}>−{round.defenderMagicDenied.toFixed(2)}</span>
                     </div>
                   )}
                   <div style={styles.mathRow}>
@@ -394,10 +512,40 @@ export default function BattlePage() {
                       <span />
                     </div>
                   )}
+                  {round.attackerDexMaxPostureRecov != null && round.attackerDexMaxPostureRecov > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#6ee7b7', fontSize: 9 }}>↺ max posture +{round.attackerDexMaxPostureRecov.toFixed(1)}</span>
+                      <span />
+                    </div>
+                  )}
                   {round.attackerDexRecovered === 0 && round.attackerDexUsed != null && (
                     <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
                       <span style={{ ...styles.mathKey, color: '#a0a0b0', fontSize: 9 }}>rem. {(round.attackerDexRemaining ?? 0).toFixed(1)}</span>
                       <span />
+                    </div>
+                  )}
+                  {round.defenderDexDenied != null && round.defenderDexDenied > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 12 }}>
+                      <span style={{ ...styles.mathKey, color: '#34d399', fontSize: 9 }}>🛡 {round.defenderDexEvasiveness?.toFixed(1)}% Dex Evas. blocked</span>
+                      <span style={{ ...styles.mathVal, color: '#34d399', fontSize: 10 }}>−{round.defenderDexDenied.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {round.defenderRotActive && round.defenderRotReduction != null && round.defenderRotReduction > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 4, marginTop: 2 }}>
+                      <span style={{ ...styles.mathKey, color: '#4ade80', fontSize: 9 }}>☠ Defender rot −{round.defenderRotReduction.toFixed(1)}% of imm ({round.defenderRotRemaining}/{round.defenderRotTotal})</span>
+                      <span />
+                    </div>
+                  )}
+                  {round.attackerAppliedRot && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 4 }}>
+                      <span style={{ ...styles.mathKey, color: '#4ade80', fontSize: 9 }}>☠ Rot landed on defender</span>
+                      <span />
+                    </div>
+                  )}
+                  {round.challengerManaRegen != null && round.challengerManaRegen > 0 && (
+                    <div style={{ ...styles.mathRow, marginTop: 2 }}>
+                      <span style={{ ...styles.mathKey, color: '#38bdf8', fontSize: 10 }}>✦ Mana Recharge {round.challengerManaRechargeRate?.toFixed(1)}%</span>
+                      <span style={{ ...styles.mathVal, color: '#38bdf8', fontWeight: 700 }}>+{round.challengerManaRegen.toFixed(1)}</span>
                     </div>
                   )}
                   <div style={{ ...styles.mathRow, borderTop: '1px solid #16213e', marginTop: 2, paddingTop: 2 }}>
@@ -408,6 +556,17 @@ export default function BattlePage() {
                     <div style={styles.mathRow}>
                       <span style={styles.mathKey}>Stamina −{((1 - (round.attackerStaminaModifier ?? 1)) * 100).toFixed(0)}%</span>
                       <span style={{ ...styles.mathVal, color: '#fbbf24' }}>−{round.attackerStaminaReduction.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {round.attackerOffSlotPenalty != null && round.attackerOffSlotPenalty > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#f87171', fontSize: 9 }}>
+                        ↳ off-slot −{(round.attackerOffSlotPenalty * 100).toFixed(1)}% stam
+                        {round.attackerOffPositioning != null && round.attackerOffPositioning > 0 && (
+                          <span style={{ color: '#fbbf24' }}> · Off-Pos. {(round.attackerOffPositioning * 100).toFixed(0)}% mitigated cap to {(round.attackerOffSlotEffMax! * 100).toFixed(0)}%</span>
+                        )}
+                      </span>
+                      <span />
                     </div>
                   )}
                   {round.attackerElementBonus != null && round.attackerElementBonus > 0 && (
@@ -444,12 +603,13 @@ export default function BattlePage() {
                   </div>
                   {/* Stats reference */}
                   <div style={styles.statsRef}>
-                    <span>PA <strong>{(round.defenderStatPa ?? 0).toFixed(1)}</strong></span>
-                    <span>MP <strong>{(round.defenderStatMp ?? 0).toFixed(1)}</strong></span>
-                    <span>Dex <strong>{(round.defenderStatDex ?? 0).toFixed(1)}</strong></span>
-                    <span>Elem <strong>{(round.defenderStatElem ?? 0).toFixed(1)}</strong></span>
-                    <span>Mana <strong>{(round.defenderStatMana ?? 0).toFixed(1)}</strong></span>
-                    <span>Stam <strong>{(round.defenderStatStam ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#f87171' }}>PA <strong>{(round.defenderStatPa ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#60a5fa' }}>MP <strong>{(round.defenderStatMp ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#4ade80' }}>Dex <strong>{(round.defenderStatDex ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#a78bfa' }}>Elem <strong>{(round.defenderStatElem ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#38bdf8' }}>Mana <strong>{(round.defenderStatMana ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#fbbf24' }}>Stam <strong>{(round.defenderStatStam ?? 0).toFixed(1)}</strong></span>
+                    <span style={{ color: '#f97316' }}>Stam Eff. <strong>{((round.defenderStaminaModifier ?? 1) * 100).toFixed(0)}%</strong></span>
                     {round.defenderStatAttack != null && round.defenderStatAttack > 0 && (
                       <span style={{ color: '#f97316' }}>Attack <strong>+{round.defenderStatAttack.toFixed(1)}</strong></span>
                     )}
@@ -458,11 +618,52 @@ export default function BattlePage() {
                     <span style={{ color: '#60a5fa' }}>MagP <strong>{((round.defenderMagicProfChance ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#34d399' }}>Dex Prof <strong>{((round.defenderDexProficiency ?? 0) * 100).toFixed(1)}%</strong></span>
                     <span style={{ color: '#6ee7b7' }}>Dex Posture <strong>{((round.defenderDexPosture ?? 0) * 100).toFixed(1)}%</strong></span>
+                    {round.defenderDexMaxPosture != null && round.defenderDexMaxPosture > 0 && (
+                      <span style={{ color: '#6ee7b7' }}>Dex Max Posture <strong>+{(round.defenderDexMaxPosture * 100).toFixed(1)}%</strong></span>
+                    )}
+                    {round.defenderOffPositioning != null && round.defenderOffPositioning > 0 && (
+                      <span style={{ color: '#fbbf24' }}>Off-Pos. <strong>{(round.defenderOffPositioning * 100).toFixed(0)}%</strong>
+                        {round.defenderOffSlotPenalty != null && <span style={{ color: '#9ca3af', fontSize: 10 }}> (penalty cap {(round.defenderOffSlotRawMax! * 100).toFixed(0)}%→{(round.defenderOffSlotEffMax! * 100).toFixed(0)}%)</span>}
+                      </span>
+                    )}
+                    {round.defenderOffSlotPenalty != null && round.defenderOffSlotPenalty > 0 && round.defenderOffPositioning == null && (
+                      <span style={{ color: '#f87171' }}>Off-slot <strong>−{(round.defenderOffSlotPenalty * 100).toFixed(1)}%</strong> stam</span>
+                    )}
                     {round.defenderSpellMastery != null && round.defenderSpellMastery > 0 && (
                       <span style={{ color: '#c084fc' }}>Spell Mastery <strong>+{(round.defenderSpellMastery * 100).toFixed(0)}%</strong></span>
                     )}
                     {round.defenderStatSpellActivation != null && round.defenderStatSpellActivation > 0 && (
                       <span style={{ color: '#e879f9' }}>Spell Act. <strong>+{(round.defenderStatSpellActivation * 100).toFixed(1)}%</strong></span>
+                    )}
+                    {round.defenderPhysImmunity  != null && round.defenderPhysImmunity  > 0 && <span style={{ color: '#60a5fa' }}>🛡 Phys Imm. <strong>{round.defenderPhysImmunity.toFixed(1)}%</strong></span>}
+                    {round.defenderMagicImmunity != null && round.defenderMagicImmunity > 0 && <span style={{ color: '#a78bfa' }}>🛡 Magic Imm. <strong>{round.defenderMagicImmunity.toFixed(1)}%</strong></span>}
+                    {round.defenderDexEvasiveness!= null && round.defenderDexEvasiveness > 0 && <span style={{ color: '#34d399' }}>🛡 Dex Evas. <strong>{round.defenderDexEvasiveness.toFixed(1)}%</strong></span>}
+                    {round.defenderSpellLearn  != null && round.defenderSpellLearn  > 0 && <span style={{ color: '#a78bfa' }}>★ Spell Learn <strong>{round.defenderSpellLearn.toFixed(1)}%</strong></span>}
+                    {round.defenderSpellCopy   != null && round.defenderSpellCopy   > 0 && <span style={{ color: '#f87171' }}>✦ Spell Copy <strong>{round.defenderSpellCopy.toFixed(1)}%</strong></span>}
+                    {round.defenderSpellAbsorb != null && round.defenderSpellAbsorb > 0 && <span style={{ color: '#34d399' }}>⊘ Spell Absorb <strong>{round.defenderSpellAbsorb.toFixed(1)}%</strong></span>}
+                    {round.defenderTenacity != null && round.defenderTenacity > 0 && (
+                      <span style={{ color: '#06b6d4' }}>
+                        ⚡ Tenacity <strong>{round.defenderTenacity}</strong>
+                        {round.defenderCapacityRaw != null && (
+                          <span style={{ color: '#9ca3af', fontSize: 10 }}> (cap {(round.defenderCapacityRaw * 100).toFixed(0)}%→{(((round.defenderCapacityBeforeFR ?? round.defenderStaminaModifier) ?? 1) * 100).toFixed(0)}%)</span>
+                        )}
+                      </span>
+                    )}
+                    {round.defenderFatigueRec != null && round.defenderFatigueRec > 0 && (
+                      <span style={{ color: '#34d399' }}>
+                        ✦ Fat. Rec. <strong>+{round.defenderFatigueRec.toFixed(1)}%</strong>
+                        {round.defenderCapacityBeforeFR != null && (
+                          <span style={{ color: '#9ca3af', fontSize: 10 }}> (cap {(round.defenderCapacityBeforeFR * 100).toFixed(0)}%→{((round.defenderStaminaModifier ?? 1) * 100).toFixed(0)}%)</span>
+                        )}
+                      </span>
+                    )}
+                    {round.defenderCleanseChance != null && round.defenderCleanseChance > 0 && <span style={{ color: '#a5f3fc' }}>✨ Cleanse <strong>{round.defenderCleanseChance.toFixed(1)}%</strong></span>}
+                    {round.defenderCleansed && <span style={{ color: '#a5f3fc', background: 'rgba(165,243,252,0.12)', border: '1px solid rgba(165,243,252,0.4)', borderRadius: 4, padding: '1px 6px', fontWeight: 700 }}>✨ CLEANSED</span>}
+                    {round.defenderRotChance != null && round.defenderRotChance > 0 && <span style={{ color: '#4ade80' }}>☠ Rot <strong>{round.defenderRotChance.toFixed(1)}%</strong></span>}
+                    {round.defenderRotActive && round.defenderRotReduction != null && round.defenderRotReduction > 0 && (
+                      <span style={{ color: '#4ade80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.35)', borderRadius: 4, padding: '1px 5px' }}>
+                        ☠ Rotting −<strong>{round.defenderRotReduction.toFixed(1)}%</strong> of imm <span style={{ color: '#9ca3af', fontSize: 10 }}>({round.defenderRotRemaining}/{round.defenderRotTotal})</span>
+                      </span>
                     )}
                   </div>
                   {/* Spell attempts */}
@@ -470,14 +671,24 @@ export default function BattlePage() {
                     <div style={{ marginBottom: 6 }}>
                       {round.defenderSpells.map((sp, i) => {
                         const fired = sp.fired !== false;
+                        const spColor = sp.absorbed ? '#6b7280' : sp.copied ? '#f87171' : sp.fromLearned ? '#a78bfa' : sp.justLearned ? '#c084fc' : fired ? '#e879f9' : '#a0a0b0';
+                        const spIcon = sp.absorbed ? '⊘' : sp.copied ? '✦' : sp.fromLearned ? '◈' : sp.justLearned ? '★' : fired ? '✦' : '✗';
                         return (
-                          <div key={i} style={{ fontSize: 10, opacity: fired ? 1 : 0.5, color: fired ? '#e879f9' : '#a0a0b0', marginBottom: 1 }}>
-                            {fired ? '✦' : '✗'} <strong>{sp.spellName}</strong>
+                          <div key={i} onMouseEnter={(e) => showSpellTip(sp, e)} onMouseMove={moveSpellTip} onMouseLeave={hideSpellTip} style={{ fontSize: 10, opacity: fired || sp.absorbed || sp.justLearned ? 1 : 0.5, color: spColor, marginBottom: 1 }}>
+                            {spIcon} <strong>{sp.spellName}</strong>
+                            {sp.justLearned && <span style={{ color: '#c084fc', marginLeft: 4, fontWeight: 800 }}>LEARNED</span>}
+                            {sp.absorbed && <span style={{ color: '#6b7280', marginLeft: 4 }}>blocked</span>}
                             {sp.chance != null && <span style={{ color: '#a0a0b0' }}> {sp.chance}%</span>}
-                            {fired && sp.manaCost != null && <span style={{ color: '#60a5fa' }}> −{sp.manaCost} MP</span>}
+                            {fired && !sp.absorbed && !sp.justLearned && sp.manaCost != null && <span style={{ color: '#60a5fa' }}> −{sp.manaCost} MP</span>}
                           </div>
                         );
                       })}
+                      {/* Mana gained by defender from absorbing challenger's spells */}
+                      {round.challengerSpells?.filter(sp => sp.absorbed && sp.manaCost != null && sp.manaCost > 0).map((sp, i) => (
+                        <div key={`da${i}`} style={{ fontSize: 10, color: '#34d399', marginBottom: 1 }}>
+                          ⊕ absorbed {sp.spellName} <span style={{ color: '#34d399', fontWeight: 700 }}>+{sp.manaCost} MP</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                   {/* Calculation */}
@@ -485,6 +696,12 @@ export default function BattlePage() {
                     <span style={styles.mathKey}>PA ×0.5</span>
                     <span style={styles.mathVal}>{(round.defenderPaContrib ?? 0).toFixed(2)}</span>
                   </div>
+                  {round.attackerPhysDenied != null && round.attackerPhysDenied > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 12 }}>
+                      <span style={{ ...styles.mathKey, color: '#60a5fa', fontSize: 9 }}>🛡 {round.attackerPhysImmunity?.toFixed(1)}% Phys Imm. blocked</span>
+                      <span style={{ ...styles.mathVal, color: '#60a5fa', fontSize: 10 }}>−{round.attackerPhysDenied.toFixed(2)}</span>
+                    </div>
+                  )}
                   {round.defenderCrit && (
                     <div style={{ ...styles.mathRow, paddingLeft: 12 }}>
                       <span style={{ ...styles.mathKey, color: '#fb923c', fontSize: 10 }}>↳ Crit PA +{((round.defenderCritDamagePct ?? 0) * 100).toFixed(0)}%</span>
@@ -499,6 +716,12 @@ export default function BattlePage() {
                     <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
                       <span style={{ ...styles.mathKey, color: '#60a5fa', fontSize: 9 }}>↺ rolled {(round.defenderMpFirstRoll).toFixed(3)} → {(round.defenderMpRoll ?? 0).toFixed(3)}</span>
                       <span />
+                    </div>
+                  )}
+                  {round.attackerMagicDenied != null && round.attackerMagicDenied > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 12 }}>
+                      <span style={{ ...styles.mathKey, color: '#a78bfa', fontSize: 9 }}>🛡 {round.attackerMagicImmunity?.toFixed(1)}% Magic Imm. blocked</span>
+                      <span style={{ ...styles.mathVal, color: '#a78bfa', fontSize: 10 }}>−{round.attackerMagicDenied.toFixed(2)}</span>
                     </div>
                   )}
                   <div style={styles.mathRow}>
@@ -517,10 +740,40 @@ export default function BattlePage() {
                       <span />
                     </div>
                   )}
+                  {round.defenderDexMaxPostureRecov != null && round.defenderDexMaxPostureRecov > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#6ee7b7', fontSize: 9 }}>↺ max posture +{round.defenderDexMaxPostureRecov.toFixed(1)}</span>
+                      <span />
+                    </div>
+                  )}
                   {round.defenderDexRecovered === 0 && round.defenderDexUsed != null && (
                     <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
                       <span style={{ ...styles.mathKey, color: '#a0a0b0', fontSize: 9 }}>rem. {(round.defenderDexRemaining ?? 0).toFixed(1)}</span>
                       <span />
+                    </div>
+                  )}
+                  {round.attackerDexDenied != null && round.attackerDexDenied > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 12 }}>
+                      <span style={{ ...styles.mathKey, color: '#34d399', fontSize: 9 }}>🛡 {round.attackerDexEvasiveness?.toFixed(1)}% Dex Evas. blocked</span>
+                      <span style={{ ...styles.mathVal, color: '#34d399', fontSize: 10 }}>−{round.attackerDexDenied.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {round.attackerRotActive && round.attackerRotReduction != null && round.attackerRotReduction > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 4, marginTop: 2 }}>
+                      <span style={{ ...styles.mathKey, color: '#4ade80', fontSize: 9 }}>☠ Attacker rot −{round.attackerRotReduction.toFixed(1)}% of imm ({round.attackerRotRemaining}/{round.attackerRotTotal})</span>
+                      <span />
+                    </div>
+                  )}
+                  {round.defenderAppliedRot && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 4 }}>
+                      <span style={{ ...styles.mathKey, color: '#4ade80', fontSize: 9 }}>☠ Rot landed on attacker</span>
+                      <span />
+                    </div>
+                  )}
+                  {round.defenderManaRegen != null && round.defenderManaRegen > 0 && (
+                    <div style={{ ...styles.mathRow, marginTop: 2 }}>
+                      <span style={{ ...styles.mathKey, color: '#38bdf8', fontSize: 10 }}>✦ Mana Recharge {round.defenderManaRechargeRate?.toFixed(1)}%</span>
+                      <span style={{ ...styles.mathVal, color: '#38bdf8', fontWeight: 700 }}>+{round.defenderManaRegen.toFixed(1)}</span>
                     </div>
                   )}
                   <div style={{ ...styles.mathRow, borderTop: '1px solid #16213e', marginTop: 2, paddingTop: 2 }}>
@@ -531,6 +784,17 @@ export default function BattlePage() {
                     <div style={styles.mathRow}>
                       <span style={styles.mathKey}>Stamina −{((1 - (round.defenderStaminaModifier ?? 1)) * 100).toFixed(0)}%</span>
                       <span style={{ ...styles.mathVal, color: '#fbbf24' }}>−{round.defenderStaminaReduction.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {round.defenderOffSlotPenalty != null && round.defenderOffSlotPenalty > 0 && (
+                    <div style={{ ...styles.mathRow, paddingLeft: 8 }}>
+                      <span style={{ ...styles.mathKey, color: '#f87171', fontSize: 9 }}>
+                        ↳ off-slot −{(round.defenderOffSlotPenalty * 100).toFixed(1)}% stam
+                        {round.defenderOffPositioning != null && round.defenderOffPositioning > 0 && (
+                          <span style={{ color: '#fbbf24' }}> · Off-Pos. {(round.defenderOffPositioning * 100).toFixed(0)}% mitigated cap to {(round.defenderOffSlotEffMax! * 100).toFixed(0)}%</span>
+                        )}
+                      </span>
+                      <span />
                     </div>
                   )}
                   {round.defenderElementBonus != null && round.defenderElementBonus > 0 && (
@@ -559,6 +823,56 @@ export default function BattlePage() {
       </div>
 
       </>}
+      {spellTooltip && (
+        <div style={{
+          position: 'fixed',
+          left: spellTooltip.x > window.innerWidth / 2 ? spellTooltip.x - 220 : spellTooltip.x + 14,
+          top: Math.min(spellTooltip.y - 10, window.innerHeight - 160),
+          zIndex: 9999,
+          background: 'linear-gradient(145deg, #0f172a 0%, #1a1040 100%)',
+          border: '1px solid rgba(139,92,246,0.45)',
+          borderRadius: 10,
+          padding: '10px 13px',
+          minWidth: 190,
+          maxWidth: 270,
+          pointerEvents: 'none',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.85), 0 0 18px rgba(139,92,246,0.18)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+            <span style={{ color: '#e2e8f0', fontWeight: 800, fontSize: 13, letterSpacing: 0.2 }}>✦ {spellTooltip.name}</span>
+            {spellTooltip.manaCost != null && spellTooltip.manaCost > 0 && (
+              <span style={{ background: 'rgba(59,130,246,0.18)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.45)', borderRadius: 6, padding: '2px 9px', fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap' }}>
+                {spellTooltip.manaCost} MP
+              </span>
+            )}
+          </div>
+          {spellTooltip.trigger && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+              <span style={{ background: 'rgba(30,41,59,0.9)', color: '#94a3b8', border: '1px solid #334155', borderRadius: 4, padding: '2px 8px', fontSize: 10, fontWeight: 800, letterSpacing: '0.08em' }}>
+                {TRIGGER_LABELS[spellTooltip.trigger] ?? spellTooltip.trigger}
+              </span>
+              {spellTooltip.chance != null && (
+                <span style={{ color: '#94a3b8', fontSize: 11 }}>{spellTooltip.chance}% chance</span>
+              )}
+            </div>
+          )}
+          {spellTooltip.bonuses && Object.keys(spellTooltip.bonuses).length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+              {Object.entries(spellTooltip.bonuses).map(([k, v]) => {
+                const c = SPELL_STAT_COLORS[k] ?? '#60a5fa';
+                return (
+                  <span key={k} style={{ background: `${c}22`, color: c, border: `1px solid ${c}44`, borderRadius: 5, padding: '2px 8px', fontSize: 11, fontWeight: 800 }}>
+                    {v > 0 ? '+' : ''}{v} {SPELL_STAT_LABELS[k] ?? k}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          {spellTooltip.lastsTurns != null && spellTooltip.lastsTurns > 0 && (
+            <div style={{ color: '#64748b', fontSize: 10, marginTop: 5 }}>Lasts {spellTooltip.lastsTurns} turns</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -672,6 +986,21 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     marginTop: 4,
   },
+  immunityTag: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: '#60a5fa',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    border: '1px solid rgba(96,165,250,0.4)',
+    borderRadius: 5,
+    padding: '2px 7px',
+    whiteSpace: 'nowrap' as const,
+  },
+  deniedAmt: {
+    color: '#e94560',
+    fontWeight: 900,
+    marginLeft: 2,
+  },
   xpSection: {
     display: 'flex',
     flexDirection: 'column',
@@ -715,7 +1044,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
     gap: '2px 8px',
     fontSize: 11,
-    color: '#666',
+    color: '#a0a0b0',
     marginBottom: 4,
     paddingBottom: 4,
     borderBottom: '1px solid #16213e',

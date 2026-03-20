@@ -4,6 +4,7 @@ import com.heromanager.dto.TeamResponse;
 import com.heromanager.dto.TeamSetupResponse;
 import com.heromanager.entity.*;
 import com.heromanager.repository.*;
+import com.heromanager.util.AbilitySpellBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ public class TeamService {
     private final TeamSetupHeroEquipmentRepository heroEquipmentRepository;
     private final PlayerService playerService;
     private final PlayerRepository playerRepository;
+    private final AbilitySpellBuilder abilitySpellBuilder;
 
     public TeamService(TeamSlotRepository teamSlotRepository,
                        HeroRepository heroRepository,
@@ -32,7 +34,8 @@ public class TeamService {
                        TeamSetupSlotRepository teamSetupSlotRepository,
                        TeamSetupHeroEquipmentRepository heroEquipmentRepository,
                        PlayerService playerService,
-                       PlayerRepository playerRepository) {
+                       PlayerRepository playerRepository,
+                       AbilitySpellBuilder abilitySpellBuilder) {
         this.teamSlotRepository = teamSlotRepository;
         this.heroRepository = heroRepository;
         this.summonRepository = summonRepository;
@@ -43,6 +46,7 @@ public class TeamService {
         this.heroEquipmentRepository = heroEquipmentRepository;
         this.playerService = playerService;
         this.playerRepository = playerRepository;
+        this.abilitySpellBuilder = abilitySpellBuilder;
     }
 
     private int getMaxSetups(Long playerId) {
@@ -143,6 +147,8 @@ public class TeamService {
                             slotEntry.put("bonuses", buildBonuses(at.getBonusPa(), at.getBonusMp(), at.getBonusDex(), at.getBonusElem(), at.getBonusMana(), at.getBonusStam()));
                             slotEntry.put("tier", at.getTier());
                             slotEntry.put("copies", equippedAbilityRepository.countByPlayerAndAbilityTemplate(playerId, at.getId()));
+                            List<Map<String, Object>> spellList = abilitySpellBuilder.buildSpellList(at);
+                            if (spellList != null) slotEntry.put("spells", spellList);
                             eqSlots.add(slotEntry);
                             continue;
                         }
@@ -182,7 +188,8 @@ public class TeamService {
         TeamResponse.SummonSlotInfo summonInfo = null;
         if (equippedSummon != null && equippedSummon.getTemplate() != null) {
             SummonTemplate st = equippedSummon.getTemplate();
-            capacityUsed += st.getCapacity();
+            int summonCap = equippedSummon.getCapacityOverride() != null ? equippedSummon.getCapacityOverride() : st.getCapacity();
+            capacityUsed += summonCap;
             Map<String, Double> summonStats = new LinkedHashMap<>(summonBonuses);
 
             summonInfo = TeamResponse.SummonSlotInfo.builder()
@@ -190,7 +197,7 @@ public class TeamService {
                     .name(st.getDisplayName())
                     .imagePath(st.getImagePath())
                     .level(equippedSummon.getLevel())
-                    .capacity(st.getCapacity())
+                    .capacity(summonCap)
                     .teamBonus(PlayerService.buildSummonTeamBonusString(summonStats))
                     .stats(summonStats)
                     .currentXp(equippedSummon.getCurrentXp())
@@ -294,11 +301,12 @@ public class TeamService {
 
         // Check capacity
         int currentCapacity = calculateCapacity(playerId);
-        int summonCapacity = summon.getTemplate().getCapacity();
-        if (currentCapacity + summonCapacity > 100) {
+        int summonCapacity = summon.getCapacityOverride() != null ? summon.getCapacityOverride() : summon.getTemplate().getCapacity();
+        int maxCapacity = getTeamCapacityMax(playerId);
+        if (currentCapacity + summonCapacity > maxCapacity) {
             throw new TeamException("CAPACITY_EXCEEDED",
                     "Not enough team capacity. Summon requires " + summonCapacity
-                            + " but only " + (100 - currentCapacity) + " available.");
+                            + " but only " + (maxCapacity - currentCapacity) + " available.");
         }
 
         TeamSlot slot = existing.orElseGet(() -> {
@@ -372,7 +380,8 @@ public class TeamService {
             if (slot.getSummonId() != null) {
                 Summon summon = summonRepository.findById(slot.getSummonId()).orElse(null);
                 if (summon != null) {
-                    total += summon.getTemplate().getCapacity();
+                    int cap = summon.getCapacityOverride() != null ? summon.getCapacityOverride() : summon.getTemplate().getCapacity();
+                    total += cap;
                 }
             }
         }

@@ -142,8 +142,18 @@ public class PlayerService {
                 .clashesLost(hero.getClashesLost())
                 .currentWinStreak(hero.getCurrentWinStreak())
                 .currentLossStreak(hero.getCurrentLossStreak())
+                .bestWinStreak(hero.getBestWinStreak())
+                .bestLossStreak(hero.getBestLossStreak())
                 .maxDamageDealt(hero.getMaxDamageDealt())
                 .maxDamageReceived(hero.getMaxDamageReceived())
+                .maxPaDamage(hero.getMaxPaDamage())
+                .maxMpDamage(hero.getMaxMpDamage())
+                .maxDexDamage(hero.getMaxDexDamage())
+                .maxElemDamage(hero.getMaxElemDamage())
+                .totalPaDamage(hero.getTotalPaDamage())
+                .totalMpDamage(hero.getTotalMpDamage())
+                .totalDexDamage(hero.getTotalDexDamage())
+                .totalElemDamage(hero.getTotalElemDamage())
                 .sellPrice((int) Math.floor(t.getCost() * 0.5))
                 .statPurchaseCount(hero.getStatPurchaseCount())
                 .nextStatCost(computeNextStatCost(t, hero.getStatPurchaseCount()))
@@ -352,6 +362,12 @@ public class PlayerService {
             bonuses.merge("physicalImmunity",at.getBonusPhysicalImmunity(), Double::sum);
             bonuses.merge("magicImmunity",   at.getBonusMagicImmunity(),    Double::sum);
             bonuses.merge("dexEvasiveness",  at.getBonusDexEvasiveness(),   Double::sum);
+            bonuses.merge("manaRecharge",    at.getBonusManaRecharge(),     Double::sum);
+            bonuses.merge("tenacity",        at.getBonusTenacity(),         Double::sum);
+            bonuses.merge("fatigueRecovery", at.getBonusFatigueRecovery(),  Double::sum);
+            bonuses.merge("cleanse",         at.getBonusCleanse(),          Double::sum);
+            bonuses.merge("rot",             at.getBonusRot(),              Double::sum);
+            bonuses.merge("offPositioning",  at.getBonusOffPositioning(),   Double::sum);
         }
         return bonuses;
     }
@@ -376,8 +392,16 @@ public class PlayerService {
                 if (ss.containsKey("dexPosture"))       bonuses.merge("dexPosture",       ss.get("dexPosture")       / 100.0, Double::sum);
                 if (ss.containsKey("goldBonus"))        bonuses.merge("goldBonus",        ss.get("goldBonus")        / 100.0, Double::sum);
                 if (ss.containsKey("xpBonus"))          bonuses.merge("expBonus",         ss.get("xpBonus")          / 100.0, Double::sum);
-                if (ss.containsKey("spellActivation"))  bonuses.merge("spellActivation",  ss.get("spellActivation")  / 100.0, Double::sum);
-                if (ss.containsKey("itemFind"))         bonuses.merge("itemDiscovery",    ss.get("itemFind"),               Double::sum);
+                if (ss.containsKey("spellActivation"))   bonuses.merge("spellActivation",  ss.get("spellActivation")   / 100.0, Double::sum);
+                if (ss.containsKey("itemFind"))          bonuses.merge("itemDiscovery",    ss.get("itemFind"),                Double::sum);
+                if (ss.containsKey("physicalImmunity"))  bonuses.merge("physicalImmunity", ss.get("physicalImmunity")  / 100.0, Double::sum);
+                if (ss.containsKey("magicImmunity"))     bonuses.merge("magicImmunity",    ss.get("magicImmunity")     / 100.0, Double::sum);
+                if (ss.containsKey("dexEvasiveness"))    bonuses.merge("dexEvasiveness",   ss.get("dexEvasiveness")    / 100.0, Double::sum);
+                if (ss.containsKey("manaRecharge"))      bonuses.merge("manaRecharge",      ss.get("manaRecharge")      / 100.0, Double::sum);
+                if (ss.containsKey("spellLearn"))        bonuses.merge("spellLearn",        ss.get("spellLearn")        / 100.0, Double::sum);
+                if (ss.containsKey("spellCopy"))         bonuses.merge("spellCopy",         ss.get("spellCopy")         / 100.0, Double::sum);
+                if (ss.containsKey("spellAbsorb"))       bonuses.merge("spellAbsorb",       ss.get("spellAbsorb")       / 100.0, Double::sum);
+                if (ss.containsKey("rot"))               bonuses.merge("rot",               ss.get("rot")               / 100.0, Double::sum);
             });
         });
         return bonuses;
@@ -773,7 +797,15 @@ public class PlayerService {
         double attack           = t.getBaseAttack()           + t.getGrowthAttack()           * lv;
         double spellActivation  = t.getBaseSpellActivation()  + t.getGrowthSpellActivation()  * lv;
         double stamina          = t.getBaseStamina()          + t.getGrowthStamina()          * lv;
-        double physicalAttack   = t.getBasePhysicalAttack()   + t.getGrowthPhysicalAttack()   * lv;
+        double physicalAttack    = t.getBasePhysicalAttack()    + t.getGrowthPhysicalAttack()    * lv;
+        double physicalImmunity  = t.getBasePhysicalImmunity()  + t.getGrowthPhysicalImmunity()  * lv;
+        double magicImmunity     = t.getBaseMagicImmunity()     + t.getGrowthMagicImmunity()     * lv;
+        double dexEvasiveness    = t.getBaseDexEvasiveness()    + t.getGrowthDexEvasiveness()    * lv;
+        double manaRecharge      = t.getBaseManaRecharge()      + t.getGrowthManaRecharge()      * lv;
+        double spellLearn        = t.getBaseSpellLearn()        + t.getGrowthSpellLearn()        * lv;
+        double spellCopy         = t.getBaseSpellCopy()         + t.getGrowthSpellCopy()         * lv;
+        double spellAbsorb       = t.getBaseSpellAbsorb()       + t.getGrowthSpellAbsorb()       * lv;
+        double rot               = t.getBaseRot()               + t.getGrowthRot()               * lv;
         if (mana         != 0) stats.put("mana",              mana);
         if (mp           != 0) stats.put("magicPower",       mp);
         if (magicProf    != 0) stats.put("magicProficiency", magicProf);
@@ -790,6 +822,14 @@ public class PlayerService {
         if (spellActivation != 0) stats.put("spellActivation", spellActivation);
         if (stamina         != 0) stats.put("stamina",         stamina);
         if (physicalAttack  != 0) stats.put("physicalAttack",  physicalAttack);
+        if (physicalImmunity != 0) stats.put("physicalImmunity", physicalImmunity);
+        if (magicImmunity    != 0) stats.put("magicImmunity",    magicImmunity);
+        if (dexEvasiveness   != 0) stats.put("dexEvasiveness",   dexEvasiveness);
+        if (manaRecharge     != 0) stats.put("manaRecharge",     manaRecharge);
+        if (spellLearn       != 0) stats.put("spellLearn",       spellLearn);
+        if (spellCopy        != 0) stats.put("spellCopy",        spellCopy);
+        if (spellAbsorb      != 0) stats.put("spellAbsorb",      spellAbsorb);
+        if (rot              != 0) stats.put("rot",              rot);
         return stats;
     }
 
@@ -811,6 +851,14 @@ public class PlayerService {
         if (stats.containsKey("spellActivation"))  parts.add("+" + Math.round(stats.get("spellActivation"))    + "% Spell Activation");
         if (stats.containsKey("stamina"))          parts.add("+" + (int)(double) stats.get("stamina")          + " Stamina");
         if (stats.containsKey("physicalAttack"))   parts.add("+" + (int)(double) stats.get("physicalAttack")   + " Phys Attack");
+        if (stats.containsKey("physicalImmunity")) parts.add("+" + Math.round(stats.get("physicalImmunity"))   + "% Phys Immunity");
+        if (stats.containsKey("magicImmunity"))    parts.add("+" + Math.round(stats.get("magicImmunity"))      + "% Magic Immunity");
+        if (stats.containsKey("dexEvasiveness"))   parts.add("+" + Math.round(stats.get("dexEvasiveness"))     + "% Dex Evasiveness");
+        if (stats.containsKey("manaRecharge"))     parts.add("+" + Math.round(stats.get("manaRecharge"))       + "% Mana Recharge");
+        if (stats.containsKey("spellLearn"))       parts.add("+" + Math.round(stats.get("spellLearn"))         + "% Spell Learn");
+        if (stats.containsKey("spellCopy"))        parts.add("+" + Math.round(stats.get("spellCopy"))          + "% Spell Copy");
+        if (stats.containsKey("spellAbsorb"))      parts.add("+" + Math.round(stats.get("spellAbsorb"))        + "% Spell Absorb");
+        if (stats.containsKey("rot"))              parts.add("+" + Math.round(stats.get("rot"))                + "% Rot");
         return String.join(", ", parts);
     }
 

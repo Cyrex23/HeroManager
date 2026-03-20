@@ -69,7 +69,7 @@ export default function ItemSlot({ slot, onUnequip }: Props) {
       bonuses={slot.bonuses ?? {}}
       sellPrice={slot.sellPrice}
       copies={slot.copies ?? undefined}
-      spell={slot.spell ?? null}
+      spells={slot.spells ?? []}
     >
       <div style={{
         position: 'relative',

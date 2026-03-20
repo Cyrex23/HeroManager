@@ -116,9 +116,16 @@ function PeriodPanel({ stats }: { stats: DashboardPeriodStats; label: string }) 
   );
 }
 
-function HeroCard({ hero }: { hero: DashboardHeroSummary }) {
+function HeroCard({ hero, activePeriod }: { hero: DashboardHeroSummary; activePeriod: PeriodKey }) {
   const navigate = useNavigate();
   const xpPct = hero.xpToNextLevel > 0 ? Math.min((hero.currentXp / hero.xpToNextLevel) * 100, 100) : 0;
+  const periodXp: Record<PeriodKey, number> = {
+    today: hero.xpGainedToday,
+    week:  hero.xpGainedWeek,
+    month: hero.xpGainedMonth,
+    allTime: hero.xpGainedAllTime,
+  };
+  const xpEarned = periodXp[activePeriod];
   const tierColor = hero.tier ? (TIER_COLOR[hero.tier] ?? '#9ca3af') : '#9ca3af';
   const elemColor = hero.element ? (ELEMENT_COLOR[hero.element] ?? '#a0a0b0') : null;
   const elemSym   = hero.element ? (ELEMENT_SYMBOL[hero.element] ?? '') : null;
@@ -176,11 +183,22 @@ function HeroCard({ hero }: { hero: DashboardHeroSummary }) {
               background: `${tierColor}18`, padding: '2px 5px', borderRadius: 4 }}>{hero.tier}</span>
           )}
         </div>
-        {/* XP text */}
-        <div style={{ color: '#6060a0', fontSize: 10, marginBottom: 6 }}>
-          XP: <span style={{ color: '#fbbf24' }}>{Math.round(hero.currentXp)}</span>
-          <span style={{ color: '#40406060' }}> / {Math.round(hero.xpToNextLevel)}</span>
-          <span style={{ color: '#50508880', marginLeft: 4 }}>({Math.round(xpPct)}%)</span>
+        {/* XP text + period earned */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <div style={{ color: '#6060a0', fontSize: 10 }}>
+            XP: <span style={{ color: '#fbbf24' }}>{Math.round(hero.currentXp)}</span>
+            <span style={{ color: '#5a5a80' }}> / {Math.round(hero.xpToNextLevel)}</span>
+            <span style={{ color: '#6060a0', marginLeft: 4 }}>({Math.round(xpPct)}%)</span>
+          </div>
+          <span style={{
+            background: xpEarned > 0 ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${xpEarned > 0 ? 'rgba(167,139,250,0.35)' : 'rgba(255,255,255,0.07)'}`,
+            color: xpEarned > 0 ? '#a78bfa' : '#404060',
+            fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 5,
+            whiteSpace: 'nowrap',
+          }}>
+            +{xpEarned} XP
+          </span>
         </div>
         {/* Win / Loss chips */}
         <div style={{ display: 'flex', gap: 6 }}>
@@ -195,7 +213,7 @@ function HeroCard({ hero }: { hero: DashboardHeroSummary }) {
             {hero.clashesLost}L
           </span>
           {totalClashes > 0 && (
-            <span style={{ color: '#6060a0', fontSize: 10, fontWeight: 600,
+            <span style={{ color: '#8080b0', fontSize: 10, fontWeight: 600,
               padding: '2px 5px', alignSelf: 'center' }}>{heroWinRate}%</span>
           )}
           {hero.currentWinStreak > 1 && (
@@ -211,7 +229,7 @@ function HeroCard({ hero }: { hero: DashboardHeroSummary }) {
       {/* Max dmg */}
       {hero.maxDamageDealt > 0 && (
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ color: '#70709090', fontSize: 9, letterSpacing: '0.08em',
+          <div style={{ color: '#7070a0', fontSize: 9, letterSpacing: '0.08em',
             textTransform: 'uppercase' }}>Best Hit</div>
           <div style={{ color: '#e94560', fontWeight: 800, fontSize: 14,
             fontFamily: 'Inter, sans-serif' }}>{Math.round(hero.maxDamageDealt)}</div>
@@ -284,7 +302,7 @@ export default function HomePage() {
       </div>
 
       {/* Quick stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10, marginBottom: 24 }}>
         <div style={{ background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.18)',
           borderRadius: 10, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10,
           animation: 'hpFadeIn 0.3s ease both' }}>
@@ -319,6 +337,19 @@ export default function HomePage() {
             <div style={{ color: '#4ade80', fontWeight: 900, fontSize: 20 }}>
               {Number(player?.arenaEnergy ?? 0).toFixed(1)}
               <span style={{ color: '#5050a0', fontSize: 13 }}>/{player?.arenaEnergyMax ?? 120}</span>
+            </div>
+          </div>
+        </div>
+        <div style={{ background: 'rgba(56,189,248,0.07)', border: '1px solid rgba(56,189,248,0.18)',
+          borderRadius: 10, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 10,
+          animation: 'hpFadeIn 0.425s ease both' }}>
+          <span style={{ fontSize: 20 }}>🌍</span>
+          <div>
+            <div style={{ color: '#7070a0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
+              textTransform: 'uppercase' }}>World Energy</div>
+            <div style={{ color: '#38bdf8', fontWeight: 900, fontSize: 20 }}>
+              {Number(player?.worldEnergy ?? 0).toFixed(1)}
+              <span style={{ color: '#5050a0', fontSize: 13 }}>/{player?.worldEnergyMax ?? 120}</span>
             </div>
           </div>
         </div>
@@ -415,7 +446,7 @@ export default function HomePage() {
               )}
               {data.heroes
                 .sort((a, b) => b.level - a.level || b.clashesWon - a.clashesWon)
-                .map(hero => <HeroCard key={hero.id} hero={hero} />)}
+                .map(hero => <HeroCard key={hero.id} hero={hero} activePeriod={activePeriod} />)}
             </div>
           </div>
         </div>

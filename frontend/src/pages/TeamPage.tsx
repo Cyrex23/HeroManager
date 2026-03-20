@@ -95,7 +95,7 @@ interface PickerOption {
   bonuses?: Partial<HeroStats>;
   tier?: number;
   copies?: number;
-  spell?: import('../types').SpellInfo | null;
+  spells?: import('../types').SpellInfo[];
 }
 
 export default function TeamPage() {
@@ -338,7 +338,7 @@ export default function TeamPage() {
     }
     for (const ab of eq.heroAbilities) {
       if (ab.slotNumber === null) {
-        options.push({ id: ab.equippedAbilityId, label: `${ab.name} (T${ab.tier})`, type: 'ability', bonuses: ab.bonuses, tier: ab.tier, copies: ab.copies, spell: ab.spell });
+        options.push({ id: ab.equippedAbilityId, label: `${ab.name} (T${ab.tier})`, type: 'ability', bonuses: ab.bonuses, tier: ab.tier, copies: ab.copies, spells: ab.spells });
       }
     }
     return options;
@@ -730,7 +730,7 @@ export default function TeamPage() {
                             ? eq.heroAbilities.find((a) => a.slotNumber === slot.slotNumber)
                             : null;
                           const abilityTier = matchedAbility?.tier ?? null;
-                          const abilitySpell = matchedAbility?.spell ?? slot.spell ?? null;
+                          const abilitySpell = matchedAbility?.spells ?? slot.spells ?? [];
 
                           return (
                             <div key={slot.slotNumber} style={styles.slotWrap}>
@@ -743,7 +743,7 @@ export default function TeamPage() {
                                   tier={abilityTier}
                                   sellPrice={slot.sellPrice}
                                   copies={slot.copies ?? undefined}
-                                  spell={abilitySpell}
+                                  spells={abilitySpell}
                                 >
                                   {(() => {
                                     const isAbility = slot.type === 'ability';
@@ -859,7 +859,7 @@ export default function TeamPage() {
                   tier={opt.tier}
                   sellPrice={opt.sellPrice}
                   copies={opt.copies}
-                  spell={opt.spell}
+                  spells={opt.spells ?? []}
                 >
                   <button
                     style={styles.pickerOption}

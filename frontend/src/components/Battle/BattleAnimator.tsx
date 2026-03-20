@@ -47,12 +47,26 @@ const ANIM_CSS = `
 @keyframes baBloodDrop { 0%{opacity:0;transform:translate(-50%,-50%) scale(0)} 38%{opacity:1;transform:translate(-50%,-50%) scale(1.3)} 65%{transform:translate(-50%,-50%) scale(0.85)} 100%{opacity:1;transform:translate(-50%,-50%) scale(1)} }
 @keyframes baXP { 0%{opacity:0;transform:translateY(10px) scale(.75)} 55%{opacity:1;transform:translateY(-2px) scale(1.08)} 100%{opacity:1;transform:translateY(0) scale(1)} }
 @keyframes baXPJump { 0%{transform:scale(1);filter:brightness(1)} 25%{transform:scale(1.6);filter:brightness(1.8)} 55%{transform:scale(1.4);filter:brightness(1.4)} 75%{transform:scale(1.1);filter:brightness(1.1)} 100%{transform:scale(1);filter:brightness(1)} }
-@keyframes baSpell { 0%{opacity:0;transform:translateY(12px) scale(0.72) rotate(0deg)} 7%{opacity:1;transform:translateY(0) scale(1.1) rotate(0deg);filter:brightness(2.8) saturate(2)} 16%{transform:scale(1.06) rotate(22deg);filter:brightness(2)} 25%{transform:scale(1.03) rotate(-17deg);filter:brightness(1.6)} 33%{transform:scale(1.01) rotate(12deg);filter:brightness(1.35)} 41%{transform:scale(1) rotate(-8deg);filter:brightness(1.2)} 49%{transform:rotate(5deg);filter:brightness(1.1)} 57%{transform:rotate(-3deg)} 64%{transform:rotate(1.8deg)} 71%{transform:rotate(-1deg)} 78%{transform:rotate(0.5deg)} 100%{opacity:1;transform:scale(1) rotate(0deg);filter:brightness(1)} }
+@keyframes baSpell { 0%{opacity:0;transform:translateY(12px) scale(0.72) rotate(0deg)} 7%{opacity:1;transform:translateY(0) scale(1.1) rotate(0deg);filter:brightness(2.8) saturate(2)} 12%{transform:scale(1.06) rotate(9deg);filter:brightness(2)} 17%{transform:scale(1.04) rotate(-7deg);filter:brightness(1.7)} 22%{transform:scale(1.02) rotate(6deg);filter:brightness(1.5)} 27%{transform:scale(1.01) rotate(-5deg);filter:brightness(1.35)} 32%{transform:scale(1) rotate(4deg);filter:brightness(1.22)} 37%{transform:rotate(-3.2deg);filter:brightness(1.14)} 42%{transform:rotate(2.6deg);filter:brightness(1.08)} 47%{transform:rotate(-2deg)} 52%{transform:rotate(1.6deg)} 57%{transform:rotate(-1.2deg)} 62%{transform:rotate(0.9deg)} 67%{transform:rotate(-0.6deg)} 72%{transform:rotate(0.3deg)} 78%{transform:rotate(-0.15deg)} 100%{opacity:1;transform:scale(1) rotate(0deg);filter:brightness(1)} }
 @keyframes baManaGlow { 0%,100%{box-shadow:0 0 8px rgba(59,130,246,0.55),0 0 0 rgba(96,165,250,0)} 50%{box-shadow:0 0 28px rgba(59,130,246,1),0 0 56px rgba(96,165,250,0.7),0 0 90px rgba(147,197,253,0.35)} }
+@keyframes baManaRegen { 0%{opacity:0;transform:translateY(0) scale(0.7)} 15%{opacity:1;transform:translateY(-6px) scale(1.1)} 70%{opacity:1;transform:translateY(-28px) scale(1)} 100%{opacity:0;transform:translateY(-44px) scale(0.85)} }
 @keyframes baOverlayIn { 0%{opacity:0;transform:scale(0.92)} 100%{opacity:1;transform:scale(1)} }
 @keyframes baTitleIn { 0%{opacity:0;transform:translateY(-18px)} 100%{opacity:1;transform:translateY(0)} }
 @keyframes baSwordsIn { 0%{opacity:0;transform:scale(0.5) rotate(-20deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }
 @keyframes baDexFloat { 0%{opacity:0;transform:translateY(2px) scale(0.75)} 16%{opacity:1;transform:translateY(-10px) scale(1.25)} 60%{opacity:1;transform:translateY(-20px) scale(1.05)} 100%{opacity:0;transform:translateY(-32px) scale(0.85)} }
+@keyframes introOverlayFade{0%{opacity:0}4%{opacity:1}82%{opacity:1}100%{opacity:0}}
+@keyframes introHeroL{0%{opacity:0;transform:translateX(-420px) scale(0.7)}22%{opacity:1;transform:translateX(0) scale(1.06)}25%{transform:translateX(0) scale(1)}76%{opacity:1;transform:translateX(0) scale(1)}91%{opacity:0;transform:translateX(-240px) scale(0.8)}100%{opacity:0}}
+@keyframes introHeroR{0%{opacity:0;transform:translateX(420px) scale(0.7)}22%{opacity:1;transform:translateX(0) scale(1.06)}25%{transform:translateX(0) scale(1)}76%{opacity:1;transform:translateX(0) scale(1)}91%{opacity:0;transform:translateX(240px) scale(0.8)}100%{opacity:0}}
+@keyframes introNameL{0%,20%{opacity:0;transform:translateY(18px)}28%{opacity:1;transform:translateY(0)}76%{opacity:1}90%{opacity:0}100%{opacity:0}}
+@keyframes introNameR{0%,20%{opacity:0;transform:translateY(18px)}28%{opacity:1;transform:translateY(0)}76%{opacity:1}90%{opacity:0}100%{opacity:0}}
+@keyframes introVs{0%,6%{opacity:0;transform:translate(-50%,-50%) scale(0.5)}16%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}20%{transform:translate(-50%,-50%) scale(1)}74%{opacity:1}87%{opacity:0}100%{opacity:0}}
+@keyframes introFlash{0%,21.5%{opacity:0}22.2%{opacity:0.92}27%{opacity:0}100%{opacity:0}}
+@keyframes introShock{0%,21.5%{transform:translate(-50%,-50%) scale(0.05);opacity:0;border-width:16px}22.3%{opacity:1;border-width:10px;transform:translate(-50%,-50%) scale(0.12)}48%{transform:translate(-50%,-50%) scale(5);opacity:0;border-width:1px}100%{opacity:0}}
+@keyframes introClashBurst{0%,21.5%{transform:translate(-50%,-50%) scale(0);opacity:0}22.2%{opacity:1;transform:translate(-50%,-50%) scale(0.3)}54%{transform:translate(-50%,-50%) scale(4.5);opacity:0}100%{opacity:0}}
+@keyframes introSparks{0%,21.5%{transform:translate(-50%,-50%) scale(0) rotate(0deg);opacity:0}22.2%{opacity:1;transform:translate(-50%,-50%) scale(0.15) rotate(0deg)}58%{opacity:0.55;transform:translate(-50%,-50%) scale(2.4) rotate(225deg)}72%{opacity:0}100%{opacity:0}}
+@keyframes introShake{0%,20%{transform:translateX(0)}22.2%{transform:translateX(-16px)}23.7%{transform:translateX(16px)}25.2%{transform:translateX(-11px)}26.7%{transform:translateX(11px)}28.2%{transform:translateX(-6px)}29.7%{transform:translateX(6px)}31.2%{transform:translateX(0)}100%{transform:translateX(0)}}
+@keyframes introFight{0%,22%{opacity:0;transform:translate(-50%,-50%) scale(0.06) rotate(-20deg)}29%{opacity:1;transform:translate(-50%,-50%) scale(1.26) rotate(5deg)}38%{transform:translate(-50%,-50%) scale(0.86) rotate(-2.5deg)}47%{transform:translate(-50%,-50%) scale(1.1) rotate(1.2deg)}55%{transform:translate(-50%,-50%) scale(0.96) rotate(-0.5deg)}63%{opacity:1;transform:translate(-50%,-50%) scale(1.03)}74%{opacity:1;transform:translate(-50%,-50%) scale(1)}87%{opacity:0;transform:translate(-50%,-50%) scale(3) rotate(12deg)}100%{opacity:0}}
+@keyframes introFightPulse{0%,63%{filter:drop-shadow(0 0 18px rgba(255,120,0,0.9)) drop-shadow(5px 8px 0 rgba(0,0,0,0.98))}70%{filter:drop-shadow(0 0 40px rgba(255,180,0,1)) drop-shadow(0 0 80px rgba(255,60,0,0.7)) drop-shadow(5px 8px 0 rgba(0,0,0,0.98))}80%{filter:drop-shadow(0 0 20px rgba(255,100,0,0.9)) drop-shadow(5px 8px 0 rgba(0,0,0,0.98))}90%{filter:drop-shadow(0 0 50px rgba(255,200,0,1)) drop-shadow(0 0 100px rgba(255,80,0,0.8)) drop-shadow(5px 8px 0 rgba(0,0,0,0.98))}}
 `;
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -107,6 +121,55 @@ function buildRoster(
   return list;
 }
 
+const BANIM_STAT_LABELS: Record<string, string> = {
+  physicalAttack: 'PA', magicPower: 'MP', dexterity: 'DEX', element: 'Elem',
+  mana: 'Mana', stamina: 'Stam', attack: 'Atk%', magicProficiency: 'MagP%',
+  spellMastery: 'SpellM%', spellActivation: 'SpellAct%', dexProficiency: 'DexP%',
+  dexPosture: 'DexPost%', critChance: 'Crit%', critDamage: 'CritDmg%',
+  expBonus: 'EXP%', goldBonus: 'Gold%', itemDiscovery: 'ItemDisc%',
+  physicalImmunity: 'PhysImm%', magicImmunity: 'MagImm%', dexEvasiveness: 'DEXEvas%',
+};
+const BANIM_STAT_COLORS: Record<string, string> = {
+  physicalAttack: '#f97316', magicPower: '#a78bfa', dexterity: '#fbbf24',
+  element: '#60a5fa', mana: '#38bdf8', stamina: '#4ade80',
+  attack: '#f97316', magicProficiency: '#a78bfa', spellMastery: '#c084fc',
+  spellActivation: '#e879f9', dexProficiency: '#fbbf24', dexPosture: '#fbbf24',
+  critChance: '#ef4444', critDamage: '#ef4444', expBonus: '#4ade80',
+  goldBonus: '#fbbf24', itemDiscovery: '#38bdf8', physicalImmunity: '#94a3b8',
+  magicImmunity: '#a78bfa', dexEvasiveness: '#fbbf24',
+};
+const BANIM_TRIGGER_LABELS: Record<string, string> = {
+  ATTACK: 'ON ATTACK', ENTRANCE: 'ON ENTRANCE', OPPONENT_ENTRANCE: 'VS ENTRANCE',
+  BEFORE_TURN_X: 'BEFORE TURN', AFTER_TURN_X: 'AFTER TURN',
+};
+
+type LearnedSpell = { name: string; bonuses?: Record<string, number>; trigger?: string; chance?: number; manaCost?: number };
+function computeLearnedSpells(rounds: BattleLog['rounds'], upToIdx: number, side: 'attacker' | 'defender'): LearnedSpell[] {
+  const learned = new Map<string, LearnedSpell>();
+  for (let i = 0; i < upToIdx && i < rounds.length; i++) {
+    const r = rounds[i];
+    const prevR = i > 0 ? rounds[i - 1] : null;
+    if (prevR) {
+      const cur = side === 'attacker' ? r.attackerHero : r.defenderHero;
+      const prev = side === 'attacker' ? prevR.attackerHero : prevR.defenderHero;
+      if (cur !== prev) learned.clear();
+    }
+    const spells = ((side === 'attacker' ? r.challengerSpells : r.defenderSpells) as Array<{ spellName: string; justLearned?: boolean; bonuses?: Record<string, number>; trigger?: string; chance?: number; manaCost?: number }> | undefined);
+    if (spells) {
+      for (const sp of spells) {
+        if (sp.justLearned) learned.set(sp.spellName, { name: sp.spellName, bonuses: sp.bonuses, trigger: sp.trigger, chance: sp.chance, manaCost: sp.manaCost });
+      }
+    }
+  }
+  // Post-loop: if the current round has a different hero than the last processed round, clear
+  if (upToIdx > 0 && upToIdx < rounds.length) {
+    const curHero  = side === 'attacker' ? rounds[upToIdx].attackerHero     : rounds[upToIdx].defenderHero;
+    const prevHero = side === 'attacker' ? rounds[upToIdx - 1].attackerHero : rounds[upToIdx - 1].defenderHero;
+    if (curHero !== prevHero) learned.clear();
+  }
+  return Array.from(learned.values());
+}
+
 function getDefeated(rounds: BattleLog['rounds'], beforeIdx: number, side: 'attacker' | 'defender'): Set<string> {
   const out = new Set<string>();
   for (let i = 0; i < beforeIdx; i++) {
@@ -149,12 +212,21 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
   const [rAnim, setRAnim] = useState<AnimSlot>(IDLE);
   const [showImpact, setShowImpact] = useState(false);
   const [impactKey, setImpactKey] = useState(0);
-  const [dmgL, setDmgL] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number; crit?: boolean; magicProf?: boolean; attackFlat?: number; highDex?: boolean } | null>(null);
-  const [dmgR, setDmgR] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number; crit?: boolean; magicProf?: boolean; attackFlat?: number; highDex?: boolean } | null>(null);
+  const [showRotL, setShowRotL] = useState(false);
+  const [showRotR, setShowRotR] = useState(false);
+  const [showBattleIntro, setShowBattleIntro] = useState(false);
+  const [introKey, setIntroKey] = useState(0);
+  const [dmgL, setDmgL] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number; crit?: boolean; magicProf?: boolean; attackFlat?: number; highDex?: boolean; physImmunity?: number; magicImmunity?: number; dexEvasiveness?: number } | null>(null);
+  const [dmgR, setDmgR] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number; crit?: boolean; magicProf?: boolean; attackFlat?: number; highDex?: boolean; physImmunity?: number; magicImmunity?: number; dexEvasiveness?: number } | null>(null);
   const [roundRes, setRoundRes] = useState<'attacker' | 'defender' | null>(null);
   const [hitInd, setHitInd] = useState<{ type: HitType; side: 'left' | 'right'; k: number } | null>(null);
-  const [cSpellNotif, setCSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number }>; k: number } | null>(null);
-  const [dSpellNotif, setDSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number }>; k: number } | null>(null);
+  const [cSpellNotif, setCSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number; spellType?: 'normal' | 'copied' | 'absorbed' | 'fromLearned' | 'justLearned'; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number }>; k: number } | null>(null);
+  const [dSpellNotif, setDSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number; spellType?: 'normal' | 'copied' | 'absorbed' | 'fromLearned' | 'justLearned'; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number }>; k: number } | null>(null);
+  const [animSpellTooltip, setAnimSpellTooltip] = useState<{
+    name: string; manaCost?: number; trigger?: string; chance?: number;
+    bonuses?: Record<string, number>; lastsTurns?: number;
+    x: number; y: number;
+  } | null>(null);
   // -1 = show full mana (before any round plays); >= 0 = show mana after that round index
   const [manaDisplayIdx, setManaDisplayIdx] = useState(-1);
   // DEX display — null means show full (max); number = tracked current value
@@ -167,6 +239,9 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
   const [dexExpDeltaR, setDexExpDeltaR] = useState<{ net: number; k: number } | null>(null);
   const [dexRecDeltaL, setDexRecDeltaL] = useState<{ net: number; k: number } | null>(null);
   const [dexRecDeltaR, setDexRecDeltaR] = useState<{ net: number; k: number } | null>(null);
+  const [manaRegenL, setManaRegenL] = useState<{ v: number; k: number } | null>(null);
+  const [manaRegenR, setManaRegenR] = useState<{ v: number; k: number } | null>(null);
+  const [manaShowRecharged, setManaShowRecharged] = useState(false);
 
   const [showEndOverlay, setShowEndOverlay] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -183,6 +258,14 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     document.head.appendChild(style);
     return () => style.remove();
   }, []);
+
+  // Battle intro cinematic — plays automatically on mount (navigation from Arena)
+  useEffect(() => {
+    setShowBattleIntro(true);
+    setIntroKey(k => k + 1);
+    const t = setTimeout(() => setShowBattleIntro(false), 2750);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Show end overlay when battle finishes (after user has interacted)
   useEffect(() => {
@@ -216,6 +299,11 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     setDexExpDeltaR(null);
     setDexRecDeltaL(null);
     setDexRecDeltaR(null);
+    setManaRegenL(null);
+    setManaRegenR(null);
+    setManaShowRecharged(false);
+    setShowRotL(false);
+    setShowRotR(false);
   }, []);
 
   const doRound = useCallback(async (idx: number) => {
@@ -242,13 +330,21 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     }
 
     // ── Spell notifications ───────────────────────────────────────────────────
-    const cSp = ((round as any).challengerSpells as Array<{ spellName: string; manaCost: number; fired?: boolean }> | undefined)?.filter(sp => sp.fired !== false);
-    const dSp = ((round as any).defenderSpells as Array<{ spellName: string; manaCost: number; fired?: boolean }> | undefined)?.filter(sp => sp.fired !== false);
-    if (cSp?.length) setCSpellNotif({ spells: cSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost })), k: Date.now() });
-    if (dSp?.length) setDSpellNotif({ spells: dSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost })), k: Date.now() + 1 });
+    type RawSpell = { spellName: string; manaCost: number; fired?: boolean; absorbed?: boolean; copied?: boolean; fromLearned?: boolean; justLearned?: boolean; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number };
+    const cSp = ((round as any).challengerSpells as RawSpell[] | undefined)?.filter(sp => sp.fired !== false || sp.absorbed || sp.justLearned);
+    const dSp = ((round as any).defenderSpells as RawSpell[] | undefined)?.filter(sp => sp.fired !== false || sp.absorbed || sp.justLearned);
+    const spType = (sp: RawSpell) => sp.absorbed ? 'absorbed' : sp.copied ? 'copied' : sp.fromLearned ? 'fromLearned' : sp.justLearned ? 'justLearned' : 'normal' as const;
+    if (cSp?.length) setCSpellNotif({ spells: cSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost, spellType: spType(sp), bonuses: sp.bonuses, lastsTurns: sp.lastsTurns, trigger: sp.trigger, chance: sp.chance })), k: Date.now() });
+    if (dSp?.length) setDSpellNotif({ spells: dSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost, spellType: spType(sp), bonuses: sp.bonuses, lastsTurns: sp.lastsTurns, trigger: sp.trigger, chance: sp.chance })), k: Date.now() + 1 });
     if (cSp?.length || dSp?.length) {
-      setManaDisplayIdx(idx);  // update bar only now that the spell visually fires
+      setManaShowRecharged(false);
+      setManaDisplayIdx(idx);  // show post-spell (pre-recharge) mana when spell visually fires
     }
+
+    // Show rot icon immediately if it was already active BEFORE this round (not newly applied now)
+    // attackerAppliedRot = left hero applied rot to right; defenderAppliedRot = right applied to left
+    setShowRotL(!!(round.attackerRotActive && !round.defenderAppliedRot));
+    setShowRotR(!!(round.defenderRotActive && !round.attackerAppliedRot));
 
     const CHARGE_DUR = 950;
     const PEAK_MS    = 390;  // ~41% of CHARGE_DUR — hero reaches opponent
@@ -272,10 +368,13 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     // Impact lands on the OPPONENT (the second/new-entrant hero)
     setShowImpact(true);
     setImpactKey(k => k + 1);
+    // Reveal rot icon on the target if this attack newly applies rot
+    if (leftGoesFirst && round.attackerAppliedRot) setShowRotR(true);
+    if (!leftGoesFirst && round.defenderAppliedRot) setShowRotL(true);
     if (leftGoesFirst) {
       // Left hits right → indicator + damage on right; right flashes
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
-      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf, attackFlat: round.attackerStatAttack, highDex: round.attackerHighDex });
+      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf, attackFlat: round.attackerStatAttack, highDex: round.attackerHighDex, physImmunity: round.defenderPhysImmunity, magicImmunity: round.defenderMagicImmunity, dexEvasiveness: round.defenderDexEvasiveness });
       bump(setRAnim, 'baHF', 700 / speed);
       // DEX expenditure for Phase-1 attacker (left = attacker)
       { const used = round.attackerDexUsed ?? 0; const rec = round.attackerDexRecovered ?? 0; const rem = round.attackerDexRemaining;
@@ -283,7 +382,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     } else {
       // Right hits left → indicator + damage on left; left flashes
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
-      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf, attackFlat: round.defenderStatAttack, highDex: round.defenderHighDex });
+      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf, attackFlat: round.defenderStatAttack, highDex: round.defenderHighDex, physImmunity: round.attackerPhysImmunity, magicImmunity: round.attackerMagicImmunity, dexEvasiveness: round.attackerDexEvasiveness });
       bump(setLAnim, 'baHF', 700 / speed);
       // DEX expenditure for Phase-1 attacker (right = defender)
       { const used = round.defenderDexUsed ?? 0; const rec = round.defenderDexRecovered ?? 0; const rem = round.defenderDexRemaining;
@@ -302,10 +401,13 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
 
     setShowImpact(true);
     setImpactKey(k => k + 1);
+    // Reveal rot icon on the target if this attack newly applies rot
+    if (leftGoesFirst && round.defenderAppliedRot) setShowRotL(true);
+    if (!leftGoesFirst && round.attackerAppliedRot) setShowRotR(true);
     if (leftGoesFirst) {
       // Right hits left → indicator + damage on left; left flashes
       setHitInd({ type: rightDom, side: 'left', k: Date.now() });
-      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf, attackFlat: round.defenderStatAttack, highDex: round.defenderHighDex });
+      setDmgL({ v: round.defenderAttackValue, k: Date.now() + 1, elemBonus: round.defenderElementBonus, elem: round.defenderElement, rawAttack: round.defenderRawAttack, staminaLost: round.defenderStaminaReduction, crit: round.defenderCrit, magicProf: round.defenderMagicProf, attackFlat: round.defenderStatAttack, highDex: round.defenderHighDex, physImmunity: round.attackerPhysImmunity, magicImmunity: round.attackerMagicImmunity, dexEvasiveness: round.attackerDexEvasiveness });
       bump(setLAnim, 'baHF', 700 / speed);
       // DEX expenditure for Phase-2 attacker (right = defender)
       { const used = round.defenderDexUsed ?? 0; const rec = round.defenderDexRecovered ?? 0; const rem = round.defenderDexRemaining;
@@ -313,7 +415,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     } else {
       // Left hits right → indicator + damage on right; right flashes
       setHitInd({ type: leftDom, side: 'right', k: Date.now() });
-      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf, attackFlat: round.attackerStatAttack, highDex: round.attackerHighDex });
+      setDmgR({ v: round.attackerAttackValue, k: Date.now() + 1, elemBonus: round.attackerElementBonus, elem: round.attackerElement, rawAttack: round.attackerRawAttack, staminaLost: round.attackerStaminaReduction, crit: round.attackerCrit, magicProf: round.attackerMagicProf, attackFlat: round.attackerStatAttack, highDex: round.attackerHighDex, physImmunity: round.defenderPhysImmunity, magicImmunity: round.defenderMagicImmunity, dexEvasiveness: round.defenderDexEvasiveness });
       bump(setRAnim, 'baHF', 700 / speed);
       // DEX expenditure for Phase-2 attacker (left = attacker)
       { const used = round.attackerDexUsed ?? 0; const rec = round.attackerDexRecovered ?? 0; const rem = round.attackerDexRemaining;
@@ -351,6 +453,14 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     }
     await sleep(1100);
     if (cancelRef.current) { setBusy(false); return; }
+
+    // ── Mana Regen float ──────────────────────────────────────────────────────
+    if (round.challengerManaRegen != null && round.challengerManaRegen > 0)
+      setManaRegenL({ v: round.challengerManaRegen, k: Date.now() });
+    if (round.defenderManaRegen != null && round.defenderManaRegen > 0)
+      setManaRegenR({ v: round.defenderManaRegen, k: Date.now() + 1 });
+    setManaShowRecharged(true);
+    setManaDisplayIdx(idx);
 
     // ── Phase 4: Elimination if hero knocked out this round ───────────────────
     const cOut = round.winner === 'defender' && (!rounds[idx + 1] || rounds[idx + 1].attackerHero !== round.attackerHero);
@@ -399,6 +509,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     const clamped = Math.max(0, Math.min(idx, rounds.length - 1));
     setRoundIdx(clamped);
     // Show accumulated mana state: mana after the previous round (idx-1), or full at start (idx=0)
+    setManaShowRecharged(true);  // when skipping, show the fully resolved (recharged) value
     setManaDisplayIdx(clamped - 1);
     // DEX: show final value of previous round for current hero (reset to null=full if hero changed)
     const prevR = clamped > 0 ? rounds[clamped - 1] : null;
@@ -470,9 +581,13 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
   const round = rounds[Math.min(roundIdx, rounds.length - 1)];
   const cDefeated = useMemo(() => getDefeated(rounds, roundIdx, 'attacker'), [rounds, roundIdx]);
   const dDefeated = useMemo(() => getDefeated(rounds, roundIdx, 'defender'), [rounds, roundIdx]);
+  const cLearnedSpells = useMemo(() => computeLearnedSpells(rounds, roundIdx, 'attacker'), [rounds, roundIdx]);
+  const dLearnedSpells = useMemo(() => computeLearnedSpells(rounds, roundIdx, 'defender'), [rounds, roundIdx]);
   const cHero = cRoster.find(h => h.name === round?.attackerHero) ?? cRoster[0];
   const dHero = dRoster.find(h => h.name === round?.defenderHero) ?? dRoster[0];
   const isAtEnd = roundIdx >= rounds.length - 1;
+  const cIntroElemColor = cRoster[0]?.element ? (ELEM_COLOR[cRoster[0].element] ?? '#fbbf24') : '#fbbf24';
+  const dIntroElemColor = dRoster[0]?.element ? (ELEM_COLOR[dRoster[0].element] ?? '#60a5fa') : '#60a5fa';
 
   // DEX helpers
   const getMaxDex = (heroName: string | undefined, side: 'attacker' | 'defender') => {
@@ -656,7 +771,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     );
   };
 
-  const renderBloodSplatter = (sp: number, label: string, elemBonus?: number, elem?: string, rawAttack?: number, staminaLost?: number, crit?: boolean, magicProf?: boolean, isLeft?: boolean, attackFlat?: number, highDex?: boolean) => {
+  const renderBloodSplatter = (sp: number, label: string, elemBonus?: number, elem?: string, rawAttack?: number, staminaLost?: number, crit?: boolean, magicProf?: boolean, isLeft?: boolean, attackFlat?: number, highDex?: boolean, _physImmunity?: number, _magicImmunity?: number, _dexEvasiveness?: number) => {
     const poolDur = `${900 / sp}ms`;
     const hasStamina = staminaLost != null && staminaLost > 0;
     const hasAttackFlat = attackFlat != null && attackFlat > 0;
@@ -903,12 +1018,17 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     dmg: typeof dmgL,
     manaTotal: number,
     manaCurrent: number,
-    spellNotif: { spells: Array<{ name: string; manaCost: number }>; k: number } | null,
+    spellNotif: { spells: Array<{ name: string; manaCost: number; spellType?: 'normal' | 'copied' | 'absorbed' | 'fromLearned' | 'justLearned'; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number }>; k: number } | null,
     dexMax: number,
     dexCur: number,
     _dexExpDelta: { net: number; k: number } | null,
     _dexRecDelta: { net: number; k: number } | null,
     dexRecovering: boolean,
+    _manaRegen: { v: number; k: number } | null,
+    learnedSpells: LearnedSpell[],
+    rotActive: boolean,
+    rotRemaining: number,
+    rotTotal: number,
   ) => {
     if (!hero) return <div style={{ flex: 1 }} />;
     const isWinner = roundRes && ((isLeft && roundRes === 'attacker') || (!isLeft && roundRes === 'defender'));
@@ -918,7 +1038,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     const showHit = !!(hitInd && ((isLeft && hitInd.side === 'left') || (!isLeft && hitInd.side === 'right')));
 
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, position: 'relative', overflow: 'visible' }}>
         {/* Floating damage number — floats up beside portrait, stays until end of round */}
         {dmg && (
           <div key={dmg.k} style={{
@@ -933,7 +1053,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
             animationTimingFunction: 'ease-out',
             pointerEvents: 'none',
           }}>
-            {renderBloodSplatter(speed, dmg.v.toFixed(1), dmg.elemBonus, dmg.elem, dmg.rawAttack, dmg.staminaLost, dmg.crit, dmg.magicProf, isLeft, dmg.attackFlat, dmg.highDex)}
+            {renderBloodSplatter(speed, dmg.v.toFixed(1), dmg.elemBonus, dmg.elem, dmg.rawAttack, dmg.staminaLost, dmg.crit, dmg.magicProf, isLeft, dmg.attackFlat, dmg.highDex, dmg.physImmunity, dmg.magicImmunity, dmg.dexEvasiveness)}
           </div>
         )}
 
@@ -1001,8 +1121,8 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
                 {/* DEX bar — bottom of portrait */}
                 {dexMax > 0 && (() => {
                   const pct = Math.max(0, Math.min(1, dexCur / dexMax));
-                  const fill = `linear-gradient(90deg, #052e16 0%, #0f3d20 25%, #14532d 55%, #166534 80%, #15803d 100%)`;
-                  const glow = 'rgba(21,128,61,0.6)';
+                  const fill = `linear-gradient(90deg, #2e2c10 0%, #5c5820 25%, #8a8432 55%, #b0aa3e 80%, #d8d455 100%)`;
+                  const glow = 'rgba(216,212,85,0.55)';
                   return (
                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 22, backgroundColor: '#3a3a4a', zIndex: 10, borderTop: '1px solid rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.6)' }}>
                       {/* Fill */}
@@ -1017,131 +1137,51 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
                         {/* Top shine */}
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 6, background: 'linear-gradient(to bottom, rgba(255,255,255,0.22), transparent)', pointerEvents: 'none' }} />
                       </div>
-                      {/* Dragon Slayer — diagonal, overflows upward into portrait */}
-                      <svg width="115" height="46" viewBox="0 0 115 46"
-                        style={{ position: 'absolute', left: 3, bottom: 0, pointerEvents: 'none', zIndex: 15, overflow: 'visible', filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.9))', transform: 'scale(0.41)', transformOrigin: 'left bottom' }}>
-                        {/* Wado Ichimonji — crosses Dragon Slayer, handle lower-right blade upper-left */}
-                        <g transform="translate(108,42) rotate(202)">
-                          {/* Kashira (pommel) — small rounded silver cap */}
-                          <ellipse cx="0" cy="0" rx="3.2" ry="2.8" fill="#c8c8d4" />
-                          <ellipse cx="0" cy="0" rx="3.2" ry="2.8" fill="none" stroke="#9090a8" strokeWidth="0.7" />
-                          <ellipse cx="-0.8" cy="-0.8" rx="1.4" ry="1" fill="rgba(255,255,255,0.3)" />
-                          {/* Tsuka (handle) — black with white ito wrap */}
-                          <rect x="3.2" y="-2.8" width="19" height="5.6" rx="1.5" fill="#0d0d14" />
-                          <rect x="3.2" y="-2.8" width="19" height="1.4" rx="1" fill="rgba(255,255,255,0.06)" />
-                          {/* Diamond ito wrap — white silk */}
-                          <line x1="5.5"  y1="-2.8" x2="7"   y2="2.8"  stroke="rgba(230,230,245,0.7)" strokeWidth="0.9" />
-                          <line x1="8.5"  y1="-2.8" x2="10"  y2="2.8"  stroke="rgba(230,230,245,0.7)" strokeWidth="0.9" />
-                          <line x1="11.5" y1="-2.8" x2="13"  y2="2.8"  stroke="rgba(230,230,245,0.7)" strokeWidth="0.9" />
-                          <line x1="14.5" y1="-2.8" x2="16"  y2="2.8"  stroke="rgba(230,230,245,0.7)" strokeWidth="0.9" />
-                          <line x1="17.5" y1="-2.8" x2="19"  y2="2.8"  stroke="rgba(230,230,245,0.7)" strokeWidth="0.9" />
-                          <line x1="5.5"  y1="2.8"  x2="7"   y2="-2.8" stroke="rgba(200,200,225,0.4)" strokeWidth="0.6" />
-                          <line x1="8.5"  y1="2.8"  x2="10"  y2="-2.8" stroke="rgba(200,200,225,0.4)" strokeWidth="0.6" />
-                          <line x1="11.5" y1="2.8"  x2="13"  y2="-2.8" stroke="rgba(200,200,225,0.4)" strokeWidth="0.6" />
-                          <line x1="14.5" y1="2.8"  x2="16"  y2="-2.8" stroke="rgba(200,200,225,0.4)" strokeWidth="0.6" />
-                          <line x1="17.5" y1="2.8"  x2="19"  y2="-2.8" stroke="rgba(200,200,225,0.4)" strokeWidth="0.6" />
-                          {/* Tsuba — circular iron guard, Wado's signature */}
-                          <circle cx="22.2" cy="0" r="5.8" fill="#72728a" />
-                          <circle cx="22.2" cy="0" r="5.8" fill="none" stroke="#505068" strokeWidth="0.9" />
-                          <circle cx="22.2" cy="0" r="4.2" fill="none" stroke="rgba(180,180,210,0.35)" strokeWidth="0.5" />
-                          <circle cx="22.2" cy="0" r="1.8" fill="rgba(200,200,230,0.15)" />
-                          <ellipse cx="20.8" cy="-1.4" rx="1.8" ry="1.1" fill="rgba(255,255,255,0.18)" />
-                          {/* Habaki (blade collar) — silver */}
-                          <rect x="28" y="-2.2" width="3.5" height="4.4" rx="0.5" fill="#b8b8cc" />
-                          <rect x="28" y="-2.2" width="3.5" height="4.4" rx="0.5" fill="none" stroke="#9090a8" strokeWidth="0.5" />
-                          {/* Blade — pure white, slender and elegant */}
-                          <polygon points="31.5,-2.2 100,0 31.5,2.2" fill="#eeeef8" />
-                          {/* Blade top edge — bright white cutting edge */}
-                          <line x1="31.5" y1="-2.2" x2="100" y2="0" stroke="rgba(255,255,255,0.95)" strokeWidth="0.7" />
-                          {/* Shinogi-ji (flat of blade) sheen */}
-                          <polygon points="31.5,-2.2 95,-0.4 95,0 31.5,-1.2" fill="rgba(255,255,255,0.18)" />
-                          {/* Bo-hi (fuller groove) */}
-                          <line x1="32" y1="-0.9" x2="88" y2="-0.35" stroke="rgba(140,150,190,0.55)" strokeWidth="0.7" />
-                          {/* Mune (spine) */}
-                          <line x1="31.5" y1="2.2" x2="96" y2="0.3" stroke="rgba(160,165,200,0.45)" strokeWidth="0.5" />
-                          {/* Yokote line */}
-                          <line x1="93" y1="-1.8" x2="93" y2="1.5" stroke="rgba(170,175,210,0.6)" strokeWidth="0.6" />
-                          {/* Kissaki (tip) — elegant curved point */}
-                          <polygon points="93,-1.8 100,0 93,1.5" fill="#f4f4ff" />
-                          <line x1="96" y1="-1" x2="100" y2="0" stroke="rgba(255,255,255,0.8)" strokeWidth="0.5" />
-                        </g>
-                        <g transform="translate(4,42) rotate(-22)">
-                          {/* Pommel — heavy iron disc */}
-                          <ellipse cx="0" cy="0" rx="5.5" ry="5" fill="#2c2c35" />
-                          <ellipse cx="0" cy="0" rx="5.5" ry="5" fill="none" stroke="#444455" strokeWidth="1" />
-                          <ellipse cx="-1" cy="-1.5" rx="2.5" ry="1.8" fill="rgba(255,255,255,0.1)" />
-                          {/* Handle — thick wrapped grip */}
-                          <rect x="5" y="-3.8" width="22" height="7.5" rx="2" fill="#1e0e04" />
-                          <rect x="5" y="-3.8" width="22" height="2" rx="1.5" fill="rgba(255,255,255,0.07)" />
-                          <line x1="8"  y1="-3.8" x2="7"  y2="3.7" stroke="rgba(160,120,50,0.55)" strokeWidth="1.1" />
-                          <line x1="12" y1="-3.8" x2="11" y2="3.7" stroke="rgba(160,120,50,0.55)" strokeWidth="1.1" />
-                          <line x1="16" y1="-3.8" x2="15" y2="3.7" stroke="rgba(160,120,50,0.55)" strokeWidth="1.1" />
-                          <line x1="20" y1="-3.8" x2="19" y2="3.7" stroke="rgba(160,120,50,0.55)" strokeWidth="1.1" />
-                          <line x1="24" y1="-3.8" x2="23" y2="3.7" stroke="rgba(160,120,50,0.55)" strokeWidth="1.1" />
-                          {/* Crossguard — wide asymmetric slab */}
-                          <rect x="26" y="-9" width="6" height="18" rx="1.5" fill="#252530" />
-                          <rect x="26" y="-9" width="6" height="18" rx="1.5" fill="none" stroke="#3a3a48" strokeWidth="0.8" />
-                          <rect x="26.5" y="-9" width="2" height="8" rx="1" fill="rgba(255,255,255,0.08)" />
-                          {/* Blade — Dragon Slayer massive iron slab */}
-                          <polygon points="31,-7 108,-3.5 108,3.5 31,7" fill="#18181f" />
-                          {/* Blade bevel — top face */}
-                          <polygon points="31,-7 108,-3.5 108,-1.5 31,-5" fill="#252532" />
-                          {/* Spine highlight */}
-                          <line x1="32" y1="-6.2" x2="107" y2="-3.2" stroke="rgba(140,155,185,0.5)" strokeWidth="0.9" />
-                          {/* Secondary edge sheen */}
-                          <line x1="32" y1="-4.5" x2="107" y2="-2" stroke="rgba(100,115,145,0.3)" strokeWidth="0.6" />
-                          {/* Fuller groove */}
-                          <line x1="32" y1="-1.2" x2="106" y2="-0.6" stroke="rgba(0,0,0,0.55)" strokeWidth="1.4" />
-                          {/* Bottom rough edge */}
-                          <line x1="31" y1="7" x2="108" y2="3.5" stroke="#111118" strokeWidth="0.8" />
-                          {/* Battle notches — Dragon Slayer is heavily used */}
-                          <polygon points="48,7 50,5 52,7"   fill="#18181f" />
-                          <polygon points="65,6.5 67,4.5 69,6.5" fill="#18181f" />
-                          <polygon points="83,5.8 85,4 87,5.8" fill="#18181f" />
-                          <polygon points="97,5.2 99,3.5 101,5.2" fill="#18181f" />
-                          {/* Tip — flat brutish end */}
-                          <polygon points="106,-3.5 112,0 106,3.5" fill="#1e1e28" />
-                          <line x1="109" y1="-2" x2="112" y2="0" stroke="rgba(130,145,175,0.35)" strokeWidth="0.7" />
-                          {/* BLOOD — dark dried stains */}
-                          <ellipse cx="50" cy="1" rx="9" ry="5" fill="rgba(140,5,5,0.72)" />
-                          <ellipse cx="49" cy="0" rx="5.5" ry="3" fill="rgba(180,10,10,0.55)" />
-                          <ellipse cx="53" cy="2.5" rx="3" ry="1.8" fill="rgba(120,0,0,0.5)" />
-                          <ellipse cx="78" cy="-0.5" rx="7" ry="4" fill="rgba(130,5,5,0.65)" />
-                          <ellipse cx="77" cy="-1.5" rx="4" ry="2.2" fill="rgba(170,8,8,0.5)" />
-                          {/* Blood drip 1 */}
-                          <path d="M52 6 Q52.5 10 52 13 Q51.5 15 52 17" stroke="rgba(160,5,5,0.75)" strokeWidth="1.8" fill="none" strokeLinecap="round" />
-                          <ellipse cx="52" cy="18" rx="1.5" ry="1.1" fill="rgba(150,5,5,0.65)" />
-                          {/* Blood drip 2 */}
-                          <path d="M76 5.5 Q76.5 9 76 12" stroke="rgba(140,5,5,0.7)" strokeWidth="1.4" fill="none" strokeLinecap="round" />
-                          <ellipse cx="76" cy="12.8" rx="1.2" ry="0.9" fill="rgba(140,5,5,0.6)" />
-                          {/* Scattered drops */}
-                          <circle cx="60" cy="-3" r="1.8" fill="rgba(130,5,5,0.55)" />
-                          <circle cx="67" cy="4"  r="1.3" fill="rgba(140,5,5,0.5)" />
-                          <circle cx="88" cy="-2" r="1.5" fill="rgba(120,5,5,0.5)" />
-                          <circle cx="95" cy="3"  r="1"   fill="rgba(135,5,5,0.45)" />
-                          <circle cx="44" cy="-4" r="1"   fill="rgba(140,5,5,0.45)" />
+                      {/* Shuriken icon */}
+                      <svg width="20" height="20" viewBox="0 0 20 20"
+                        style={{ position: 'absolute', left: 4, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 15, filter: 'drop-shadow(0 0 4px rgba(251,191,36,0.9)) drop-shadow(0 0 8px rgba(251,191,36,0.5))' }}>
+                        <g transform="translate(10,10)">
+                          {/* 4 blades — twisted shuriken shape */}
+                          {/* Top-right blade */}
+                          <polygon points="0,-8.5 3.5,0 0,-2.5 -1.5,-3" fill="#fbbf24" />
+                          {/* Right-bottom blade */}
+                          <polygon points="8.5,0 0,3.5 2.5,0 3,-1.5" fill="#d97706" />
+                          {/* Bottom-left blade */}
+                          <polygon points="0,8.5 -3.5,0 0,2.5 1.5,3" fill="#fbbf24" />
+                          {/* Left-top blade */}
+                          <polygon points="-8.5,0 0,-3.5 -2.5,0 -3,1.5" fill="#d97706" />
+                          {/* Blade highlights */}
+                          <polygon points="0,-8.5 1.5,-4 0,-2.5" fill="rgba(255,236,153,0.55)" />
+                          <polygon points="8.5,0 4,1.5 2.5,0" fill="rgba(255,236,153,0.35)" />
+                          <polygon points="0,8.5 -1.5,4 0,2.5" fill="rgba(255,236,153,0.55)" />
+                          <polygon points="-8.5,0 -4,-1.5 -2.5,0" fill="rgba(255,236,153,0.35)" />
+                          {/* Center hole ring */}
+                          <circle cx="0" cy="0" r="2.8" fill="#1a0e00" />
+                          <circle cx="0" cy="0" r="2.8" fill="none" stroke="#b45309" strokeWidth="0.8" />
+                          <circle cx="0" cy="0" r="1.2" fill="#92400e" />
+                          <circle cx="-0.6" cy="-0.6" r="0.6" fill="rgba(255,220,100,0.3)" />
                         </g>
                       </svg>
-                      {/* DEX label — next to sword (left), value on right */}
-                      <div style={{ position: 'absolute', left: 62, top: 0, bottom: 0, display: 'flex', alignItems: 'center', gap: 2, pointerEvents: 'none' }}>
+                      {/* DEX label — next to shuriken (left), value on right */}
+                      <div style={{ position: 'absolute', left: 28, top: 0, bottom: 0, display: 'flex', alignItems: 'center', gap: 2, pointerEvents: 'none' }}>
                         <span style={{
-                          fontSize: 11, fontWeight: 900, color: '#4ade80', letterSpacing: '0.18em', lineHeight: 1,
+                          fontSize: 11, fontWeight: 900, color: '#d8d455', letterSpacing: '0.18em', lineHeight: 1,
                           textTransform: 'uppercase',
-                          textShadow: '0 0 8px rgba(74,222,128,0.95), 0 0 18px rgba(74,222,128,0.6), 0 0 32px rgba(74,222,128,0.35), -1px -1px 0 rgba(0,0,0,1), 1px -1px 0 rgba(0,0,0,1), -1px 1px 0 rgba(0,0,0,1), 1px 1px 0 rgba(0,0,0,1)',
+                          textShadow: '0 0 8px rgba(216,212,85,0.95), 0 0 18px rgba(216,212,85,0.6), 0 0 32px rgba(216,212,85,0.35), -1px -1px 0 rgba(0,0,0,1), 1px -1px 0 rgba(0,0,0,1), -1px 1px 0 rgba(0,0,0,1), 1px 1px 0 rgba(0,0,0,1)',
                         }}>DEX</span>
                       </div>
                       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 7, gap: 1, pointerEvents: 'none' }}>
                         <span style={{
-                          fontSize: 12, fontWeight: 900, color: '#d1fae5', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
-                          textShadow: '0 0 10px rgba(74,222,128,0.9), 0 0 22px rgba(74,222,128,0.5), -1px -1px 0 rgba(0,0,0,1), 1px -1px 0 rgba(0,0,0,1), -1px 1px 0 rgba(0,0,0,1), 1px 1px 0 rgba(0,0,0,1), 0 2px 8px rgba(0,0,0,1)',
+                          fontSize: 12, fontWeight: 900, color: '#d8d455', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                          textShadow: '0 0 10px rgba(216,212,85,0.9), 0 0 22px rgba(216,212,85,0.5), -1px -1px 0 rgba(0,0,0,1), 1px -1px 0 rgba(0,0,0,1), -1px 1px 0 rgba(0,0,0,1), 1px 1px 0 rgba(0,0,0,1), 0 2px 8px rgba(0,0,0,1)',
                         }}>{Math.round(dexCur)}</span>
                         <span style={{
-                          fontSize: 12, fontWeight: 700, color: 'rgba(134,239,172,0.55)', lineHeight: 1,
-                          textShadow: '-1px -1px 0 rgba(0,0,0,0.8), 1px 1px 0 rgba(0,0,0,0.8)',
+                          fontSize: 12, fontWeight: 900, color: 'rgba(216,212,85,0.85)', lineHeight: 1,
+                          textShadow: '-1px -1px 0 rgba(0,0,0,1), 1px -1px 0 rgba(0,0,0,1), -1px 1px 0 rgba(0,0,0,1), 1px 1px 0 rgba(0,0,0,1)',
                         }}>/</span>
                         <span style={{
-                          fontSize: 12, fontWeight: 700, color: 'rgba(134,239,172,0.65)', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
-                          textShadow: '-1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9), 1px 1px 0 rgba(0,0,0,0.9)',
+                          fontSize: 14, fontWeight: 900, color: '#d8d455', fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                          textShadow: '0 0 10px rgba(216,212,85,0.85), -1px -1px 0 rgba(0,0,0,0.9), 1px -1px 0 rgba(0,0,0,0.9), -1px 1px 0 rgba(0,0,0,0.9), 1px 1px 0 rgba(0,0,0,0.9)',
                         }}>{Math.round(dexMax)}</span>
                       </div>
                     </div>
@@ -1156,13 +1196,165 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
             )}
           </div>
 
+          {/* Rot icon — biological pathogen cell cluster */}
+          {rotActive && rotRemaining > 0 && (
+            <div style={{
+              position: 'absolute', bottom: 0, zIndex: 20, pointerEvents: 'none',
+              ...(isLeft ? { left: 'calc(100% + 5px)' } : { right: 'calc(100% + 5px)' }),
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+            }}>
+              <div style={{
+                width: 50, height: 50,
+                background: '#080100',
+                border: '2px solid rgba(160,20,20,0.85)',
+                borderRadius: 9,
+                boxShadow: '0 0 0 1px rgba(50,0,0,0.8), 0 0 14px rgba(190,20,20,0.8), 0 0 30px rgba(150,10,10,0.4), inset 0 0 16px rgba(60,0,0,0.9)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative', overflow: 'hidden',
+              }}>
+                {/* Subtle organic background warmth */}
+                <div style={{
+                  position: 'absolute', inset: 0, borderRadius: 7,
+                  background: 'radial-gradient(ellipse at 35% 30%, rgba(50,5,2,0.7) 0%, transparent 55%), radial-gradient(ellipse at 70% 72%, rgba(35,3,2,0.5) 0%, transparent 45%)',
+                }} />
+                {/* Pulsing disease glow */}
+                <div style={{
+                  position: 'absolute', inset: 0, borderRadius: 7,
+                  background: 'radial-gradient(circle at 50% 50%, rgba(160,20,20,0.22) 0%, transparent 58%)',
+                  animation: 'baManaGlow 1.6s ease-in-out infinite',
+                }} />
+                <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ position: 'relative', zIndex: 1 }}>
+                  {/* ── Filaments (drawn behind cells) ── */}
+                  <path d="M6 7 Q9 10 13 13.5" stroke="#4a0505" strokeWidth="0.55" opacity="0.8" />
+                  <path d="M6 7 Q11 8.5 15.5 11" stroke="#3a0404" strokeWidth="0.4" opacity="0.65" />
+                  <path d="M25 5 Q22 9 18.5 13" stroke="#4a0505" strokeWidth="0.55" opacity="0.8" />
+                  <path d="M25 5 Q20.5 7.5 16 11" stroke="#3a0404" strokeWidth="0.4" opacity="0.65" />
+                  <path d="M27 21 Q23.5 20 19 18" stroke="#4a0505" strokeWidth="0.55" opacity="0.8" />
+                  <path d="M27 21 Q22.5 23 18.5 20" stroke="#3a0404" strokeWidth="0.4" opacity="0.6" />
+                  <path d="M5 24 Q9 22 13 19" stroke="#4a0505" strokeWidth="0.55" opacity="0.8" />
+                  <path d="M5 24 Q8 20.5 13.5 18" stroke="#3a0404" strokeWidth="0.4" opacity="0.6" />
+                  <path d="M6 7 Q11 14 10 20" stroke="#300404" strokeWidth="0.35" opacity="0.5" />
+                  <path d="M25 5 Q25 15 27 21" stroke="#300404" strokeWidth="0.35" opacity="0.5" />
+                  <path d="M5 24 Q13.5 21 21 27" stroke="#300404" strokeWidth="0.35" opacity="0.45" />
+                  <path d="M13 3 Q14 7.5 15.5 11" stroke="#3a0404" strokeWidth="0.4" opacity="0.6" />
+                  <path d="M21 27 Q19.5 24 18 21" stroke="#3a0404" strokeWidth="0.4" opacity="0.6" />
+                  <path d="M22 11 Q20.5 13.5 18.5 15.5" stroke="#4a0505" strokeWidth="0.45" opacity="0.7" />
+                  <path d="M10 21 Q12 19.5 13.5 17.5" stroke="#4a0505" strokeWidth="0.45" opacity="0.7" />
+                  <path d="M28 11 Q25.5 14 22 11" stroke="#3a0404" strokeWidth="0.4" opacity="0.55" />
+                  <path d="M4 15 Q7 15.5 6 7" stroke="#300404" strokeWidth="0.35" opacity="0.5" />
+                  {/* ── Tiny satellite cells ── */}
+                  {/* (cx, cy, r): shadow → dark base → mid → highlight dot */}
+                  <circle cx="13" cy="3" r="2.3" fill="#030000" />
+                  <circle cx="13" cy="3" r="1.9" fill="#5a0000" />
+                  <circle cx="12.3" cy="2.4" r="1.0" fill="#991b1b" opacity="0.75" />
+                  <circle cx="12.0" cy="2.1" r="0.38" fill="#fca5a5" opacity="0.55" />
+
+                  <circle cx="28" cy="11" r="2.1" fill="#030000" />
+                  <circle cx="28" cy="11" r="1.7" fill="#5a0000" />
+                  <circle cx="27.4" cy="10.4" r="0.9" fill="#991b1b" opacity="0.75" />
+                  <circle cx="27.1" cy="10.1" r="0.34" fill="#fca5a5" opacity="0.55" />
+
+                  <circle cx="4" cy="15" r="1.8" fill="#030000" />
+                  <circle cx="4" cy="15" r="1.4" fill="#5a0000" />
+                  <circle cx="3.5" cy="14.5" r="0.7" fill="#991b1b" opacity="0.7" />
+
+                  <circle cx="21" cy="27" r="2.4" fill="#030000" />
+                  <circle cx="21" cy="27" r="2.0" fill="#5a0000" />
+                  <circle cx="20.3" cy="26.3" r="1.0" fill="#991b1b" opacity="0.75" />
+                  <circle cx="20.0" cy="26.0" r="0.4" fill="#fca5a5" opacity="0.55" />
+                  {/* ── Medium cells ── */}
+                  <circle cx="22" cy="11" r="3.2" fill="#020000" />
+                  <circle cx="22" cy="11" r="2.7" fill="#6b0000" />
+                  <circle cx="20.8" cy="9.9" r="1.4" fill="#b91c1c" opacity="0.72" />
+                  <circle cx="20.4" cy="9.5" r="0.55" fill="#fca5a5" opacity="0.6" />
+                  <circle cx="20.2" cy="9.3" r="0.22" fill="white" opacity="0.38" />
+
+                  <circle cx="10" cy="21" r="2.9" fill="#020000" />
+                  <circle cx="10" cy="21" r="2.4" fill="#6b0000" />
+                  <circle cx="9.0" cy="20.0" r="1.2" fill="#b91c1c" opacity="0.7" />
+                  <circle cx="8.6" cy="19.6" r="0.5" fill="#fca5a5" opacity="0.58" />
+                  <circle cx="8.4" cy="19.4" r="0.2" fill="white" opacity="0.35" />
+                  {/* ── Large outer cells ── */}
+                  <circle cx="6" cy="7" r="5.0" fill="#010000" />
+                  <circle cx="6" cy="7" r="4.3" fill="#7f0000" />
+                  <circle cx="4.5" cy="5.6" r="2.1" fill="#c0392b" opacity="0.68" />
+                  <circle cx="4.0" cy="5.1" r="0.85" fill="#fca5a5" opacity="0.58" />
+                  <circle cx="3.7" cy="4.8" r="0.35" fill="white" opacity="0.42" />
+
+                  <circle cx="25" cy="5" r="4.5" fill="#010000" />
+                  <circle cx="25" cy="5" r="3.8" fill="#7f0000" />
+                  <circle cx="23.6" cy="3.7" r="1.9" fill="#c0392b" opacity="0.68" />
+                  <circle cx="23.1" cy="3.2" r="0.75" fill="#fca5a5" opacity="0.58" />
+                  <circle cx="22.8" cy="2.9" r="0.3" fill="white" opacity="0.42" />
+
+                  <circle cx="27" cy="21" r="4.8" fill="#010000" />
+                  <circle cx="27" cy="21" r="4.1" fill="#7f0000" />
+                  <circle cx="25.4" cy="19.5" r="2.0" fill="#c0392b" opacity="0.68" />
+                  <circle cx="24.9" cy="19.0" r="0.8" fill="#fca5a5" opacity="0.58" />
+                  <circle cx="24.6" cy="18.7" r="0.32" fill="white" opacity="0.42" />
+
+                  <circle cx="5" cy="24" r="4.2" fill="#010000" />
+                  <circle cx="5" cy="24" r="3.5" fill="#7f0000" />
+                  <circle cx="3.7" cy="22.7" r="1.7" fill="#c0392b" opacity="0.65" />
+                  <circle cx="3.3" cy="22.3" r="0.68" fill="#fca5a5" opacity="0.55" />
+                  <circle cx="3.0" cy="22.0" r="0.28" fill="white" opacity="0.38" />
+                  {/* ── Dominant central cell ── */}
+                  <circle cx="16" cy="16" r="7.2" fill="#010000" />
+                  <circle cx="16" cy="16" r="6.3" fill="#8b0000" />
+                  <circle cx="14.2" cy="14.2" r="3.1" fill="#c0392b" opacity="0.7" />
+                  <circle cx="13.5" cy="13.5" r="1.3" fill="#fca5a5" opacity="0.62" />
+                  <circle cx="13.1" cy="13.1" r="0.55" fill="white" opacity="0.45" />
+                </svg>
+              </div>
+              {/* Turn counter */}
+              <div style={{
+                background: 'rgba(0,0,0,0.9)',
+                border: '1px solid rgba(160,20,20,0.7)',
+                borderRadius: 10, padding: '1px 7px',
+                display: 'flex', alignItems: 'baseline', gap: 1,
+                boxShadow: '0 0 6px rgba(160,20,20,0.45)',
+              }}>
+                <span style={{
+                  fontSize: 13, fontWeight: 900, color: '#ffffff',
+                  textShadow: '0 0 10px rgba(200,30,30,1), 0 1px 3px #000',
+                  fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                }}>{rotRemaining}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#8b1010', lineHeight: 1 }}>/{rotTotal}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Learned spells panel — left side of portrait for left hero, right side for right hero */}
+          {learnedSpells.length > 0 && (
+            <div style={{
+              position: 'absolute', top: 0, zIndex: 10,
+              ...(isLeft ? { right: 'calc(100% + 8px)' } : { left: 'calc(100% + 8px)' }),
+              minWidth: 110, display: 'flex', flexDirection: 'column', gap: 4,
+            }}>
+              <div style={{ fontSize: 8, fontWeight: 900, color: '#9f7aea', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 2, textShadow: '0 0 6px rgba(159,122,234,0.6)' }}>Learned</div>
+              {learnedSpells.map(sp => (
+                <span key={sp.name}
+                  onMouseEnter={(e) => setAnimSpellTooltip({ name: sp.name, bonuses: sp.bonuses, trigger: sp.trigger, chance: sp.chance, manaCost: sp.manaCost, x: e.clientX, y: e.clientY })}
+                  onMouseMove={(e) => setAnimSpellTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
+                  onMouseLeave={() => setAnimSpellTooltip(null)}
+                  style={{
+                    fontSize: 9, fontWeight: 800, color: '#c084fc',
+                    backgroundColor: 'rgba(192,132,252,0.12)',
+                    border: '1px solid rgba(192,132,252,0.4)', borderRadius: 4,
+                    padding: '3px 6px', whiteSpace: 'nowrap',
+                    textShadow: '0 0 8px rgba(192,132,252,0.7)',
+                    cursor: 'help',
+                  }}>◈ {sp.name}</span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Mana bar — below the name, only if team has mana */}
         {manaTotal > 0 && (() => {
           const pct = Math.max(0, Math.min(1, manaCurrent / manaTotal));
           return (
-            <div style={{ width: PORTRAIT_SIZE + 100, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: PORTRAIT_SIZE + 100, display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
               <div style={{ flex: 1, ...s.manaBarTrack }}>
                 <div style={{
                   ...s.manaBarFill,
@@ -1179,19 +1371,32 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
           );
         })()}
 
-        {/* Spell notifications — each row pops in sequentially */}
+        {/* Spell notifications — absolutely positioned below so they don't shift the portrait */}
         {spellNotif && (
-          <div key={spellNotif.k} style={{ ...s.spellNotifWrap, width: PORTRAIT_SIZE + 40 }}>
-            {spellNotif.spells.map((sp, i) => (
-              <div key={sp.name + i} style={{
-                ...s.spellNotif,
-                animationDelay: `${i * 600}ms`,
-              }}>
-                <span style={s.spellNotifIcon}>✦</span>
-                <span style={s.spellNotifName}>{sp.name}</span>
-                <span style={s.spellNotifCost}>−{sp.manaCost} MP</span>
-              </div>
-            ))}
+          <div key={spellNotif.k} style={{ ...s.spellNotifWrap, width: PORTRAIT_SIZE + 40, position: 'absolute', top: '100%', marginTop: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 20 }}>
+            {spellNotif.spells.map((sp, i) => {
+              const t = sp.spellType ?? 'normal';
+              const isAbsorbed = t === 'absorbed';
+              const notifColor = t === 'copied' ? '#f87171' : t === 'fromLearned' ? '#a78bfa' : t === 'justLearned' ? '#c084fc' : isAbsorbed ? '#6b7280' : '#60a5fa';
+              const notifIcon = t === 'copied' ? '✦' : t === 'fromLearned' ? '◈' : t === 'justLearned' ? '★' : isAbsorbed ? '⊘' : '✦';
+              return (
+                <div key={sp.name + i} onMouseEnter={(e) => setAnimSpellTooltip({ name: sp.name, manaCost: sp.manaCost, trigger: sp.trigger, chance: sp.chance, bonuses: sp.bonuses, lastsTurns: sp.lastsTurns, x: e.clientX, y: e.clientY })} onMouseMove={(e) => setAnimSpellTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)} onMouseLeave={() => setAnimSpellTooltip(null)} style={{
+                  ...s.spellNotif,
+                  animationDelay: `${i * 600}ms`,
+                  borderColor: `${notifColor}99`,
+                  boxShadow: `0 0 22px ${notifColor}44, 0 0 50px ${notifColor}18`,
+                  opacity: isAbsorbed ? 0.6 : 1,
+                }}>
+                  <span style={{ ...s.spellNotifIcon, color: notifColor, textShadow: `0 0 12px ${notifColor}, 0 0 24px ${notifColor}88` }}>{notifIcon}</span>
+                  <span style={{ ...s.spellNotifName, color: isAbsorbed ? '#9ca3af' : `${notifColor}ee` }}>
+                    {sp.name}
+                    {t === 'justLearned' && <span style={{ color: '#c084fc', fontSize: 9, marginLeft: 5, fontWeight: 900, letterSpacing: '0.12em' }}>LEARNED</span>}
+                    {isAbsorbed && <span style={{ color: '#6b7280', fontSize: 9, marginLeft: 5, letterSpacing: '0.12em' }}>BLOCKED</span>}
+                  </span>
+                  {!isAbsorbed && t !== 'justLearned' && <span style={{ ...s.spellNotifCost, color: notifColor, backgroundColor: `${notifColor}22`, borderColor: `${notifColor}55`, textShadow: `0 0 8px ${notifColor}` }}>{sp.manaCost}</span>}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -1286,9 +1491,17 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
 
         {renderHeroColumn(cHero, lAnim, true, dmgL,
           battleLog.challengerManaTotal ?? 0,
-          manaDisplayIdx >= 0 ? (rounds[manaDisplayIdx]?.challengerManaAfter ?? (battleLog.challengerManaTotal ?? 0)) : (battleLog.challengerManaTotal ?? 0),
+          manaDisplayIdx >= 0
+            ? (manaShowRecharged
+                ? (rounds[manaDisplayIdx]?.challengerManaAfter ?? (battleLog.challengerManaTotal ?? 0))
+                : (rounds[manaDisplayIdx]?.challengerManaBeforeRecharge ?? rounds[manaDisplayIdx]?.challengerManaAfter ?? (battleLog.challengerManaTotal ?? 0)))
+            : (battleLog.challengerManaTotal ?? 0),
           cSpellNotif,
           cMaxDex, cCurDex, dexExpDeltaL, dexRecDeltaL, dexRecoveringL,
+          manaRegenL, cLearnedSpells,
+          !!(busy ? showRotL : round?.attackerRotActive),
+          round?.attackerRotRemaining ?? 0,
+          round?.attackerRotTotal ?? 0,
         )}
 
         {/* Center panel */}
@@ -1325,9 +1538,17 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
 
         {renderHeroColumn(dHero, rAnim, false, dmgR,
           battleLog.defenderManaTotal ?? 0,
-          manaDisplayIdx >= 0 ? (rounds[manaDisplayIdx]?.defenderManaAfter ?? (battleLog.defenderManaTotal ?? 0)) : (battleLog.defenderManaTotal ?? 0),
+          manaDisplayIdx >= 0
+            ? (manaShowRecharged
+                ? (rounds[manaDisplayIdx]?.defenderManaAfter ?? (battleLog.defenderManaTotal ?? 0))
+                : (rounds[manaDisplayIdx]?.defenderManaBeforeRecharge ?? rounds[manaDisplayIdx]?.defenderManaAfter ?? (battleLog.defenderManaTotal ?? 0)))
+            : (battleLog.defenderManaTotal ?? 0),
           dSpellNotif,
           dMaxDex, dCurDex, dexExpDeltaR, dexRecDeltaR, dexRecoveringR,
+          manaRegenR, dLearnedSpells,
+          !!(busy ? showRotR : round?.defenderRotActive),
+          round?.defenderRotRemaining ?? 0,
+          round?.defenderRotTotal ?? 0,
         )}
       </div>
 
@@ -1422,6 +1643,226 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
           </div>
         </div>
       )}
+      {animSpellTooltip && (
+        <div style={{
+          position: 'fixed',
+          left: animSpellTooltip.x > window.innerWidth / 2 ? animSpellTooltip.x - 220 : animSpellTooltip.x + 14,
+          top: Math.min(animSpellTooltip.y - 10, window.innerHeight - 160),
+          zIndex: 9999,
+          background: 'linear-gradient(145deg, #0f172a 0%, #1a1040 100%)',
+          border: '1px solid rgba(139,92,246,0.45)',
+          borderRadius: 10,
+          padding: '10px 13px',
+          minWidth: 190,
+          maxWidth: 270,
+          pointerEvents: 'none',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.85), 0 0 18px rgba(139,92,246,0.18)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+            <span style={{ color: '#e2e8f0', fontWeight: 800, fontSize: 13 }}>✦ {animSpellTooltip.name}</span>
+            {animSpellTooltip.manaCost != null && animSpellTooltip.manaCost > 0 && (
+              <span style={{ background: 'rgba(59,130,246,0.18)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.45)', borderRadius: 6, padding: '2px 9px', fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap' }}>
+                {animSpellTooltip.manaCost} MP
+              </span>
+            )}
+          </div>
+          {animSpellTooltip.trigger && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+              <span style={{ background: 'rgba(30,41,59,0.9)', color: '#94a3b8', border: '1px solid #334155', borderRadius: 4, padding: '2px 8px', fontSize: 10, fontWeight: 800, letterSpacing: '0.08em' }}>
+                {BANIM_TRIGGER_LABELS[animSpellTooltip.trigger] ?? animSpellTooltip.trigger}
+              </span>
+              {animSpellTooltip.chance != null && (
+                <span style={{ color: '#94a3b8', fontSize: 11 }}>{animSpellTooltip.chance}% chance</span>
+              )}
+            </div>
+          )}
+          {animSpellTooltip.bonuses && Object.keys(animSpellTooltip.bonuses).length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+              {Object.entries(animSpellTooltip.bonuses).map(([k, v]) => {
+                const c = BANIM_STAT_COLORS[k] ?? '#60a5fa';
+                return (
+                  <span key={k} style={{ background: `${c}22`, color: c, border: `1px solid ${c}44`, borderRadius: 5, padding: '2px 8px', fontSize: 11, fontWeight: 800 }}>
+                    {v > 0 ? '+' : ''}{v} {BANIM_STAT_LABELS[k] ?? k}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          {animSpellTooltip.lastsTurns != null && animSpellTooltip.lastsTurns > 0 && (
+            <div style={{ color: '#64748b', fontSize: 10, marginTop: 5 }}>Lasts {animSpellTooltip.lastsTurns} turns</div>
+          )}
+        </div>
+      )}
+
+      {/* ── Battle intro cinematic ── */}
+      {showBattleIntro && (
+        <div key={introKey} style={{ position: 'fixed', inset: 0, zIndex: 10000, overflow: 'hidden', animation: 'introOverlayFade 2.75s ease forwards', pointerEvents: 'none' }}>
+          {/* Deep dark arena background */}
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 90% 65% at 50% 50%, #1a0505 0%, #060008 55%, #000 100%)' }} />
+          {/* CRT scan lines */}
+          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'repeating-linear-gradient(0deg,rgba(0,0,0,0.14) 0px,rgba(0,0,0,0.14) 1px,transparent 1px,transparent 3px)', pointerEvents: 'none' }} />
+          {/* Atmospheric floor glow */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%', background: 'linear-gradient(to top, rgba(180,30,0,0.12), transparent)', pointerEvents: 'none' }} />
+
+          {/* Screen-shake wrapper */}
+          <div style={{ position: 'absolute', inset: 0, animation: 'introShake 2.75s linear forwards' }}>
+
+            {/* ── Left panel (challenger) ── */}
+            <div style={{ position: 'absolute', left: '8%', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, animation: 'introHeroL 2.75s ease forwards' }}>
+              <div style={{ fontSize: 10, fontWeight: 900, color: '#fbbf24', letterSpacing: '0.2em', textTransform: 'uppercase', textShadow: '0 0 10px rgba(251,191,36,0.85)', marginBottom: -2 }}>PLAYER 1</div>
+              {/* Account portrait */}
+              <div style={{ width: 180, height: 200, border: `2.5px solid ${cIntroElemColor}`, boxShadow: `0 0 32px ${cIntroElemColor}, 0 0 80px rgba(255,100,0,0.18), inset 0 0 20px rgba(0,0,0,0.5)`, borderRadius: 8, overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+                {battleLog.challenger.profileImagePath
+                  ? <HeroPortrait imagePath={battleLog.challenger.profileImagePath} name={battleLog.challenger.username} size={180} />
+                  : <div style={{ width: 180, height: 200, background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: 56 }}>{battleLog.challenger.username.charAt(0).toUpperCase()}</div>
+                }
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%)', pointerEvents: 'none' }} />
+              </div>
+              {/* Username */}
+              <div style={{ fontFamily: '"Impact","Arial Black",sans-serif', fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '0.07em', textTransform: 'uppercase', textShadow: `0 0 14px ${cIntroElemColor}, 2px 2px 0 rgba(0,0,0,0.95)`, animation: 'introNameL 2.75s ease forwards', textAlign: 'center' }}>
+                {battleLog.challenger.username}
+              </div>
+              {/* Team power */}
+              {battleLog.challenger.teamPower != null && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, animation: 'introNameL 2.75s ease forwards' }}>
+                  <span style={{ fontSize: 11, color: '#a0a0b0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Power</span>
+                  <span style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24', textShadow: '0 0 10px rgba(251,191,36,0.9), 1px 1px 0 rgba(0,0,0,0.9)' }}>{Math.round(battleLog.challenger.teamPower).toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+
+            {/* ── Right panel (defender) ── */}
+            <div style={{ position: 'absolute', right: '8%', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, animation: 'introHeroR 2.75s ease forwards' }}>
+              <div style={{ fontSize: 10, fontWeight: 900, color: '#60a5fa', letterSpacing: '0.2em', textTransform: 'uppercase', textShadow: '0 0 10px rgba(96,165,250,0.85)', marginBottom: -2 }}>OPPONENT</div>
+              {/* Account portrait */}
+              <div style={{ width: 180, height: 200, border: `2.5px solid ${dIntroElemColor}`, boxShadow: `0 0 32px ${dIntroElemColor}, 0 0 80px rgba(50,100,255,0.18), inset 0 0 20px rgba(0,0,0,0.5)`, borderRadius: 8, overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+                {battleLog.defender.profileImagePath
+                  ? <HeroPortrait imagePath={battleLog.defender.profileImagePath} name={battleLog.defender.username} size={180} />
+                  : <div style={{ width: 180, height: 200, background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: 56 }}>{battleLog.defender.username.charAt(0).toUpperCase()}</div>
+                }
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%)', pointerEvents: 'none' }} />
+              </div>
+              {/* Username */}
+              <div style={{ fontFamily: '"Impact","Arial Black",sans-serif', fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '0.07em', textTransform: 'uppercase', textShadow: `0 0 14px ${dIntroElemColor}, 2px 2px 0 rgba(0,0,0,0.95)`, animation: 'introNameR 2.75s ease forwards', textAlign: 'center' }}>
+                {battleLog.defender.username}
+              </div>
+              {/* Team power */}
+              {battleLog.defender.teamPower != null && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, animation: 'introNameR 2.75s ease forwards' }}>
+                  <span style={{ fontSize: 11, color: '#a0a0b0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Power</span>
+                  <span style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24', textShadow: '0 0 10px rgba(251,191,36,0.9), 1px 1px 0 rgba(0,0,0,0.9)' }}>{Math.round(battleLog.defender.teamPower).toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+
+            {/* ── VS — visible while heroes approach ── */}
+            <div style={{ position: 'absolute', top: '50%', left: '50%', animation: 'introVs 2.75s ease forwards', pointerEvents: 'none' }}>
+              <span style={{ fontFamily: '"Impact","Arial Black",sans-serif', fontSize: 56, fontWeight: 900, color: 'transparent', backgroundImage: 'linear-gradient(180deg,#ffe000 0%,#ff8c00 45%,#cc2200 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', filter: 'drop-shadow(2px 4px 0 rgba(0,0,0,0.95)) drop-shadow(0 0 18px rgba(255,150,0,0.75))', letterSpacing: '0.06em', lineHeight: 1, display: 'block' }}>VS</span>
+            </div>
+
+            {/* ── Clash effects (baked timing: 22% of 2750ms ≈ 605ms) ── */}
+            {/* White screen flash */}
+            <div style={{ position: 'absolute', inset: 0, background: 'white', animation: 'introFlash 2.75s linear forwards', pointerEvents: 'none' }} />
+            {/* Expanding shockwave ring */}
+            <div style={{ position: 'absolute', top: '50%', left: '50%', width: 90, height: 90, borderRadius: '50%', border: '12px solid rgba(255,230,50,0.95)', animation: 'introShock 2.75s linear forwards', pointerEvents: 'none' }} />
+            {/* Radial gold burst */}
+            <div style={{ position: 'absolute', top: '50%', left: '50%', width: 110, height: 110, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,230,60,1) 0%, rgba(255,120,0,0.75) 35%, transparent 68%)', animation: 'introClashBurst 2.75s linear forwards', pointerEvents: 'none' }} />
+            {/* Spark starburst */}
+            <div style={{ position: 'absolute', top: '50%', left: '50%', width: 260, height: 260, animation: 'introSparks 2.75s linear forwards', pointerEvents: 'none' }}>
+              <svg width="260" height="260" viewBox="0 0 260 260" style={{ position: 'absolute', top: '-130px', left: '-130px', overflow: 'visible' }}>
+                {[0,22,45,67,90,112,135,157,180,202,225,247,270,292,315,337].map((angle, i) => {
+                  const rad = angle * Math.PI / 180;
+                  const len = i % 4 === 0 ? 120 : i % 4 === 1 ? 85 : i % 4 === 2 ? 65 : 45;
+                  return (
+                    <line key={i} x1="130" y1="130" x2={130 + len * Math.cos(rad)} y2={130 + len * Math.sin(rad)}
+                      stroke={i % 3 === 0 ? '#fbbf24' : i % 3 === 1 ? '#ff8c00' : '#fff'} strokeWidth={i % 4 === 0 ? 2.8 : 1.5} strokeLinecap="round" opacity="0.95" />
+                  );
+                })}
+              </svg>
+            </div>
+
+            {/* ── FIGHT! text — Street Fighter SVG style ── */}
+            <div style={{ position: 'absolute', top: '50%', left: '50%', animation: 'introFight 2.75s ease forwards', pointerEvents: 'none', userSelect: 'none' }}>
+              <svg width="680" height="145" viewBox="0 0 680 145" style={{ overflow: 'visible', display: 'block', transform: 'translate(-50%, -50%)' }}>
+                <defs>
+                  {/* Fire face gradient */}
+                  <linearGradient id="sfFire" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor="#fffde7"/>
+                    <stop offset="10%"  stopColor="#ffd600"/>
+                    <stop offset="32%"  stopColor="#ff8f00"/>
+                    <stop offset="60%"  stopColor="#e53935"/>
+                    <stop offset="85%"  stopColor="#b71c1c"/>
+                    <stop offset="100%" stopColor="#3e0000"/>
+                  </linearGradient>
+                  {/* Extrusion depth gradient */}
+                  <linearGradient id="sfExtr" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor="#6a0000"/>
+                    <stop offset="100%" stopColor="#180000"/>
+                  </linearGradient>
+                  {/* Inner highlight gradient — top quarter only */}
+                  <linearGradient id="sfSheen" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor="rgba(255,255,220,0.55)"/>
+                    <stop offset="40%"  stopColor="rgba(255,200,80,0.15)"/>
+                    <stop offset="100%" stopColor="rgba(255,200,80,0)"/>
+                  </linearGradient>
+                  {/* Outer fire haze filter */}
+                  <filter id="sfHaze" x="-22%" y="-55%" width="144%" height="210%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="14" result="b1"/>
+                    <feFlood floodColor="#ff5500" floodOpacity="0.75" result="c1"/>
+                    <feComposite in="c1" in2="b1" operator="in" result="haze"/>
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="28" result="b2"/>
+                    <feFlood floodColor="#ff2200" floodOpacity="0.4" result="c2"/>
+                    <feComposite in="c2" in2="b2" operator="in" result="haze2"/>
+                    <feMerge>
+                      <feMergeNode in="haze2"/>
+                      <feMergeNode in="haze"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                {/* — 3D extrusion stack (darkest bottom → lightest top) — */}
+                {[10,9,8,7,6,5,4,3,2,1].map(i => (
+                  <text key={i} x="340" y="112" textAnchor="middle"
+                    fontFamily='"Impact","Arial Black",sans-serif' fontSize="115"
+                    fontStyle="italic" fontWeight="900"
+                    fill={i > 6 ? '#1a0000' : '#4a0000'}
+                    transform={`translate(${i * 1.4}, ${i * 1.4})`}
+                    opacity={0.95 - i * 0.04}>FIGHT!</text>
+                ))}
+
+                {/* — Thick black outer stroke — */}
+                <text x="340" y="112" textAnchor="middle"
+                  fontFamily='"Impact","Arial Black",sans-serif' fontSize="115"
+                  fontStyle="italic" fontWeight="900"
+                  fill="none" stroke="#000" strokeWidth="9" strokeLinejoin="round" strokeLinecap="round">FIGHT!</text>
+
+                {/* — Fire face with glow filter — */}
+                <text x="340" y="112" textAnchor="middle"
+                  fontFamily='"Impact","Arial Black",sans-serif' fontSize="115"
+                  fontStyle="italic" fontWeight="900"
+                  fill="url(#sfFire)" filter="url(#sfHaze)">FIGHT!</text>
+
+                {/* — Crimson mid-stroke for depth separation — */}
+                <text x="340" y="112" textAnchor="middle"
+                  fontFamily='"Impact","Arial Black",sans-serif' fontSize="115"
+                  fontStyle="italic" fontWeight="900"
+                  fill="none" stroke="rgba(160,20,0,0.45)" strokeWidth="3">FIGHT!</text>
+
+                {/* — White-yellow sheen overlay (top highlight) — */}
+                <text x="340" y="112" textAnchor="middle"
+                  fontFamily='"Impact","Arial Black",sans-serif' fontSize="115"
+                  fontStyle="italic" fontWeight="900"
+                  fill="url(#sfSheen)">FIGHT!</text>
+              </svg>
+            </div>
+
+          </div>{/* end shake wrapper */}
+
+          {/* Vignette */}
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 50%, transparent 28%, rgba(0,0,0,0.7) 100%)', pointerEvents: 'none' }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -1474,7 +1915,6 @@ const s: Record<string, React.CSSProperties> = {
     background: '#08000a',
     position: 'relative',
     gap: 8,
-    overflow: 'hidden',
   },
   arenaFloor: {
     position: 'absolute',
@@ -1613,15 +2053,15 @@ const s: Record<string, React.CSSProperties> = {
   spellNotifWrap: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 5,
-    marginTop: 6,
+    gap: 3,
+    marginTop: 4,
   },
   spellNotif: {
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
-    padding: '7px 14px',
-    backgroundColor: 'rgba(59,130,246,0.18)',
+    gap: 6,
+    padding: '4px 10px',
+    backgroundColor: 'rgba(15,25,55,0.97)',
     border: '1px solid rgba(96,165,250,0.6)',
     borderRadius: 8,
     animationName: 'baSpell',
@@ -1633,26 +2073,26 @@ const s: Record<string, React.CSSProperties> = {
   },
   spellNotifIcon: {
     color: '#60a5fa',
-    fontSize: 16,
+    fontSize: 13,
     textShadow: '0 0 12px #3b82f6, 0 0 24px rgba(96,165,250,0.8)',
     flexShrink: 0,
   },
   spellNotifName: {
     color: '#bfdbfe',
     fontWeight: 800,
-    fontSize: 13,
-    letterSpacing: 0.4,
+    fontSize: 11,
+    letterSpacing: 0.3,
     flex: 1,
     textShadow: '0 0 10px rgba(147,197,253,0.7)',
   },
   spellNotifCost: {
     color: '#93c5fd',
     fontWeight: 900,
-    fontSize: 12,
+    fontSize: 11,
     backgroundColor: 'rgba(59,130,246,0.3)',
     border: '1px solid rgba(96,165,250,0.4)',
     borderRadius: 4,
-    padding: '2px 7px',
+    padding: '1px 5px',
     whiteSpace: 'nowrap',
     flexShrink: 0,
     textShadow: '0 0 8px rgba(96,165,250,0.9)',

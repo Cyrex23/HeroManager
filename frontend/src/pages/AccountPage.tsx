@@ -167,8 +167,10 @@ export default function AccountPage() {
     { value: String(data.wins),         label: 'Wins',        color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
     { value: String(data.losses),       label: 'Losses',      color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
     { value: `${winRate}%`,             label: 'Win Rate',    color: '#fbbf24', glowClass: 'stat-val-gold',  barPct: winRate },
-    { value: String(data.winStreak),    label: 'Win Streak',  color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
-    { value: String(data.lossStreak),   label: 'Loss Streak', color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
+    { value: String(data.winStreak),      label: 'Win Streak',      color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
+    { value: String(data.bestWinStreak),  label: 'Best Win Streak',  color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
+    { value: String(data.lossStreak),     label: 'Loss Streak',     color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
+    { value: String(data.bestLossStreak), label: 'Best Loss Streak', color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
   ];
 
   return (

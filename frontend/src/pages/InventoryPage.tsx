@@ -368,7 +368,7 @@ export default function InventoryPage() {
               {heroAbilities.map((ab, i) => {
                 const tc = ABILITY_TIER_COLOR[ab.tier] ?? '#9ca3af';
                 return (
-                  <EquipmentTooltip key={ab.equippedAbilityId} name={ab.name} type="ability" bonuses={ab.bonuses} tier={ab.tier} sellPrice={ab.sellPrice} spell={ab.spell ?? null} block>
+                  <EquipmentTooltip key={ab.equippedAbilityId} name={ab.name} type="ability" bonuses={ab.bonuses} tier={ab.tier} sellPrice={ab.sellPrice} spells={ab.spells ?? []} block>
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: 14,
                       padding: '12px 22px', width: '100%', boxSizing: 'border-box',
@@ -395,12 +395,12 @@ export default function InventoryPage() {
                       <div style={{ minWidth: 160, flexShrink: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                           <span style={{ color: '#e8e8f0', fontWeight: 700, fontSize: 13 }}>{ab.name}</span>
-                          {ab.spell && (
+                          {ab.spells && ab.spells.length > 0 && (
                             <span style={{
                               fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 4,
                               background: 'rgba(96,165,250,0.12)', border: '1px solid rgba(96,165,250,0.3)',
                               color: '#60a5fa', letterSpacing: '0.06em', textTransform: 'uppercase',
-                            }}>SPELL</span>
+                            }}>{ab.spells.length > 1 ? `${ab.spells.length} SPELLS` : 'SPELL'}</span>
                           )}
                         </div>
                         <span style={{

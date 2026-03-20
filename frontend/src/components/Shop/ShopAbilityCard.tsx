@@ -57,7 +57,7 @@ export default function ShopAbilityCard({ ability: ab, canAfford, onBuy }: Props
       type="ability"
       bonuses={ab.bonuses}
       tier={ab.tier}
-      spell={ab.spell ?? null}
+      spells={ab.spells ?? []}
     >
       <div style={{
         position: 'relative',
@@ -96,7 +96,7 @@ export default function ShopAbilityCard({ ability: ab, canAfford, onBuy }: Props
         </div>
 
         {/* SPELL badge (top-left) */}
-        {ab.spell && (
+        {ab.spells && ab.spells.length > 0 && (
           <div style={{
             position: 'absolute', top: 10, left: 10,
             fontSize: 9, fontWeight: 800, letterSpacing: '0.05em',
@@ -106,7 +106,7 @@ export default function ShopAbilityCard({ ability: ab, canAfford, onBuy }: Props
             color: '#60a5fa',
             textTransform: 'uppercase' as const,
           }}>
-            SPELL
+            {ab.spells.length > 1 ? `${ab.spells.length} SPELLS` : 'SPELL'}
           </div>
         )}
 

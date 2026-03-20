@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default function HeroPortrait({ imagePath, name, size = 180, tier }: Props) {
-  const src = `/src/assets/heroes/${imagePath}`;
+  const src = `/${imagePath}`;
   const borderColor = (tier && TIER_BORDER[tier]) ?? '#16213e';
   return (
     <img

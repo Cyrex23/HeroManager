@@ -62,6 +62,9 @@ public class ItemTemplate {
     private double bonusDexPosture = 0;       // [0,1] fraction of DEX immune to stamina penalty
 
     @Column(columnDefinition = "double default 0")
+    private double bonusDexMaxPosture = 0;    // [0,1] fraction of MAX DEX recovered each round
+
+    @Column(columnDefinition = "double default 0")
     private double bonusCritChance = 0;       // [0,1] probability of landing a critical hit
 
     @Column(columnDefinition = "double default 0")

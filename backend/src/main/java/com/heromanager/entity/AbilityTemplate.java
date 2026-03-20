@@ -97,6 +97,9 @@ public class AbilityTemplate {
     private double bonusDexPosture = 0;
 
     @Column(columnDefinition = "double default 0")
+    private double bonusDexMaxPosture = 0;
+
+    @Column(columnDefinition = "double default 0")
     private double bonusCritChance = 0;
 
     @Column(columnDefinition = "double default 0")
@@ -121,6 +124,28 @@ public class AbilityTemplate {
 
     @Column(columnDefinition = "double default 0")
     private double bonusDexEvasiveness = 0;
+
+    // ── Extended passive sub-stats (abilities) ─────────────────────────────────
+    @Column(columnDefinition = "double default 0")
+    private double bonusManaRecharge = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusTenacity = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusFatigueRecovery = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusCleanse = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusRot = 0;
+
+    @Column(columnDefinition = "double default 0")
+    private double bonusOffPositioning = 0;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "abilityTemplate")
+    private java.util.List<AbilitySpell> spells = new java.util.ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "heroTemplateId", insertable = false, updatable = false)

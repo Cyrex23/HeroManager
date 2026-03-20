@@ -1,12 +1,19 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Users, Hammer, Swords } from 'lucide-react';
 import { useTeam } from '../../context/TeamContext';
 import { usePlayer } from '../../context/PlayerContext';
 import HeroPortrait from '../Hero/HeroPortrait';
 import HeroManagerLogo from '../brand/HeroManagerLogo';
 import EnergyBar from './EnergyBar';
 import { getOnlineCount } from '../../api/playerApi';
+
+const NAV_ICONS: Record<string, React.ReactElement> = {
+  '/team':       <Users   size={13} strokeWidth={2.2} color="#60a5fa" />,
+  '/blacksmith': <Hammer  size={13} strokeWidth={2.2} color="#f97316" />,
+  '/arena':      <Swords  size={13} strokeWidth={2.2} color="#e94560" />,
+};
 
 const navItems: Array<{ path: string; label: string; locked?: boolean }> = [
   { path: '/team',         label: 'Team' },
@@ -462,6 +469,7 @@ export default function Navbar() {
             );
           }
           const isActive = location.pathname === item.path;
+          const icon = NAV_ICONS[item.path];
           return (
             <Link
               key={item.path}
@@ -469,12 +477,16 @@ export default function Navbar() {
               className={`nav-link${isActive ? ' active' : ''}`}
               style={{
                 ...styles.link,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: icon ? 5 : 0,
                 color: isActive ? '#ffffff' : '#c0c0d8',
                 backgroundColor: isActive ? 'rgba(233,69,96,0.14)' : 'rgba(255,255,255,0.06)',
                 borderColor: isActive ? 'rgba(233,69,96,0.5)' : 'rgba(255,255,255,0.18)',
                 boxShadow: isActive ? '0 0 14px rgba(233,69,96,0.22), inset 0 1px 0 rgba(255,255,255,0.06)' : 'none',
               }}
             >
+              {icon}
               {item.label}
             </Link>
           );

@@ -40,7 +40,7 @@ export default function AbilitySlot({ ability, onUnequip, emptySlots, onEquip }:
       bonuses={ability.bonuses}
       tier={ability.tier}
       copies={ability.copies}
-      spell={ability.spell ?? null}
+      spells={ability.spells ?? []}
     >
       <div style={{
         position: 'relative',
@@ -78,7 +78,7 @@ export default function AbilitySlot({ ability, onUnequip, emptySlots, onEquip }:
         </div>
 
         {/* SPELL badge (top-left) */}
-        {ability.spell && (
+        {ability.spells && ability.spells.length > 0 && (
           <div style={{
             position: 'absolute', top: 8, left: 8,
             fontSize: 8, fontWeight: 800, letterSpacing: '0.05em',
@@ -88,7 +88,7 @@ export default function AbilitySlot({ ability, onUnequip, emptySlots, onEquip }:
             color: '#60a5fa',
             textTransform: 'uppercase' as const,
           }}>
-            SPELL
+            {ability.spells.length > 1 ? `${ability.spells.length} SPELLS` : 'SPELL'}
           </div>
         )}
 

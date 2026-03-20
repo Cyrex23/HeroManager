@@ -9,10 +9,20 @@ interface Props {
   tier?: number | null;
   sellPrice?: number | null;
   copies?: number | null;
-  spell?: SpellInfo | null;
+  spells?: SpellInfo[];
   children: React.ReactNode;
   block?: boolean;
 }
+
+const TRIGGER_LABELS: Record<string, string> = {
+  ENTRANCE: 'ON ENTER',
+  ATTACK: 'ON ATTACK',
+  AFTER_CLASH: 'AFTER CLASH',
+  AFTER_CLASH_CRIT: 'AFTER CRIT',
+  OPPONENT_ENTRANCE: 'OPP. ENTER',
+  BEFORE_TURN_X: 'BEFORE TURN',
+  AFTER_TURN_X: 'AFTER TURN',
+};
 
 const STATS: Array<{ key: keyof HeroStats; label: string }> = [
   { key: 'physicalAttack', label: 'PA' },
@@ -25,7 +35,7 @@ const STATS: Array<{ key: keyof HeroStats; label: string }> = [
 
 const TOOLTIP_WIDTH = 270;
 
-export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice, copies, spell, children, block }: Props) {
+export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice, copies, spells, children, block }: Props) {
   const [pos, setPos] = useState<{ x: number; y: number; above: boolean } | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -93,41 +103,71 @@ export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice,
             })}
           </div>
 
-          {/* Spell section */}
-          {spell && (
-            <>
+          {/* Spell section — one block per spell */}
+          {spells && spells.length > 0 && spells.map((spell, si) => (
+            <div key={si}>
               <div style={styles.spellDivider} />
-              <div style={styles.spellSection}>
+              <div style={{
+                ...styles.spellSection,
+                borderColor: spell.affectsOpponent ? 'rgba(248,113,113,0.3)' : 'rgba(59,130,246,0.2)',
+                backgroundColor: spell.affectsOpponent ? 'rgba(239,68,68,0.06)' : 'rgba(59,130,246,0.06)',
+              }}>
                 {/* Spell header row */}
                 <div style={styles.spellHeader}>
-                  <span style={styles.spellIcon}>✦</span>
+                  <span style={{ ...styles.spellIcon, color: spell.affectsOpponent ? '#f87171' : '#60a5fa', textShadow: spell.affectsOpponent ? '0 0 6px #ef4444' : '0 0 6px #3b82f6' }}>
+                    {spell.affectsOpponent ? '☠' : '✦'}
+                  </span>
                   <span style={styles.spellName}>{spell.name}</span>
                   <span style={styles.spellMana}>{spell.manaCost} MP</span>
                 </div>
+                {/* Duration / usage / pass-on — above trigger row */}
+                {((spell.lastsTurns && spell.lastsTurns > 0) || (spell.maxUsages && spell.maxUsages > 0) || spell.passOnType) && (
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 4, flexWrap: 'wrap' as const }}>
+                    {spell.lastsTurns && spell.lastsTurns > 0 && (
+                      <span style={{ fontSize: 9, color: '#818cf8', fontWeight: 700, backgroundColor: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.25)', borderRadius: 3, padding: '1px 5px' }}>
+                        Lasts {spell.lastsTurns} turn{spell.lastsTurns > 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {spell.maxUsages && spell.maxUsages > 0 && (
+                      <span style={{ fontSize: 9, color: '#fbbf24', fontWeight: 700, backgroundColor: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 3, padding: '1px 5px' }}>
+                        Max {spell.maxUsages}×
+                      </span>
+                    )}
+                    {spell.passOnType && (
+                      <span style={{ fontSize: 9, color: '#34d399', fontWeight: 700, backgroundColor: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.25)', borderRadius: 3, padding: '1px 5px', letterSpacing: '0.05em' }}>
+                        {spell.passOnType}
+                      </span>
+                    )}
+                  </div>
+                )}
                 {/* Trigger + chance */}
                 <div style={styles.spellMeta}>
-                  <span style={styles.spellTriggerBadge}>
-                    {spell.trigger === 'ENTRANCE' ? 'ON ENTER' : 'ON ATTACK'}
+                  <span style={{ ...styles.spellTriggerBadge, color: spell.affectsOpponent ? '#f87171' : '#a78bfa', backgroundColor: spell.affectsOpponent ? 'rgba(248,113,113,0.12)' : 'rgba(167,139,250,0.12)', borderColor: spell.affectsOpponent ? 'rgba(248,113,113,0.25)' : 'rgba(167,139,250,0.25)' }}>
+                    {TRIGGER_LABELS[spell.trigger] ?? spell.trigger}
                   </span>
                   <span style={styles.spellChance}>{Math.round(spell.chance * 100)}% chance</span>
                 </div>
                 {/* Spell bonus stats */}
                 {Object.keys(spell.bonuses).length > 0 && (
                   <div style={styles.spellBonuses}>
-                    {STATS.map(({ key, label }) => {
-                      const val = spell.bonuses[key];
+                    {Object.entries(spell.bonuses).map(([key, val]) => {
                       if (!val || val === 0) return null;
+                      const isNeg = (val as number) < 0;
+                      const statLabel = STATS.find(s => s.key === key)?.label ?? key;
+                      const displayVal = typeof val === 'number' && Math.abs(val) < 1
+                        ? `${isNeg ? '' : '+'}${Math.round((val as number) * 100)}%`
+                        : `${isNeg ? '' : '+'}${val}`;
                       return (
-                        <span key={key} style={styles.spellBonus}>
-                          +{val} {label}
+                        <span key={key} style={{ ...styles.spellBonus, color: isNeg ? '#f87171' : '#34d399', backgroundColor: isNeg ? 'rgba(248,113,113,0.08)' : 'rgba(52,211,153,0.08)' }}>
+                          {displayVal} {statLabel}
                         </span>
                       );
                     })}
                   </div>
                 )}
               </div>
-            </>
-          )}
+            </div>
+          ))}
 
           <div style={styles.divider} />
 

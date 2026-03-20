@@ -34,8 +34,18 @@ public class HeroResponse {
     private int clashesLost;
     private int currentWinStreak;
     private int currentLossStreak;
+    private int bestWinStreak;
+    private int bestLossStreak;
     private double maxDamageDealt;
     private double maxDamageReceived;
+    private double maxPaDamage;
+    private double maxMpDamage;
+    private double maxDexDamage;
+    private double maxElemDamage;
+    private double totalPaDamage;
+    private double totalMpDamage;
+    private double totalDexDamage;
+    private double totalElemDamage;
     private int sellPrice;
     private int statPurchaseCount;
     private int nextStatCost;

@@ -2,6 +2,7 @@ package com.heromanager.service;
 
 import com.heromanager.entity.*;
 import com.heromanager.repository.*;
+import com.heromanager.util.AbilitySpellBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,15 +15,18 @@ public class EquipmentService {
     private final EquippedAbilityRepository equippedAbilityRepository;
     private final HeroRepository heroRepository;
     private final PlayerRepository playerRepository;
+    private final AbilitySpellBuilder abilitySpellBuilder;
 
     public EquipmentService(EquippedItemRepository equippedItemRepository,
                             EquippedAbilityRepository equippedAbilityRepository,
                             HeroRepository heroRepository,
-                            PlayerRepository playerRepository) {
+                            PlayerRepository playerRepository,
+                            AbilitySpellBuilder abilitySpellBuilder) {
         this.equippedItemRepository = equippedItemRepository;
         this.equippedAbilityRepository = equippedAbilityRepository;
         this.heroRepository = heroRepository;
         this.playerRepository = playerRepository;
+        this.abilitySpellBuilder = abilitySpellBuilder;
     }
 
     @Transactional(readOnly = true)
@@ -66,8 +70,8 @@ public class EquipmentService {
                 slotMap.put("bonuses", buildAbilityBonuses(at));
                 slotMap.put("sellPrice", null);
                 slotMap.put("copies", equippedAbilityRepository.countByPlayerAndAbilityTemplate(playerId, at.getId()));
-                Map<String, Object> spellData = buildSpellData(at);
-                if (spellData != null) slotMap.put("spell", spellData);
+                List<Map<String, Object>> spellList = abilitySpellBuilder.buildSpellList(at);
+                if (spellList != null) slotMap.put("spells", spellList);
                 slots.add(slotMap);
                 continue;
             }
@@ -110,8 +114,8 @@ public class EquipmentService {
             entry.put("bonuses", buildAbilityBonuses(at));
             entry.put("slotNumber", ea.getSlotNumber());
             entry.put("copies", equippedAbilityRepository.countByPlayerAndAbilityTemplate(playerId, at.getId()));
-            Map<String, Object> spellData = buildSpellData(at);
-            if (spellData != null) entry.put("spell", spellData);
+            List<Map<String, Object>> spellList = abilitySpellBuilder.buildSpellList(at);
+            if (spellList != null) entry.put("spells", spellList);
             abilityList.add(entry);
         }
 
@@ -300,8 +304,8 @@ public class EquipmentService {
             entry.put("heroId", ea.getHeroId());
             entry.put("heroName", heroName);
             entry.put("slotNumber", ea.getSlotNumber());
-            Map<String, Object> spellData = buildSpellData(at);
-            if (spellData != null) entry.put("spell", spellData);
+            List<Map<String, Object>> spellList = abilitySpellBuilder.buildSpellList(at);
+            if (spellList != null) entry.put("spells", spellList);
             abilityList.add(entry);
         }
 
@@ -379,25 +383,28 @@ public class EquipmentService {
         if (t.getBonusElem() != 0) bonuses.put("element", t.getBonusElem());
         if (t.getBonusMana() != 0) bonuses.put("mana", t.getBonusMana());
         if (t.getBonusStam() != 0) bonuses.put("stamina", t.getBonusStam());
+        if (t.getBonusAttack()           != 0) bonuses.put("attack",           t.getBonusAttack());
+        if (t.getBonusMagicProficiency() != 0) bonuses.put("magicProficiency", t.getBonusMagicProficiency());
+        if (t.getBonusSpellMastery()     != 0) bonuses.put("spellMastery",     t.getBonusSpellMastery());
+        if (t.getBonusSpellActivation()  != 0) bonuses.put("spellActivation",  t.getBonusSpellActivation());
+        if (t.getBonusDexProficiency()   != 0) bonuses.put("dexProficiency",   t.getBonusDexProficiency());
+        if (t.getBonusDexPosture()       != 0) bonuses.put("dexPosture",       t.getBonusDexPosture());
+        if (t.getBonusDexMaxPosture()    != 0) bonuses.put("dexMaxPosture",    t.getBonusDexMaxPosture());
+        if (t.getBonusCritChance()       != 0) bonuses.put("critChance",       t.getBonusCritChance());
+        if (t.getBonusCritDamage()       != 0) bonuses.put("critDamage",       t.getBonusCritDamage());
+        if (t.getBonusExpBonus()         != 0) bonuses.put("expBonus",         t.getBonusExpBonus());
+        if (t.getBonusGoldBonus()        != 0) bonuses.put("goldBonus",        t.getBonusGoldBonus());
+        if (t.getBonusItemDiscovery()    != 0) bonuses.put("itemDiscovery",    t.getBonusItemDiscovery());
+        if (t.getBonusPhysicalImmunity() != 0) bonuses.put("physicalImmunity", t.getBonusPhysicalImmunity());
+        if (t.getBonusMagicImmunity()    != 0) bonuses.put("magicImmunity",    t.getBonusMagicImmunity());
+        if (t.getBonusDexEvasiveness()   != 0) bonuses.put("dexEvasiveness",   t.getBonusDexEvasiveness());
+        if (t.getBonusManaRecharge()     != 0) bonuses.put("manaRecharge",     t.getBonusManaRecharge());
+        if (t.getBonusTenacity()         != 0) bonuses.put("tenacity",         t.getBonusTenacity());
+        if (t.getBonusFatigueRecovery()  != 0) bonuses.put("fatigueRecovery",  t.getBonusFatigueRecovery());
+        if (t.getBonusCleanse()          != 0) bonuses.put("cleanse",          t.getBonusCleanse());
+        if (t.getBonusRot()              != 0) bonuses.put("rot",              t.getBonusRot());
+        if (t.getBonusOffPositioning()   != 0) bonuses.put("offPositioning",   t.getBonusOffPositioning());
         return bonuses;
-    }
-
-    private Map<String, Object> buildSpellData(AbilityTemplate t) {
-        if (t.getSpellName() == null || t.getSpellName().isBlank()) return null;
-        Map<String, Object> spellBonuses = new LinkedHashMap<>();
-        if (t.getSpellBonusPa() != 0) spellBonuses.put("physicalAttack", t.getSpellBonusPa());
-        if (t.getSpellBonusMp() != 0) spellBonuses.put("magicPower", t.getSpellBonusMp());
-        if (t.getSpellBonusDex() != 0) spellBonuses.put("dexterity", t.getSpellBonusDex());
-        if (t.getSpellBonusElem() != 0) spellBonuses.put("element", t.getSpellBonusElem());
-        if (t.getSpellBonusMana() != 0) spellBonuses.put("mana", t.getSpellBonusMana());
-        if (t.getSpellBonusStam() != 0) spellBonuses.put("stamina", t.getSpellBonusStam());
-        Map<String, Object> spell = new LinkedHashMap<>();
-        spell.put("name", t.getSpellName());
-        spell.put("manaCost", t.getSpellManaCost());
-        spell.put("trigger", t.getSpellTrigger());
-        spell.put("chance", t.getSpellChance());
-        spell.put("bonuses", spellBonuses);
-        return spell;
     }
 
     public static class EquipmentException extends RuntimeException {

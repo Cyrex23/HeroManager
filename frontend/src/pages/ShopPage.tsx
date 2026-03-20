@@ -548,7 +548,7 @@ export default function ShopPage() {
             cost={2000} currency="gold"
             purchased={player?.extraLineupGoldPurchased ?? false}
             canAfford={(player?.gold ?? 0) >= 2000}
-            onBuy={() => handleUpgrade(buyExtraLineupGold)}
+            onBuy={() => requestConfirm('Extra Team Setup (3rd slot)', 2000, 'gold', () => handleUpgrade(buyExtraLineupGold))}
           />
           <UpgradeCard
             icon="📋"
@@ -557,7 +557,7 @@ export default function ShopPage() {
             cost={100} currency="diamonds"
             purchased={player?.extraLineupDiamondsPurchased ?? false}
             canAfford={(player?.diamonds ?? 0) >= 100}
-            onBuy={() => handleUpgrade(buyExtraLineupDiamonds)}
+            onBuy={() => requestConfirm('Extra Team Setup (4th slot)', 100, 'diamonds', () => handleUpgrade(buyExtraLineupDiamonds))}
           />
 
           <div style={styles.upgradeSection}>ENERGY</div>
@@ -568,7 +568,7 @@ export default function ShopPage() {
             cost={40} currency="diamonds"
             purchased={player?.energyPlusPurchased ?? false}
             canAfford={(player?.diamonds ?? 0) >= 40}
-            onBuy={() => handleUpgrade(buyEnergyPlus)}
+            onBuy={() => requestConfirm('Energy Plus', 40, 'diamonds', () => handleUpgrade(buyEnergyPlus))}
           />
 
           <div style={styles.upgradeSection}>ROSTER</div>
@@ -579,7 +579,7 @@ export default function ShopPage() {
             cost={4000} currency="gold"
             purchased={player?.heroPlusCapacityPurchased ?? false}
             canAfford={(player?.gold ?? 0) >= 4000}
-            onBuy={() => handleUpgrade(buyHeroPlusCapacity)}
+            onBuy={() => requestConfirm('Hero Capacity Plus', 4000, 'gold', () => handleUpgrade(buyHeroPlusCapacity))}
           />
 
           <div style={styles.upgradeSection}>CAPACITY</div>
@@ -590,7 +590,7 @@ export default function ShopPage() {
             cost={8000} currency="gold"
             purchased={(player?.capacityPlusCount ?? 0) >= 1}
             canAfford={(player?.gold ?? 0) >= 8000}
-            onBuy={() => handleUpgrade(buyCapacityPlus)}
+            onBuy={() => requestConfirm('Capacity Plus', 8000, 'gold', () => handleUpgrade(buyCapacityPlus))}
           />
 
           <div style={styles.upgradeSection}>HEROES</div>
@@ -601,7 +601,7 @@ export default function ShopPage() {
             cost={15000} currency="gold"
             purchased={player?.statResetUnlocked ?? false}
             canAfford={(player?.gold ?? 0) >= 15000}
-            onBuy={() => handleUpgrade(buyStatReset)}
+            onBuy={() => requestConfirm('Stat Reset Unlock', 15000, 'gold', () => handleUpgrade(buyStatReset))}
           />
 
           <div style={styles.upgradeSection}>ARENA</div>
@@ -612,7 +612,7 @@ export default function ShopPage() {
             cost={500} currency="gold"
             purchased={player?.battleLogUnlocked ?? false}
             canAfford={(player?.gold ?? 0) >= 500}
-            onBuy={() => handleUpgrade(buyBattleLog)}
+            onBuy={() => requestConfirm('Battle Log', 500, 'gold', () => handleUpgrade(buyBattleLog))}
           />
           <UpgradeCard
             icon="↩"
@@ -621,7 +621,7 @@ export default function ShopPage() {
             cost={8000} currency="gold"
             purchased={player?.returnCapUpgraded ?? false}
             canAfford={(player?.gold ?? 0) >= 8000}
-            onBuy={() => handleUpgrade(buyReturnCap)}
+            onBuy={() => requestConfirm('Return Queue+', 8000, 'gold', () => handleUpgrade(buyReturnCap))}
           />
           <UpgradeCard
             icon="⚔"
@@ -630,7 +630,7 @@ export default function ShopPage() {
             cost={13000} currency="gold"
             purchased={player?.challengeLimitUpgraded ?? false}
             canAfford={(player?.gold ?? 0) >= 13000}
-            onBuy={() => handleUpgrade(buyChallengeLimitUpgrade)}
+            onBuy={() => requestConfirm('Challenge Limit+', 13000, 'gold', () => handleUpgrade(buyChallengeLimitUpgrade))}
           />
           <UpgradeCard
             icon="⚡"
@@ -639,7 +639,7 @@ export default function ShopPage() {
             cost={200000} currency="gold"
             purchased={player?.energyGainUpgraded ?? false}
             canAfford={(player?.gold ?? 0) >= 200000}
-            onBuy={() => handleUpgrade(buyEnergyGainUpgrade)}
+            onBuy={() => requestConfirm('Energy Gain+', 200000, 'gold', () => handleUpgrade(buyEnergyGainUpgrade))}
           />
 
           <div style={styles.upgradeSection}>BLACKSMITH</div>
@@ -650,7 +650,7 @@ export default function ShopPage() {
             cost={4000} currency="gold"
             purchased={player?.extraCraftingSlotPurchased ?? false}
             canAfford={(player?.gold ?? 0) >= 4000}
-            onBuy={() => handleUpgrade(buyExtraCraftingSlot)}
+            onBuy={() => requestConfirm('Extra Crafting Slot', 4000, 'gold', () => handleUpgrade(buyExtraCraftingSlot))}
           />
           <UpgradeCard
             icon="🎰"
@@ -659,7 +659,7 @@ export default function ShopPage() {
             cost={50} currency="diamonds"
             purchased={player?.doubleSpinPurchased ?? false}
             canAfford={(player?.diamonds ?? 0) >= 50}
-            onBuy={() => handleUpgrade(buyDoubleSpin)}
+            onBuy={() => requestConfirm('Double Daily Spin', 50, 'diamonds', () => handleUpgrade(buyDoubleSpin))}
           />
         </div>
       )}

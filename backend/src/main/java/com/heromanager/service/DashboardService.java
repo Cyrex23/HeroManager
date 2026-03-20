@@ -5,6 +5,7 @@ import com.heromanager.entity.Hero;
 import com.heromanager.entity.HeroTemplate;
 import com.heromanager.repository.BattleLogRepository;
 import com.heromanager.repository.HeroRepository;
+import com.heromanager.repository.HeroXpLogRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +21,13 @@ public class DashboardService {
 
     private final BattleLogRepository battleLogRepository;
     private final HeroRepository heroRepository;
+    private final HeroXpLogRepository heroXpLogRepository;
 
-    public DashboardService(BattleLogRepository battleLogRepository, HeroRepository heroRepository) {
+    public DashboardService(BattleLogRepository battleLogRepository, HeroRepository heroRepository,
+                            HeroXpLogRepository heroXpLogRepository) {
         this.battleLogRepository = battleLogRepository;
         this.heroRepository = heroRepository;
+        this.heroXpLogRepository = heroXpLogRepository;
     }
 
     @Transactional(readOnly = true)
@@ -39,7 +43,7 @@ public class DashboardService {
                 .week(buildPeriod(playerId, startOfWeek))
                 .month(buildPeriod(playerId, startOfMonth))
                 .allTime(buildAllTime(playerId))
-                .heroes(buildHeroes(playerId))
+                .heroes(buildHeroes(playerId, startOfToday, startOfWeek, startOfMonth))
                 .build();
     }
 
@@ -69,7 +73,8 @@ public class DashboardService {
                 .build();
     }
 
-    private List<DashboardResponse.HeroSummary> buildHeroes(Long playerId) {
+    private List<DashboardResponse.HeroSummary> buildHeroes(Long playerId,
+            LocalDateTime startOfToday, LocalDateTime startOfWeek, LocalDateTime startOfMonth) {
         List<Hero> heroes = heroRepository.findByPlayerId(playerId);
         List<DashboardResponse.HeroSummary> result = new ArrayList<>();
         for (Hero h : heroes) {
@@ -91,6 +96,10 @@ public class DashboardService {
                     .clashesLost(h.getClashesLost())
                     .currentWinStreak(h.getCurrentWinStreak())
                     .maxDamageDealt(h.getMaxDamageDealt())
+                    .xpGainedToday(heroXpLogRepository.sumXpSince(h.getId(), startOfToday))
+                    .xpGainedWeek(heroXpLogRepository.sumXpSince(h.getId(), startOfWeek))
+                    .xpGainedMonth(heroXpLogRepository.sumXpSince(h.getId(), startOfMonth))
+                    .xpGainedAllTime(heroXpLogRepository.sumXpAllTime(h.getId()))
                     .build());
         }
         return result;

@@ -1,13 +1,11 @@
 package com.heromanager.service;
 
-import com.heromanager.entity.BattleLog;
 import com.heromanager.entity.HeroTemplate;
 import com.heromanager.entity.Player;
 import com.heromanager.repository.BattleLogRepository;
 import com.heromanager.repository.HeroRepository;
 import com.heromanager.repository.HeroTemplateRepository;
 import com.heromanager.repository.PlayerRepository;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,20 +47,8 @@ public class AccountService {
         long wins = battleLogRepository.countWins(playerId);
         long losses = totalBattles - wins;
 
-        // Compute current win/loss streak from recent battle history
-        List<BattleLog> recentBattles = battleLogRepository
-                .findByPlayerInvolved(playerId, PageRequest.of(0, 100)).getContent();
-        int winStreak = 0;
-        int lossStreak = 0;
-        if (!recentBattles.isEmpty()) {
-            boolean latestIsWin = playerId.equals(recentBattles.get(0).getWinnerId());
-            for (BattleLog b : recentBattles) {
-                boolean isWin = playerId.equals(b.getWinnerId());
-                if (latestIsWin && isWin) winStreak++;
-                else if (!latestIsWin && !isWin) lossStreak++;
-                else break;
-            }
-        }
+        int winStreak  = player.getCurrentWinStreak();
+        int lossStreak = player.getCurrentLossStreak();
 
         // Build unlocked avatar list: stored set + any currently owned heroes not yet in the set
         Set<String> unlocked = new HashSet<>(player.getUnlockedAvatars());
@@ -101,6 +87,8 @@ public class AccountService {
         result.put("losses", losses);
         result.put("winStreak", winStreak);
         result.put("lossStreak", lossStreak);
+        result.put("bestWinStreak", player.getBestWinStreak());
+        result.put("bestLossStreak", player.getBestLossStreak());
         result.put("avatarOptions", avatarOptions);
         result.put("canChangeTeamName", daysUntilTeamNameChange == 0);
         result.put("daysUntilTeamNameChange", daysUntilTeamNameChange);

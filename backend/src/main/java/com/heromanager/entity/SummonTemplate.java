@@ -126,4 +126,52 @@ public class SummonTemplate {
 
     @Column
     private double growthPhysicalAttack;
+
+    @Column(columnDefinition = "double default 0")
+    private double basePhysicalImmunity;
+
+    @Column(columnDefinition = "double default 0")
+    private double growthPhysicalImmunity;
+
+    @Column(columnDefinition = "double default 0")
+    private double baseMagicImmunity;
+
+    @Column(columnDefinition = "double default 0")
+    private double growthMagicImmunity;
+
+    @Column(columnDefinition = "double default 0")
+    private double baseDexEvasiveness;
+
+    @Column(columnDefinition = "double default 0")
+    private double growthDexEvasiveness;
+
+    @Column(columnDefinition = "double default 0")
+    private double baseManaRecharge;
+
+    @Column(columnDefinition = "double default 0")
+    private double growthManaRecharge;
+
+    @Column(columnDefinition = "double default 0")
+    private double baseSpellLearn;
+
+    @Column(columnDefinition = "double default 0")
+    private double growthSpellLearn;
+
+    @Column(columnDefinition = "double default 0")
+    private double baseSpellCopy;
+
+    @Column(columnDefinition = "double default 0")
+    private double growthSpellCopy;
+
+    @Column(columnDefinition = "double default 0")
+    private double baseSpellAbsorb;
+
+    @Column(columnDefinition = "double default 0")
+    private double growthSpellAbsorb;
+
+    @Column(columnDefinition = "double default 0")
+    private double baseRot;
+
+    @Column(columnDefinition = "double default 0")
+    private double growthRot;
 }

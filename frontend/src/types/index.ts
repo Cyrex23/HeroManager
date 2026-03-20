@@ -100,6 +100,11 @@ export interface HeroStats {
   physicalImmunity?: number;
   magicImmunity?: number;
   dexEvasiveness?: number;
+  offPositioning?: number;
+  tenacity?: number;
+  fatigueRecovery?: number;
+  cleanse?: number;
+  dexMaxPosture?: number;
 }
 
 export type SummonStats = Record<string, number>;
@@ -155,8 +160,18 @@ export interface HeroResponse {
   clashesLost: number;
   currentWinStreak: number;
   currentLossStreak: number;
+  bestWinStreak: number;
+  bestLossStreak: number;
   maxDamageDealt: number;
   maxDamageReceived: number;
+  maxPaDamage: number;
+  maxMpDamage: number;
+  maxDexDamage: number;
+  maxElemDamage: number;
+  totalPaDamage: number;
+  totalMpDamage: number;
+  totalDexDamage: number;
+  totalElemDamage: number;
   sellPrice: number;
   statPurchaseCount: number;
   nextStatCost: number;
@@ -213,6 +228,7 @@ export interface TeamSlotHero {
     tier?: number | null;
     cost?: number | null;
     copies?: number | null;
+    spells?: SpellInfo[];
   }>;
 }
 
@@ -341,9 +357,13 @@ export interface BuyItemResponse {
 export interface SpellInfo {
   name: string;
   manaCost: number;
-  trigger: 'ENTRANCE' | 'ATTACK';
+  trigger: string; // ENTRANCE, ATTACK, AFTER_CLASH, AFTER_CLASH_CRIT, OPPONENT_ENTRANCE, BEFORE_TURN_X, AFTER_TURN_X
   chance: number;
   bonuses: Partial<HeroStats>;
+  maxUsages?: number;
+  lastsTurns?: number;
+  affectsOpponent?: boolean;
+  passOnType?: 'NEXT' | 'TEAM' | 'BATTLEFIELD';
 }
 
 export interface SpellEvent {
@@ -354,6 +374,12 @@ export interface SpellEvent {
   trigger: string;
   fired?: boolean;
   chance?: number;
+  absorbed?: boolean;
+  copied?: boolean;
+  justLearned?: boolean;
+  fromLearned?: boolean;
+  bonuses?: Record<string, number>;
+  lastsTurns?: number;
 }
 
 export interface ShopAbilityResponse {
@@ -363,7 +389,7 @@ export interface ShopAbilityResponse {
   tier: number;
   bonuses: Partial<HeroStats>;
   owned: boolean;
-  spell?: SpellInfo | null;
+  spells?: SpellInfo[];
 }
 
 export interface ShopAbilityListResponse {
@@ -466,6 +492,18 @@ export interface BattleRound {
   defenderDexProficiency?: number;
   attackerDexPosture?: number;
   defenderDexPosture?: number;
+  attackerDexMaxPosture?: number;
+  defenderDexMaxPosture?: number;
+  attackerDexMaxPostureRecov?: number;
+  defenderDexMaxPostureRecov?: number;
+  attackerOffPositioning?: number;
+  defenderOffPositioning?: number;
+  attackerOffSlotPenalty?: number;
+  defenderOffSlotPenalty?: number;
+  attackerOffSlotRawMax?: number;
+  defenderOffSlotRawMax?: number;
+  attackerOffSlotEffMax?: number;
+  defenderOffSlotEffMax?: number;
   attackerCritDamagePct?: number;
   defenderCritDamagePct?: number;
   attackerCritPaBonus?: number;
@@ -492,6 +530,60 @@ export interface BattleRound {
   defenderDexUsed?: number;
   defenderDexRecovered?: number;
   defenderDexRemaining?: number;
+  attackerPhysImmunity?: number;
+  attackerMagicImmunity?: number;
+  attackerDexEvasiveness?: number;
+  attackerPhysDenied?: number;
+  attackerMagicDenied?: number;
+  attackerDexDenied?: number;
+  defenderPhysImmunity?: number;
+  defenderMagicImmunity?: number;
+  defenderDexEvasiveness?: number;
+  defenderPhysDenied?: number;
+  defenderMagicDenied?: number;
+  defenderDexDenied?: number;
+  challengerManaBeforeRecharge?: number;
+  defenderManaBeforeRecharge?: number;
+  challengerManaRegen?: number;
+  challengerManaRechargeRate?: number;
+  defenderManaRegen?: number;
+  defenderManaRechargeRate?: number;
+  attackerSpellLearn?: number;
+  attackerSpellCopy?: number;
+  attackerSpellAbsorb?: number;
+  defenderSpellLearn?: number;
+  defenderSpellCopy?: number;
+  defenderSpellAbsorb?: number;
+  challengerLearnedSpells?: string[];
+  defenderLearnedSpells?: string[];
+  // Tenacity
+  attackerTenacity?: number;
+  defenderTenacity?: number;
+  attackerCapacityRaw?: number;
+  defenderCapacityRaw?: number;
+  // Cleanse
+  attackerCleanseChance?: number;
+  defenderCleanseChance?: number;
+  attackerCleansed?: boolean;
+  defenderCleansed?: boolean;
+  // Fatigue Recovery
+  attackerFatigueRec?: number;
+  defenderFatigueRec?: number;
+  attackerCapacityBeforeFR?: number;
+  defenderCapacityBeforeFR?: number;
+  // Rot
+  attackerRotChance?: number;
+  defenderRotChance?: number;
+  attackerAppliedRot?: boolean;
+  defenderAppliedRot?: boolean;
+  attackerRotActive?: boolean;
+  defenderRotActive?: boolean;
+  attackerRotRemaining?: number;
+  attackerRotTotal?: number;
+  attackerRotReduction?: number;
+  defenderRotRemaining?: number;
+  defenderRotTotal?: number;
+  defenderRotReduction?: number;
 }
 
 export interface BattleHeroInfo {
@@ -517,12 +609,14 @@ export interface LevelUpInfo {
 export interface BattleLog {
   challenger: {
     username: string;
+    teamPower?: number;
     profileImagePath?: string | null;
     heroes: BattleHeroInfo[];
     summon?: { name: string; imagePath: string } | null;
   };
   defender: {
     username: string;
+    teamPower?: number;
     profileImagePath?: string | null;
     heroes: BattleHeroInfo[];
     summon?: { name: string; imagePath: string } | null;
@@ -599,7 +693,7 @@ export interface HeroAbilityEntry {
   bonuses: Partial<HeroStats>;
   slotNumber: number | null;
   copies: number;
-  spell?: SpellInfo | null;
+  spells?: SpellInfo[];
 }
 
 export interface CombinedSlot {
@@ -611,7 +705,7 @@ export interface CombinedSlot {
   bonuses: Partial<HeroStats> | null;
   sellPrice: number | null;
   copies: number | null;
-  spell?: SpellInfo | null;
+  spells?: SpellInfo[];
 }
 
 export interface HeroEquipmentResponse {
@@ -651,6 +745,8 @@ export interface AccountData {
   losses: number;
   winStreak: number;
   lossStreak: number;
+  bestWinStreak: number;
+  bestLossStreak: number;
   avatarOptions: AvatarOption[];
   canChangeTeamName: boolean;
   daysUntilTeamNameChange: number;
@@ -883,6 +979,10 @@ export interface DashboardHeroSummary {
   clashesLost: number;
   currentWinStreak: number;
   maxDamageDealt: number;
+  xpGainedToday: number;
+  xpGainedWeek: number;
+  xpGainedMonth: number;
+  xpGainedAllTime: number;
 }
 
 export interface DashboardResponse {

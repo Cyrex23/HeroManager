@@ -3,6 +3,7 @@ package com.heromanager.service;
 import com.heromanager.dto.ShopHeroResponse;
 import com.heromanager.entity.*;
 import com.heromanager.repository.*;
+import com.heromanager.util.AbilitySpellBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ public class ShopService {
     private final AbilityTemplateRepository abilityTemplateRepository;
     private final EquippedItemRepository equippedItemRepository;
     private final EquippedAbilityRepository equippedAbilityRepository;
+    private final AbilitySpellBuilder abilitySpellBuilder;
 
     public ShopService(HeroTemplateRepository heroTemplateRepository,
                        SummonTemplateRepository summonTemplateRepository,
@@ -29,7 +31,8 @@ public class ShopService {
                        ItemTemplateRepository itemTemplateRepository,
                        AbilityTemplateRepository abilityTemplateRepository,
                        EquippedItemRepository equippedItemRepository,
-                       EquippedAbilityRepository equippedAbilityRepository) {
+                       EquippedAbilityRepository equippedAbilityRepository,
+                       AbilitySpellBuilder abilitySpellBuilder) {
         this.heroTemplateRepository = heroTemplateRepository;
         this.summonTemplateRepository = summonTemplateRepository;
         this.heroRepository = heroRepository;
@@ -39,6 +42,7 @@ public class ShopService {
         this.abilityTemplateRepository = abilityTemplateRepository;
         this.equippedItemRepository = equippedItemRepository;
         this.equippedAbilityRepository = equippedAbilityRepository;
+        this.abilitySpellBuilder = abilitySpellBuilder;
     }
 
     public Map<String, Object> listHeroes(Long playerId) {
@@ -253,23 +257,8 @@ public class ShopService {
             entry.put("bonuses", bonuses);
             entry.put("owned", ownedIds.contains(t.getId()));
 
-            if (t.getSpellName() != null && !t.getSpellName().isBlank()) {
-                Map<String, Object> spellBonuses = new LinkedHashMap<>();
-                if (t.getSpellBonusPa() != 0) spellBonuses.put("physicalAttack", t.getSpellBonusPa());
-                if (t.getSpellBonusMp() != 0) spellBonuses.put("magicPower", t.getSpellBonusMp());
-                if (t.getSpellBonusDex() != 0) spellBonuses.put("dexterity", t.getSpellBonusDex());
-                if (t.getSpellBonusElem() != 0) spellBonuses.put("element", t.getSpellBonusElem());
-                if (t.getSpellBonusMana() != 0) spellBonuses.put("mana", t.getSpellBonusMana());
-                if (t.getSpellBonusStam() != 0) spellBonuses.put("stamina", t.getSpellBonusStam());
-
-                Map<String, Object> spell = new LinkedHashMap<>();
-                spell.put("name", t.getSpellName());
-                spell.put("manaCost", t.getSpellManaCost());
-                spell.put("trigger", t.getSpellTrigger());
-                spell.put("chance", t.getSpellChance());
-                spell.put("bonuses", spellBonuses);
-                entry.put("spell", spell);
-            }
+            List<Map<String, Object>> spellList = abilitySpellBuilder.buildSpellList(t);
+            if (spellList != null) entry.put("spells", spellList);
 
             abilities.add(entry);
         }
@@ -344,17 +333,33 @@ public class ShopService {
         if (dex          != 0) map.put("dexterity",        dex);
         if (dexProf      != 0) map.put("dexProficiency",   dexProf);
         if (dexPosture   != 0) map.put("dexPosture",       dexPosture);
-        double attack          = useGrowth ? st.getGrowthAttack()          : st.getBaseAttack();
-        double spellActivation = useGrowth ? st.getGrowthSpellActivation() : st.getBaseSpellActivation();
-        double stamina         = useGrowth ? st.getGrowthStamina()         : st.getBaseStamina();
-        double physicalAttack  = useGrowth ? st.getGrowthPhysicalAttack()  : st.getBasePhysicalAttack();
-        if (goldBonus       != 0) map.put("goldBonus",       goldBonus);
-        if (itemFind        != 0) map.put("itemFind",        itemFind);
-        if (xpBonus         != 0) map.put("xpBonus",        xpBonus);
-        if (attack          != 0) map.put("attack",          attack);
-        if (spellActivation != 0) map.put("spellActivation", spellActivation);
-        if (stamina         != 0) map.put("stamina",         stamina);
-        if (physicalAttack  != 0) map.put("physicalAttack",  physicalAttack);
+        double attack            = useGrowth ? st.getGrowthAttack()            : st.getBaseAttack();
+        double spellActivation   = useGrowth ? st.getGrowthSpellActivation()   : st.getBaseSpellActivation();
+        double stamina           = useGrowth ? st.getGrowthStamina()           : st.getBaseStamina();
+        double physicalAttack    = useGrowth ? st.getGrowthPhysicalAttack()    : st.getBasePhysicalAttack();
+        double physicalImmunity  = useGrowth ? st.getGrowthPhysicalImmunity()  : st.getBasePhysicalImmunity();
+        double magicImmunity     = useGrowth ? st.getGrowthMagicImmunity()     : st.getBaseMagicImmunity();
+        double dexEvasiveness    = useGrowth ? st.getGrowthDexEvasiveness()    : st.getBaseDexEvasiveness();
+        double manaRecharge      = useGrowth ? st.getGrowthManaRecharge()      : st.getBaseManaRecharge();
+        double spellLearn        = useGrowth ? st.getGrowthSpellLearn()        : st.getBaseSpellLearn();
+        double spellCopy         = useGrowth ? st.getGrowthSpellCopy()         : st.getBaseSpellCopy();
+        double spellAbsorb       = useGrowth ? st.getGrowthSpellAbsorb()       : st.getBaseSpellAbsorb();
+        double rot               = useGrowth ? st.getGrowthRot()               : st.getBaseRot();
+        if (goldBonus          != 0) map.put("goldBonus",         goldBonus);
+        if (itemFind           != 0) map.put("itemFind",          itemFind);
+        if (xpBonus            != 0) map.put("xpBonus",           xpBonus);
+        if (attack             != 0) map.put("attack",            attack);
+        if (spellActivation    != 0) map.put("spellActivation",   spellActivation);
+        if (stamina            != 0) map.put("stamina",           stamina);
+        if (physicalAttack     != 0) map.put("physicalAttack",    physicalAttack);
+        if (physicalImmunity   != 0) map.put("physicalImmunity",  physicalImmunity);
+        if (magicImmunity      != 0) map.put("magicImmunity",     magicImmunity);
+        if (dexEvasiveness     != 0) map.put("dexEvasiveness",    dexEvasiveness);
+        if (manaRecharge       != 0) map.put("manaRecharge",      manaRecharge);
+        if (spellLearn         != 0) map.put("spellLearn",        spellLearn);
+        if (spellCopy          != 0) map.put("spellCopy",         spellCopy);
+        if (spellAbsorb        != 0) map.put("spellAbsorb",       spellAbsorb);
+        if (rot                != 0) map.put("rot",               rot);
         return map;
     }
 
