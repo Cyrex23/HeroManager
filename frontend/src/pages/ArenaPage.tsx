@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getOpponents, challenge, getBattleLog } from '../api/arenaApi';
 import { usePlayer } from '../context/PlayerContext';
+import { useLanguage } from '../context/LanguageContext';
 import type { ArenaOpponentResponse, BattleLogEntry, ErrorResponse } from '../types';
 import OpponentRow from '../components/Arena/OpponentRow';
 import BattleLogList from '../components/Arena/BattleLogList';
@@ -64,6 +65,7 @@ export default function ArenaPage() {
   const [error, setError] = useState('');
   const [fighting, setFighting] = useState(false);
   const { player, fetchPlayer } = usePlayer();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const refresh = useCallback(async () => {
@@ -75,7 +77,7 @@ export default function ArenaPage() {
       setOpponents(opData.opponents);
       setBattles(logData.battles);
     } catch {
-      setError('Failed to load arena data.');
+      setError(t('arena_load_failed'));
     } finally {
       setLoading(false);
     }
@@ -99,7 +101,7 @@ export default function ArenaPage() {
       navigate(`/battle/${result.battleId}`, { state: { battleResult: result } });
     } catch (err) {
       const msg = (err as AxiosError<ErrorResponse>).response?.data?.message;
-      setError(msg || 'Challenge failed.');
+      setError(msg || t('arena_challenge_failed'));
       setFighting(false);
     }
   }
@@ -107,7 +109,7 @@ export default function ArenaPage() {
   if (loading) return (
     <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}>
       <span className="spinner" style={{ width: 18, height: 18 }} />
-      Loading arena...
+      {t('arena_loading')}
     </div>
   );
 
@@ -121,14 +123,14 @@ export default function ArenaPage() {
       {/* ── Header ───────────────────────────────────────────── */}
       <div style={styles.header}>
         <div>
-          <h2 style={styles.title} className="gradient-title">Arena</h2>
-          <p style={styles.subtitle}>Challenge opponents and climb the ranks.</p>
+          <h2 style={styles.title} className="gradient-title">{t('arena_title')}</h2>
+          <p style={styles.subtitle}>{t('arena_subtitle')}</p>
         </div>
         <div style={styles.energyBox}>
           <div style={styles.energyBadge} className="ae-badge-anim">
             <span style={styles.energyIcon}>⚡</span>
             <div style={styles.energyInner}>
-              <span style={styles.energyLabel}>Arena Energy</span>
+              <span style={styles.energyLabel}>{t('arena_energy_label')}</span>
               <div style={styles.energyMain}>
                 <span style={styles.energyValue} className="ae-value-anim">{Number(player?.arenaEnergy ?? 0).toFixed(1)}</span>
                 <span style={styles.energySlash}>/</span>
@@ -138,9 +140,9 @@ export default function ArenaPage() {
           </div>
           {(player?.arenaEnergy ?? 120) < 5 && (
             <div style={styles.energyWarning}>
-              Not enough energy to challenge (min 4 AE)
+              {t('arena_no_energy')}
               {player?.nextEnergyTickSeconds != null && player.nextEnergyTickSeconds > 0 && (
-                <span> · Next +{player.nextTickGain ?? 1} in {Math.floor(player.nextEnergyTickSeconds / 60)}:{(player.nextEnergyTickSeconds % 60).toString().padStart(2, '0')}</span>
+                <span> · {t('arena_next_energy')} +{player.nextTickGain ?? 1} {t('arena_in')} {Math.floor(player.nextEnergyTickSeconds / 60)}:{(player.nextEnergyTickSeconds % 60).toString().padStart(2, '0')}</span>
               )}
             </div>
           )}
@@ -154,9 +156,9 @@ export default function ArenaPage() {
 
         {/* Left — Opponents */}
         <div style={styles.leftCol}>
-          <SectionHeader label="OPPONENTS" />
+          <SectionHeader label={t('arena_opponents')} />
           {opponents.length === 0 ? (
-            <p style={styles.muted}>No opponents available yet.</p>
+            <p style={styles.muted}>{t('arena_no_opponents')}</p>
           ) : (
             <div style={styles.opponentList}>
               {opponents.map((op) => (
@@ -176,24 +178,24 @@ export default function ArenaPage() {
         <div style={styles.rightPanel}>
 
           {/* Received */}
-          <SectionHeader label="CHALLENGES RECEIVED" count={received.length} />
+          <SectionHeader label={t('arena_received')} count={received.length} />
           <BattleLogList
             battles={received}
             onReturnChallenge={(id) => handleChallenge(id, true)}
             onViewBattle={(id) => navigate(`/battle/${id}`)}
-            emptyMessage="No challenges received yet."
+            emptyMessage={t('arena_no_received')}
           />
 
           {/* Divider */}
           <div style={styles.panelDivider} />
 
           {/* Sent */}
-          <SectionHeader label="CHALLENGES SENT" />
+          <SectionHeader label={t('arena_sent')} />
           <BattleLogList
             battles={sent}
             onReturnChallenge={(id) => handleChallenge(id, true)}
             onViewBattle={(id) => navigate(`/battle/${id}`)}
-            emptyMessage="No challenges sent yet."
+            emptyMessage={t('arena_no_sent')}
           />
         </div>
 

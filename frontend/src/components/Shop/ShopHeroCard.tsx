@@ -2,6 +2,7 @@ import type { ShopHeroResponse } from '../../types';
 import HeroPortrait from '../Hero/HeroPortrait';
 import HexStatDiagram from '../Hero/HexStatDiagram';
 import CapBadge from '../Hero/CapBadge';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ELEMENT_SYMBOL: Record<string, string> = {
   FIRE: '🔥', WATER: '🌊', WIND: '🌀', EARTH: '⛰️', LIGHTNING: '⚡',
@@ -22,6 +23,7 @@ interface Props {
 
 export default function ShopHeroCard({ hero, playerGold, onBuy }: Props) {
   const canBuy = !hero.owned && playerGold >= hero.cost;
+  const { t } = useLanguage();
 
   return (
     <div style={{ ...styles.card, opacity: hero.owned ? 0.6 : 1 }} className="card-hover">
@@ -55,7 +57,7 @@ export default function ShopHeroCard({ hero, playerGold, onBuy }: Props) {
           <span style={styles.gold}>{hero.cost}g</span>
         </div>
         {hero.owned ? (
-          <div style={styles.ownedBadge}>Owned</div>
+          <div style={styles.ownedBadge}>{t('shop_owned')}</div>
         ) : (
           <button
             onClick={onBuy}
@@ -68,7 +70,7 @@ export default function ShopHeroCard({ hero, playerGold, onBuy }: Props) {
               cursor: canBuy ? 'pointer' : 'not-allowed',
             }}
           >
-            Buy
+            {t('shop_buy')}
           </button>
         )}
       </div>

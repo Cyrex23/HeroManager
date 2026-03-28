@@ -1,6 +1,10 @@
 import { useLocation, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ProtectedRoute } from './context/AuthContext';
+import { useState, useEffect } from 'react';
+import { LogIn, Clock } from 'lucide-react';
+import { useLanguage } from './context/LanguageContext';
+import { ProtectedRoute, useAuth } from './context/AuthContext';
+import { useAFKTimeout } from './hooks/useAFKTimeout';
 import Navbar from './components/Layout/Navbar';
 import Sidebar from './components/Layout/Sidebar';
 import LoginPage from './pages/LoginPage';
@@ -61,8 +65,36 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
  * It uses <Outlet /> from React Router v6 so child pages swap in/out
  * without unmounting the layout — AnimatePresence works correctly.
  */
+function SessionExpiredModal({ onLogin }: { onLogin: () => void }) {
+  const { t } = useLanguage();
+  return (
+    <div style={styles.modalOverlay}>
+      <div style={styles.modalCard}>
+        <Clock size={44} color="#fbbf24" style={{ marginBottom: 12 }} />
+        <h2 style={styles.modalTitle}>{t('session_expired_title')}</h2>
+        <p style={styles.modalText}>{t('session_expired_body')}</p>
+        <button style={styles.modalBtn} onClick={onLogin}>
+          <LogIn size={16} style={{ marginRight: 8 }} />
+          {t('session_expired_btn')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AppLayout() {
   const location = useLocation();
+  const { logout } = useAuth();
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  useAFKTimeout(() => setSessionExpired(true));
+
+  useEffect(() => {
+    const handler = () => setSessionExpired(true);
+    window.addEventListener('session-expired', handler);
+    return () => window.removeEventListener('session-expired', handler);
+  }, []);
+
   return (
     <div style={styles.appContainer}>
       <GameBackground />
@@ -87,6 +119,7 @@ function AppLayout() {
       <Footer />
       <ChatPanel />
       <LevelUpNotification />
+      {sessionExpired && <SessionExpiredModal onLogin={logout} />}
     </div>
   );
 }
@@ -156,5 +189,55 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#e0e0e0',
     position: 'relative',
     overflow: 'hidden',
+  },
+  modalOverlay: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 9999,
+    background: 'rgba(0,0,0,0.75)',
+    backdropFilter: 'blur(6px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCard: {
+    background: 'linear-gradient(160deg, #12112a 0%, #1a1835 100%)',
+    border: '1px solid rgba(251,191,36,0.35)',
+    borderRadius: 16,
+    padding: '40px 48px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: 0,
+    boxShadow: '0 0 40px rgba(251,191,36,0.15)',
+    maxWidth: 380,
+    width: '90%',
+    textAlign: 'center' as const,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: '#fbbf24',
+    margin: '0 0 10px',
+  },
+  modalText: {
+    fontSize: 14,
+    color: '#a0a0b0',
+    margin: '0 0 28px',
+    lineHeight: 1.6,
+  },
+  modalBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+    color: '#0d0d1a',
+    fontWeight: 700,
+    fontSize: 15,
+    border: 'none',
+    borderRadius: 8,
+    padding: '11px 32px',
+    cursor: 'pointer',
+    letterSpacing: '0.03em',
   },
 };

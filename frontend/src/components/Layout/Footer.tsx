@@ -1,12 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-
-const LINKS = [
-  { to: '/about',   label: 'About' },
-  { to: '/privacy', label: 'Privacy Policy' },
-  { to: '/terms',   label: 'Terms of Use' },
-  { to: '/rules',   label: 'Game Rules' },
-  { to: '/legal',   label: 'Legal Disclaimer' },
-];
+import { useState, useRef, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { useLanguage, type Locale } from '../../context/LanguageContext';
 
 function DiscordIcon() {
   return (
@@ -33,23 +28,123 @@ function BuyMeACoffeeIcon() {
   );
 }
 
+function FlagGB({ size = 20 }: { size?: number }) {
+  const h = Math.round(size * 0.6);
+  return (
+    <svg width={size} height={h} viewBox="0 0 60 36" style={{ borderRadius: 2, display: 'block', flexShrink: 0 }}>
+      <rect width="60" height="36" fill="#012169"/>
+      {/* White diagonals */}
+      <path d="M0,0 L60,36 M60,0 L0,36" stroke="#fff" strokeWidth="7.2"/>
+      {/* Red diagonals (clipped to quadrants) */}
+      <path d="M0,0 L60,36" stroke="#C8102E" strokeWidth="4.8" clipPath="url(#tl-br)"/>
+      <path d="M60,0 L0,36" stroke="#C8102E" strokeWidth="4.8" clipPath="url(#tr-bl)"/>
+      <clipPath id="tl-br"><polygon points="0,0 30,0 60,36 30,36"/></clipPath>
+      <clipPath id="tr-bl"><polygon points="30,0 60,0 60,18 30,36 0,36 0,18"/></clipPath>
+      {/* White cross */}
+      <rect x="25" y="0" width="10" height="36" fill="#fff"/>
+      <rect x="0" y="13" width="60" height="10" fill="#fff"/>
+      {/* Red cross */}
+      <rect x="27" y="0" width="6" height="36" fill="#C8102E"/>
+      <rect x="0" y="15" width="60" height="6" fill="#C8102E"/>
+    </svg>
+  );
+}
+
+function FlagBR({ size = 20 }: { size?: number }) {
+  const h = Math.round(size * 0.7);
+  return (
+    <svg width={size} height={h} viewBox="0 0 20 14" style={{ borderRadius: 2, display: 'block', flexShrink: 0 }}>
+      <rect width="20" height="14" fill="#009C3B"/>
+      <polygon points="10,1.4 18.6,7 10,12.6 1.4,7" fill="#FFDF00"/>
+      <circle cx="10" cy="7" r="3.2" fill="#002776"/>
+      <path d="M6.9,5.5 a3.2,3.2 0 0,1 6.2,0" stroke="#fff" strokeWidth="0.7" fill="none"/>
+    </svg>
+  );
+}
+
+const FLAGS: Record<string, (props: { size?: number }) => JSX.Element> = {
+  gb: FlagGB,
+  br: FlagBR,
+};
+
+function FlagImg({ countryCode, size = 20 }: { countryCode: string; size?: number }) {
+  const Flag = FLAGS[countryCode];
+  return Flag ? <Flag size={size} /> : null;
+}
+
+const LANGUAGES: { locale: Locale; countryCode: string; label: string }[] = [
+  { locale: 'en',    countryCode: 'gb', label: 'English' },
+  { locale: 'pt-BR', countryCode: 'br', label: 'Português (BR)' },
+];
+
+function LangDropdown({ locale, setLocale }: { locale: Locale; setLocale: (l: Locale) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = LANGUAGES.find((l) => l.locale === locale)!;
+
+  useEffect(() => {
+    if (!open) return;
+    function close(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button style={d.trigger} onClick={() => setOpen((o) => !o)}>
+        <FlagImg countryCode={current.countryCode} size={16} />
+        <span style={d.triggerLabel}>{current.label}</span>
+        <ChevronDown size={11} style={{ marginLeft: 2, opacity: 0.5, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.18s' }} />
+      </button>
+
+      {open && (
+        <div style={d.menu}>
+          {LANGUAGES.map(({ locale: l, countryCode, label }) => (
+            <button
+              key={l}
+              style={{ ...d.option, ...(locale === l ? d.optionActive : {}) }}
+              onClick={() => { setLocale(l); setOpen(false); }}
+            >
+              <FlagImg countryCode={countryCode} size={18} />
+              <span style={d.optionLabel}>{label}</span>
+              {locale === l && <span style={d.check}>✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Footer() {
   const { pathname } = useLocation();
+  const { locale, setLocale, t } = useLanguage();
+
+  const LINKS = [
+    { to: '/about',   label: t('footer_about') },
+    { to: '/privacy', label: t('footer_privacy') },
+    { to: '/terms',   label: t('footer_terms') },
+    { to: '/rules',   label: t('footer_rules') },
+    { to: '/legal',   label: t('footer_legal') },
+  ];
+
   return (
     <footer style={s.footer}>
       <div style={s.inner}>
         {/* Community pills */}
         <div style={s.discordPill}>
           <DiscordIcon />
-          Discord
+          {t('footer_discord')}
         </div>
         <div style={s.patreonPill}>
           <PatreonIcon />
-          Patreon
+          {t('footer_patreon')}
         </div>
         <a href="https://buymeacoffee.com/heromanager" target="_blank" rel="noreferrer" style={s.bmcPill}>
           <BuyMeACoffeeIcon />
-          Buy me a coffee
+          {t('footer_coffee')}
         </a>
 
         <span style={s.sep}>·</span>
@@ -63,8 +158,14 @@ export default function Footer() {
             {label}
           </Link>
         ))}
+
         <span style={s.sep}>·</span>
         <span style={s.copy}>© {new Date().getFullYear()} HeroManager</span>
+
+        <span style={s.sep}>·</span>
+
+        {/* Language dropdown */}
+        <LangDropdown locale={locale} setLocale={setLocale} />
       </div>
     </footer>
   );
@@ -113,5 +214,58 @@ const s: Record<string, React.CSSProperties> = {
     color: '#ffd500', fontSize: 11, fontWeight: 600,
     fontFamily: 'Inter, sans-serif', textDecoration: 'none',
     transition: 'background-color 0.2s, border-color 0.2s',
+  },
+};
+
+// Dropdown-specific styles
+const d: Record<string, React.CSSProperties> = {
+  trigger: {
+    display: 'flex', alignItems: 'center', gap: 5,
+    padding: '3px 9px', borderRadius: 6,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.09)',
+    color: '#7070a0', fontSize: 11, fontWeight: 600,
+    fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+    transition: 'border-color 0.18s, background 0.18s',
+    whiteSpace: 'nowrap' as const,
+  },
+  triggerLabel: {
+    fontSize: 11, letterSpacing: '0.03em',
+  },
+  menu: {
+    position: 'absolute',
+    bottom: 'calc(100% + 6px)',
+    right: 0,
+    minWidth: 160,
+    background: 'linear-gradient(160deg, #12112a 0%, #1a1835 100%)',
+    border: '1px solid rgba(255,255,255,0.09)',
+    borderRadius: 8,
+    padding: '4px',
+    boxShadow: '0 -8px 24px rgba(0,0,0,0.5)',
+    zIndex: 1000,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 2,
+  },
+  option: {
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '7px 10px', borderRadius: 6,
+    background: 'transparent',
+    border: 'none',
+    color: '#8080b0', fontSize: 12, fontWeight: 500,
+    fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+    textAlign: 'left' as const,
+    transition: 'background 0.15s, color 0.15s',
+    width: '100%',
+  },
+  optionActive: {
+    background: 'rgba(167,139,250,0.1)',
+    color: '#a78bfa',
+  },
+  optionLabel: {
+    flex: 1,
+  },
+  check: {
+    color: '#a78bfa', fontSize: 11,
   },
 };

@@ -3,6 +3,7 @@ import { Shield, Monitor, Clock, Swords } from 'lucide-react';
 import HeroManagerLogo from '../components/brand/HeroManagerLogo';
 import Footer from '../components/Layout/Footer';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 function Section({
   icon, title, color = '#e94560', children,
@@ -44,25 +45,18 @@ function Section({
   );
 }
 
-const timeline = [
-  {
-    year: '2026', short: '\'26', label: 'Development Begins',
-    desc: 'A group of passionate anime fans starts building HeroManager from scratch in early February 2026, driven by a shared love of strategy games and animated lore.',
-  },
-  {
-    year: '2027', short: '\'27', label: 'Open Beta',
-    desc: 'The gates are set to open in June 2027. Players will flood in, test the arena, and shape the future of the game through real feedback.',
-  },
-  {
-    year: '2027', short: '\'27', label: 'Official Launch',
-    desc: 'Beta concludes and HeroManager officially opens to all commanders by the end of 2027. The realm becomes a permanent home.',
-  },
-];
-
 export default function AboutPage() {
   const { isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const backTo = isAuthenticated ? '/team' : '/login';
-  const backLabel = isAuthenticated ? '← Back to Game' : '← Back to Login';
+  const backLabel = isAuthenticated ? t('back_to_game') : t('back_to_login');
+
+  const timeline = [
+    { year: '2026', short: '\'26', label: t('about_tl1_label'), desc: t('about_tl1_desc') },
+    { year: '2027', short: '\'27', label: t('about_tl2_label'), desc: t('about_tl2_desc') },
+    { year: '2027', short: '\'27', label: t('about_tl3_label'), desc: t('about_tl3_desc') },
+  ];
+
   return (
     <div style={{ height: '100vh', overflowY: 'auto', background: '#07061a', position: 'relative' }}>
 
@@ -97,48 +91,34 @@ export default function AboutPage() {
         }}>
           <Swords size={12} color="#e94560" />
           <span style={{ color: '#e94560', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            The Realm Awaits
+            {t('about_badge')}
           </span>
         </div>
         <h1 className="gradient-title" style={{ fontSize: 46, margin: '0 0 16px', letterSpacing: 2 }}>
-          About HeroManager
+          {t('about_title')}
         </h1>
         <p style={{ color: '#555577', fontSize: 15, maxWidth: 500, margin: '0 auto', lineHeight: 1.7, fontFamily: 'Inter, sans-serif' }}>
-          Where legendary commanders are forged and rivals are conquered
+          {t('about_subtitle')}
         </p>
       </div>
 
       {/* Content */}
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '0 24px 100px', position: 'relative', zIndex: 1 }}>
 
-        <Section icon={<Shield size={18} />} title="The HeroManager Universe" color="#e94560">
-          <p style={{ margin: '0 0 14px' }}>
-            HeroManager is a free, browser-based MMORPG set in a realm of legendary warriors drawn from manga, anime, and world mythology.
-            You take the role of a strategic commander — assembling a roster of powerful heroes and leading them through fierce competitive battles
-            against players from around the globe.
-          </p>
-          <p style={{ margin: 0 }}>
-            Level up your fighters, unlock devastating abilities, and outfit them with rare equipment as you climb the arena rankings.
-            Every decision shapes your team's destiny. The ultimate ambition: to be crowned the most formidable commander the realm has ever known.
-            Will you answer the call?
-          </p>
+        <Section icon={<Shield size={18} />} title={t('about_s1_title')} color="#e94560">
+          <p style={{ margin: '0 0 14px' }}>{t('about_s1_p1')}</p>
+          <p style={{ margin: 0 }}>{t('about_s1_p2')}</p>
         </Section>
 
-        <Section icon={<Monitor size={18} />} title="Playing in Your Browser" color="#60a5fa">
-          <p style={{ margin: '0 0 14px' }}>
-            There's nothing to download, install, or configure. HeroManager runs entirely within your browser — open the page and you're in.
-            For the sharpest performance and smoothest battle animations, we recommend running the latest version of Google Chrome.
-          </p>
-          <p style={{ margin: 0 }}>
-            Prefer gaming on the go? HeroManager is fully optimized for tablets and smartphones, so your team is always just a tap away —
-            whether you're managing roster changes, challenging rivals, or climbing the leaderboard from anywhere in the world.
-          </p>
+        <Section icon={<Monitor size={18} />} title={t('about_s2_title')} color="#60a5fa">
+          <p style={{ margin: '0 0 14px' }}>{t('about_s2_p1')}</p>
+          <p style={{ margin: 0 }}>{t('about_s2_p2')}</p>
         </Section>
 
-        <Section icon={<Clock size={18} />} title="Our Journey" color="#a78bfa">
+        <Section icon={<Clock size={18} />} title={t('about_s3_title')} color="#a78bfa">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {timeline.map(({ short, label, desc }, i) => (
-              <div key={short} style={{ display: 'flex', gap: 20 }}>
+              <div key={short + i} style={{ display: 'flex', gap: 20 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
                   <div style={{
                     width: 42, height: 42, borderRadius: '50%', flexShrink: 0,

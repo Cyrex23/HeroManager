@@ -3,6 +3,7 @@ import { Scale, AlertTriangle, BookOpen, Globe } from 'lucide-react';
 import HeroManagerLogo from '../components/brand/HeroManagerLogo';
 import Footer from '../components/Layout/Footer';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const COLOR = '#fb923c';
 
@@ -44,8 +45,9 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
 
 export default function LegalPage() {
   const { isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const backTo = isAuthenticated ? '/team' : '/login';
-  const backLabel = isAuthenticated ? '← Back to Game' : '← Back to Login';
+  const backLabel = isAuthenticated ? t('back_to_game') : t('back_to_login');
 
   return (
     <div style={{ height: '100vh', overflowY: 'auto', background: '#07061a', position: 'relative' }}>
@@ -81,39 +83,31 @@ export default function LegalPage() {
         }}>
           <Scale size={12} color={COLOR} />
           <span style={{ color: COLOR, fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>
-            Fan-Made Project
+            {t('legal_badge')}
           </span>
         </div>
         <h1 className="gradient-title" style={{ fontSize: 46, margin: '0 0 16px', letterSpacing: 2 }}>
-          Legal Disclaimer
+          {t('legal_title')}
         </h1>
         <p style={{ color: '#555577', fontSize: 15, maxWidth: 500, margin: '0 auto', lineHeight: 1.7, fontFamily: 'Inter, sans-serif' }}>
-          HeroManager is an independent, non-profit fan project
+          {t('legal_subtitle')}
         </p>
       </div>
 
       {/* Content */}
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '0 24px 100px', position: 'relative', zIndex: 1 }}>
 
-        <Section icon={<AlertTriangle size={18} />} title="Fan-Made Project — No Affiliation">
+        <Section icon={<AlertTriangle size={18} />} title={t('legal_s1_title')}>
           <p style={{ margin: '0 0 10px' }}>
-            HeroManager is an independent, fan-made web game created purely for entertainment and fan appreciation.
-            This project has <strong style={{ color: '#e0e0e0' }}>no affiliation, sponsorship, endorsement, or
-            connection</strong> of any kind with the original series, their authors, publishers, or any related
-            organisations. It is not an official product and does not represent the views or positions of any of
-            the rights-holders mentioned herein.
+            {t('legal_s1_p1').split(t('legal_s1_p1_strong'))[0]}
+            <strong style={{ color: '#e0e0e0' }}>{t('legal_s1_p1_strong')}</strong>
+            {t('legal_s1_p1').split(t('legal_s1_p1_strong'))[1]}
           </p>
-          <p style={{ margin: 0 }}>
-            This project is entirely non-commercial and non-profit. No revenue, subscriptions, or financial gain
-            of any kind is derived from its operation.
-          </p>
+          <p style={{ margin: 0 }}>{t('legal_s1_p2')}</p>
         </Section>
 
-        <Section icon={<Scale size={18} />} title="Intellectual Property">
-          <p style={{ margin: '0 0 10px' }}>
-            All intellectual property, trademarks, character names, images, and related content featured in
-            HeroManager belong exclusively to their respective creators and publishers:
-          </p>
+        <Section icon={<Scale size={18} />} title={t('legal_s2_title')}>
+          <p style={{ margin: '0 0 10px' }}>{t('legal_s2_intro')}</p>
           <ul style={{ margin: '0 0 12px', paddingLeft: 22, display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
             <li>
               <em style={{ color: '#e0e0e0' }}>Naruto</em> — created by{' '}
@@ -131,36 +125,17 @@ export default function LegalPage() {
               <strong style={{ color: '#e0e0e0' }}>Shueisha Inc.</strong>
             </li>
           </ul>
-          <p style={{ margin: 0 }}>
-            The use of character names, likenesses, and references in this project does not constitute any claim
-            of ownership and is intended solely for fan appreciation and cultural discussion purposes.
-          </p>
+          <p style={{ margin: 0 }}>{t('legal_s2_footer')}</p>
         </Section>
 
-        <Section icon={<BookOpen size={18} />} title="Fair Use & Fan Content">
-          <p style={{ margin: '0 0 10px' }}>
-            All references to characters, series, and related material are used under the principles of fan
-            content creation — for commentary, parody, and transformative fan expression. The use of names
-            and character references does not constitute a violation of copyright when used for non-commercial,
-            fan-appreciation purposes.
-          </p>
-          <p style={{ margin: 0 }}>
-            If you are a rights-holder and have concerns regarding content featured in this project, please
-            contact us directly. We are committed to respecting intellectual property rights and will address
-            any legitimate concerns promptly.
-          </p>
+        <Section icon={<BookOpen size={18} />} title={t('legal_s3_title')}>
+          <p style={{ margin: '0 0 10px' }}>{t('legal_s3_p1')}</p>
+          <p style={{ margin: 0 }}>{t('legal_s3_p2')}</p>
         </Section>
 
-        <Section icon={<Globe size={18} />} title="Limitation of Liability">
-          <p style={{ margin: '0 0 10px' }}>
-            HeroManager is provided as-is, without warranties of any kind. The creators and operators of this
-            project shall not be held liable for any direct, indirect, incidental, or consequential damages
-            arising from the use of or inability to use this service.
-          </p>
-          <p style={{ margin: 0 }}>
-            By continuing to access and use HeroManager, you acknowledge that you have read and understood this
-            disclaimer and agree to its terms.
-          </p>
+        <Section icon={<Globe size={18} />} title={t('legal_s4_title')}>
+          <p style={{ margin: '0 0 10px' }}>{t('legal_s4_p1')}</p>
+          <p style={{ margin: 0 }}>{t('legal_s4_p2')}</p>
         </Section>
 
       </div>

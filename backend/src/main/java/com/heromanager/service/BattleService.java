@@ -320,12 +320,12 @@ public class BattleService {
                         double finalMult = doubled ? 2.0 : masteryMult;
                         if (asp.isAffectsOpponent()) {
                             applyAbilitySpellBonuses(asp, dStats, dBufList, asp.getLastsTurns(), finalMult);
+                        } else if (asp.getPassOnType() != null) {
+                            // Sub spell: buffs only subsequent team heroes, NOT the caster
+                            applyAbilityPassOnBonuses(asp, cNextHeroBufs, cTeamBufs, finalMult);
+                            if ("BATTLEFIELD".equals(asp.getPassOnType())) applyAbilityPassOnBonuses(asp, dNextHeroBufs, dTeamBufs, finalMult);
                         } else {
                             applyAbilitySpellBonuses(asp, cStats, cBufList, asp.getLastsTurns(), finalMult);
-                            if (asp.getPassOnType() != null) {
-                                applyAbilityPassOnBonuses(asp, cNextHeroBufs, cTeamBufs, finalMult);
-                                if ("BATTLEFIELD".equals(asp.getPassOnType())) applyAbilityPassOnBonuses(asp, dNextHeroBufs, dTeamBufs, finalMult);
-                            }
                         }
                         if (doubled) ev.put("doubledMult", 2.0);
                         cFiredAbilitySnaps.add(new SpellSnapshot(asp.getSpellName(), cEffectiveCost,
@@ -450,12 +450,12 @@ public class BattleService {
                         double finalMult = doubled ? 2.0 : masteryMult;
                         if (asp.isAffectsOpponent()) {
                             applyAbilitySpellBonuses(asp, cStats, cBufList, asp.getLastsTurns(), finalMult);
+                        } else if (asp.getPassOnType() != null) {
+                            // Sub spell: buffs only subsequent team heroes, NOT the caster
+                            applyAbilityPassOnBonuses(asp, dNextHeroBufs, dTeamBufs, finalMult);
+                            if ("BATTLEFIELD".equals(asp.getPassOnType())) applyAbilityPassOnBonuses(asp, cNextHeroBufs, cTeamBufs, finalMult);
                         } else {
                             applyAbilitySpellBonuses(asp, dStats, dBufList, asp.getLastsTurns(), finalMult);
-                            if (asp.getPassOnType() != null) {
-                                applyAbilityPassOnBonuses(asp, dNextHeroBufs, dTeamBufs, finalMult);
-                                if ("BATTLEFIELD".equals(asp.getPassOnType())) applyAbilityPassOnBonuses(asp, cNextHeroBufs, cTeamBufs, finalMult);
-                            }
                         }
                         if (doubled) ev.put("doubledMult", 2.0);
                         dFiredAbilitySnaps.add(new SpellSnapshot(asp.getSpellName(), dEffectiveCost,

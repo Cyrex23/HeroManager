@@ -67,7 +67,13 @@
       "Bash(xargs grep:*)",
       "Bash(find d:/HeroManager -name *Madara* -o -name '*lvl up*' -o -name '*level up*')",
       "Bash(find D:HeroManagerbackend -name *HeroTemplate* -o -name *ResponseBuilder*)",
-      "Bash(grep -r \"BattleRound\\\\|attackerCapacity\\\\|consecWins\" d:/HeroManager/frontend/src --include=*.ts --include=*.tsx -l)"
+      "Bash(grep -r \"BattleRound\\\\|attackerCapacity\\\\|consecWins\" d:/HeroManager/frontend/src --include=*.ts --include=*.tsx -l)",
+      "Bash(find d:/HeroManager/backend -name *.log)",
+      "Bash(/tmp/all_files.txt:*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//d/HeroManager/**)",
+      "Bash(done)"
     ]
   }
 }

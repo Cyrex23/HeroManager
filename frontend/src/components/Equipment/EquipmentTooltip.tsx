@@ -104,24 +104,44 @@ export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice,
           </div>
 
           {/* Spell section — one block per spell */}
-          {spells && spells.length > 0 && spells.map((spell, si) => (
+          {spells && spells.length > 0 && spells.map((spell, si) => {
+            const isPassOn = !!spell.passOnType;
+            const sectionBorder = spell.affectsOpponent
+              ? 'rgba(248,113,113,0.3)'
+              : isPassOn ? 'rgba(20,184,166,0.3)' : 'rgba(59,130,246,0.2)';
+            const sectionBg = spell.affectsOpponent
+              ? 'rgba(239,68,68,0.06)'
+              : isPassOn ? 'rgba(20,184,166,0.07)' : 'rgba(59,130,246,0.06)';
+            const iconColor = spell.affectsOpponent ? '#f87171' : isPassOn ? '#2dd4bf' : '#60a5fa';
+            const iconGlow  = spell.affectsOpponent ? '#ef4444' : isPassOn ? '#0d9488' : '#3b82f6';
+            const icon      = spell.affectsOpponent ? '☠' : isPassOn ? '⤴' : '✦';
+            const nameColor = spell.affectsOpponent ? '#fca5a5' : isPassOn ? '#5eead4' : '#93c5fd';
+            const manaColor = spell.affectsOpponent ? '#f87171' : isPassOn ? '#2dd4bf' : '#60a5fa';
+            const manaBg    = spell.affectsOpponent ? 'rgba(248,113,113,0.15)' : isPassOn ? 'rgba(20,184,166,0.15)' : 'rgba(59,130,246,0.15)';
+            const manaBorder = spell.affectsOpponent ? 'rgba(248,113,113,0.3)' : isPassOn ? 'rgba(20,184,166,0.3)' : 'rgba(59,130,246,0.3)';
+            const trigColor  = spell.affectsOpponent ? '#f87171' : isPassOn ? '#2dd4bf' : '#a78bfa';
+            const trigBg     = spell.affectsOpponent ? 'rgba(248,113,113,0.12)' : isPassOn ? 'rgba(20,184,166,0.12)' : 'rgba(167,139,250,0.12)';
+            const trigBorder = spell.affectsOpponent ? 'rgba(248,113,113,0.25)' : isPassOn ? 'rgba(20,184,166,0.25)' : 'rgba(167,139,250,0.25)';
+            return (
             <div key={si}>
-              <div style={styles.spellDivider} />
-              <div style={{
-                ...styles.spellSection,
-                borderColor: spell.affectsOpponent ? 'rgba(248,113,113,0.3)' : 'rgba(59,130,246,0.2)',
-                backgroundColor: spell.affectsOpponent ? 'rgba(239,68,68,0.06)' : 'rgba(59,130,246,0.06)',
-              }}>
+              <div style={{ ...styles.spellDivider, background: isPassOn ? 'linear-gradient(to right, transparent, rgba(20,184,166,0.4), transparent)' : styles.spellDivider.background }} />
+              <div style={{ ...styles.spellSection, borderColor: sectionBorder, backgroundColor: sectionBg }}>
+                {/* Pass-on label above spell header */}
+                {isPassOn && (
+                  <div style={{ fontSize: 9, color: '#2dd4bf', fontWeight: 700, letterSpacing: '0.06em', marginBottom: 5, textTransform: 'uppercase' as const }}>
+                    ⤴ TEAM SUB-SPELL · {spell.passOnType}
+                  </div>
+                )}
                 {/* Spell header row */}
                 <div style={styles.spellHeader}>
-                  <span style={{ ...styles.spellIcon, color: spell.affectsOpponent ? '#f87171' : '#60a5fa', textShadow: spell.affectsOpponent ? '0 0 6px #ef4444' : '0 0 6px #3b82f6' }}>
-                    {spell.affectsOpponent ? '☠' : '✦'}
+                  <span style={{ ...styles.spellIcon, color: iconColor, textShadow: `0 0 6px ${iconGlow}` }}>
+                    {icon}
                   </span>
-                  <span style={styles.spellName}>{spell.name}</span>
-                  <span style={styles.spellMana}>{spell.manaCost} MP</span>
+                  <span style={{ ...styles.spellName, color: nameColor }}>{spell.name}</span>
+                  <span style={{ ...styles.spellMana, color: manaColor, backgroundColor: manaBg, borderColor: manaBorder }}>{spell.manaCost} MP</span>
                 </div>
-                {/* Duration / usage / pass-on — above trigger row */}
-                {((spell.lastsTurns && spell.lastsTurns > 0) || (spell.maxUsages && spell.maxUsages > 0) || spell.passOnType) && (
+                {/* Duration / usage — above trigger row (passOnType badge now shown at top) */}
+                {((spell.lastsTurns && spell.lastsTurns > 0) || (spell.maxUsages && spell.maxUsages > 0)) && (
                   <div style={{ display: 'flex', gap: 6, marginBottom: 4, flexWrap: 'wrap' as const }}>
                     {spell.lastsTurns && spell.lastsTurns > 0 && (
                       <span style={{ fontSize: 9, color: '#818cf8', fontWeight: 700, backgroundColor: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.25)', borderRadius: 3, padding: '1px 5px' }}>
@@ -133,16 +153,11 @@ export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice,
                         Max {spell.maxUsages}×
                       </span>
                     )}
-                    {spell.passOnType && (
-                      <span style={{ fontSize: 9, color: '#34d399', fontWeight: 700, backgroundColor: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.25)', borderRadius: 3, padding: '1px 5px', letterSpacing: '0.05em' }}>
-                        {spell.passOnType}
-                      </span>
-                    )}
                   </div>
                 )}
                 {/* Trigger + chance */}
                 <div style={styles.spellMeta}>
-                  <span style={{ ...styles.spellTriggerBadge, color: spell.affectsOpponent ? '#f87171' : '#a78bfa', backgroundColor: spell.affectsOpponent ? 'rgba(248,113,113,0.12)' : 'rgba(167,139,250,0.12)', borderColor: spell.affectsOpponent ? 'rgba(248,113,113,0.25)' : 'rgba(167,139,250,0.25)' }}>
+                  <span style={{ ...styles.spellTriggerBadge, color: trigColor, backgroundColor: trigBg, borderColor: trigBorder }}>
                     {TRIGGER_LABELS[spell.trigger] ?? spell.trigger}
                   </span>
                   <span style={styles.spellChance}>{Math.round(spell.chance * 100)}% chance</span>
@@ -167,7 +182,7 @@ export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice,
                 )}
               </div>
             </div>
-          ))}
+          ); })}
 
           <div style={styles.divider} />
 

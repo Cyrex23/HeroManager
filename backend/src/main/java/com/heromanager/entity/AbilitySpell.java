@@ -11,8 +11,9 @@ public class AbilitySpell {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long abilityTemplateId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ability_template_id", nullable = false)
+    private AbilityTemplate abilityTemplate;
 
     @Column(nullable = false)
     private String spellName;
@@ -21,32 +22,29 @@ public class AbilitySpell {
     private int spellManaCost = 0;
 
     @Column
-    private String spellTrigger; // ATTACK, ENTRANCE, AFTER_CLASH, AFTER_CLASH_CRIT, BEFORE_TURN_X, AFTER_TURN_X, OPPONENT_ENTRANCE
+    private String spellTrigger;
 
     @Column(columnDefinition = "double default 0")
     private double spellChance = 0;
 
     @Column(columnDefinition = "int default 0")
-    private int maxUsages = 0; // 0 = unlimited
+    private int maxUsages = 0;
 
     @Column(columnDefinition = "int default 0")
-    private int lastsTurns = 0; // 0 = instant
+    private int lastsTurns = 0;
 
     @Column(columnDefinition = "boolean default false")
     private boolean affectsOpponent = false;
 
     @Column
-    private String passOnType; // NEXT, TEAM, BATTLEFIELD
+    private String passOnType;
 
-    // Basic stat bonuses
     @Column(columnDefinition = "double default 0") private double spellBonusPa = 0;
     @Column(columnDefinition = "double default 0") private double spellBonusMp = 0;
     @Column(columnDefinition = "double default 0") private double spellBonusDex = 0;
     @Column(columnDefinition = "double default 0") private double spellBonusElem = 0;
     @Column(columnDefinition = "double default 0") private double spellBonusMana = 0;
     @Column(columnDefinition = "double default 0") private double spellBonusStam = 0;
-
-    // Sub-stat bonuses (fractions 0-1 for %, flat for tenacity)
     @Column(columnDefinition = "double default 0") private double spellBonusAttack = 0;
     @Column(columnDefinition = "double default 0") private double spellBonusMagicProficiency = 0;
     @Column(columnDefinition = "double default 0") private double spellBonusSpellMastery = 0;
@@ -68,8 +66,4 @@ public class AbilitySpell {
     @Column(columnDefinition = "double default 0") private double spellBonusCleanse = 0;
     @Column(columnDefinition = "double default 0") private double spellBonusRot = 0;
     @Column(columnDefinition = "double default 0") private double spellBonusOffPositioning = 0;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "abilityTemplateId", insertable = false, updatable = false)
-    private AbilityTemplate abilityTemplate;
 }

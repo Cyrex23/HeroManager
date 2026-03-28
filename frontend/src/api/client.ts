@@ -23,7 +23,7 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('playerId');
       localStorage.removeItem('username');
-      window.location.href = '/login';
+      window.dispatchEvent(new CustomEvent('session-expired'));
     }
     return Promise.reject(error);
   }

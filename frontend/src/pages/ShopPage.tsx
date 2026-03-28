@@ -10,6 +10,7 @@ import {
 } from '../api/upgradeApi';
 import { getHeroes } from '../api/playerApi';
 import { usePlayer } from '../context/PlayerContext';
+import { useLanguage } from '../context/LanguageContext';
 import type {
   ShopHeroResponse, ShopSummonResponse,
   ShopItemResponse, ShopAbilityResponse,
@@ -48,8 +49,8 @@ const TIER_ICON: Record<string, string> = {
   COMMONER: '👤', ELITE: '🔱', LEGENDARY: '✨', SUMMONS: '🐉',
 };
 
-const TIER_LABEL: Record<string, string> = {
-  COMMONER: 'Commoners', ELITE: 'Elites', LEGENDARY: 'Legendarys', SUMMONS: 'Summons',
+const TIER_LABEL_KEY: Record<string, string> = {
+  COMMONER: 'shop_tier_commoners', ELITE: 'shop_tier_elites', LEGENDARY: 'shop_tier_legendarys', SUMMONS: 'shop_tier_summons',
 };
 
 const ALL_FILTERS: TierFilter[] = ['COMMONER', 'ELITE', 'LEGENDARY', 'SUMMONS'];
@@ -73,6 +74,7 @@ export default function ShopPage() {
     action: () => Promise<void>;
   } | null>(null);
   const { player, fetchPlayer } = usePlayer();
+  const { t } = useLanguage();
   const abilityReqId = useRef(0);
 
   function requestConfirm(label: string, cost: number, currency: 'gold' | 'diamonds', action: () => Promise<void>) {
@@ -195,7 +197,7 @@ export default function ShopPage() {
     }
   }
 
-  if (loading) return <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}><span className="spinner" style={{ width: 18, height: 18 }} />Loading shop...</div>;
+  if (loading) return <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}><span className="spinner" style={{ width: 18, height: 18 }} />{t('shop_loading')}</div>;
 
   return (
     <div>
@@ -217,7 +219,7 @@ export default function ShopPage() {
             textAlign: 'center',
           }} onClick={e => e.stopPropagation()}>
             <div style={{ fontSize: 13, color: '#a0a0b0', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
-              Confirm Purchase
+              {t('shop_confirm_purchase')}
             </div>
             <div style={{ fontSize: 17, fontWeight: 800, color: '#e0e0e0', marginBottom: 6 }}>
               {pendingBuy.label}
@@ -234,7 +236,7 @@ export default function ShopPage() {
                 background: 'transparent', color: '#6a6a8a', fontWeight: 700, fontSize: 13,
                 cursor: 'pointer', letterSpacing: 0.5,
               }}>
-                Cancel
+                {t('shop_cancel')}
               </button>
               <button onClick={confirmBuy} style={{
                 padding: '8px 22px', borderRadius: 6,
@@ -244,7 +246,7 @@ export default function ShopPage() {
                 cursor: 'pointer', letterSpacing: 0.5,
                 boxShadow: '0 0 12px rgba(233,69,96,0.2)',
               }}>
-                ✓ Confirm
+                {t('shop_confirm_btn')}
               </button>
             </div>
           </div>
@@ -252,11 +254,11 @@ export default function ShopPage() {
       )}
 
       <div style={styles.header}>
-        <h2 style={styles.title} className="gradient-title">Shop</h2>
+        <h2 style={styles.title} className="gradient-title">{t('shop_title')}</h2>
         <div style={styles.goldBadge}>
           <span style={styles.goldIcon}><Coins size={22} /></span>
           <div style={styles.goldInfo}>
-            <span style={styles.goldLabel}>Gold</span>
+            <span style={styles.goldLabel}>{t('shop_gold_label')}</span>
             <span className="gold-text gold-text-animated" style={styles.goldValue}>
               {(player?.gold ?? 0).toLocaleString()}
             </span>
@@ -265,19 +267,22 @@ export default function ShopPage() {
       </div>
 
       <div style={styles.tabs}>
-        {(['heroes', 'items', 'abilities', 'upgrades'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              ...styles.tab,
-              borderBottomColor: tab === t ? '#e94560' : 'transparent',
-              color: tab === t ? '#e0e0e0' : '#666',
-            }}
-          >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
+        {(['heroes', 'items', 'abilities', 'upgrades'] as Tab[]).map((tabKey) => {
+          const tabLabel = tabKey === 'heroes' ? t('shop_tab_heroes') : tabKey === 'items' ? t('shop_tab_items') : tabKey === 'abilities' ? t('shop_tab_abilities') : t('shop_tab_upgrades');
+          return (
+            <button
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
+              style={{
+                ...styles.tab,
+                borderBottomColor: tab === tabKey ? '#e94560' : 'transparent',
+                color: tab === tabKey ? '#e0e0e0' : '#666',
+              }}
+            >
+              {tabLabel}
+            </button>
+          );
+        })}
       </div>
 
       {error && <div style={styles.error}>{error}</div>}
@@ -308,14 +313,14 @@ export default function ShopPage() {
                   onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 0 1px ${color}22`; (e.currentTarget as HTMLButtonElement).style.borderColor = `${color}55`; } }}
                 >
                   <span style={{ marginRight: 5, fontSize: 13 }}>{TIER_ICON[tier]}</span>
-                  {TIER_LABEL[tier]}
+                  {t(TIER_LABEL_KEY[tier] as Parameters<typeof t>[0])}
                 </button>
               );
             })}
           </div>
 
           <div style={styles.statFilterRow}>
-            <span style={styles.statFilterLabel}>Scaling:</span>
+            <span style={styles.statFilterLabel}>{t('shop_scaling')}</span>
             {STAT_FILTER_CONFIG.map(({ key, label, color }) => {
               const active = statFilter === key;
               return (
@@ -345,7 +350,7 @@ export default function ShopPage() {
             return (
               <div key={tier}>
                 <div style={{ ...styles.tierHeader, borderLeftColor: TIER_COLOR[tier] }}>
-                  <span style={{ color: TIER_COLOR[tier] }}>{tier.charAt(0) + tier.slice(1).toLowerCase()}s</span>
+                  <span style={{ color: TIER_COLOR[tier] }}>{t(TIER_LABEL_KEY[tier] as Parameters<typeof t>[0])}</span>
                 </div>
                 <div style={styles.heroGrid}>
                   {tierHeroes.map((hero) => (
@@ -363,7 +368,7 @@ export default function ShopPage() {
 
           {visibleTiers.has('SUMMONS') && <>
           <div style={{ ...styles.tierHeader, borderLeftColor: '#a78bfa', marginTop: 8 }}>
-            <span style={{ color: '#a78bfa' }}>Summons</span>
+            <span style={{ color: '#a78bfa' }}>{t('shop_summons_label')}</span>
           </div>
           <div style={styles.grid}>
             {shopSummons.map((summon) => (
@@ -382,19 +387,19 @@ export default function ShopPage() {
       {tab === 'items' && (
         <>
           <p style={styles.inventoryHint}>
-            Items go to your team inventory — equip them to heroes from the <strong>Team</strong> page.
+            {t('shop_items_hint')}
           </p>
           {(['COMMON', 'RARE', 'LEGENDARY'] as const).map((tier) => {
             const tierItems = items.filter((item) => getItemTier(item.cost) === tier);
             if (tierItems.length === 0) return null;
             const tierColor = { COMMON: '#9ca3af', RARE: '#a78bfa', LEGENDARY: '#f97316' }[tier];
-            const tierLabel = { COMMON: 'Common', RARE: 'Rare', LEGENDARY: 'Legendary' }[tier];
+            const tierLabel = tier === 'LEGENDARY' ? t('shop_item_legendary') : tier === 'RARE' ? t('shop_item_rare') : t('shop_item_common');
             return (
               <div key={tier}>
                 <div style={{ ...styles.tierHeader, borderLeftColor: tierColor }}>
                   <span style={{ color: tierColor }}>{tierLabel}</span>
                   <span style={{ color: tierColor + '66', fontSize: 12, fontWeight: 500, textTransform: 'none' as const, letterSpacing: 0 }}>
-                    — {tierItems.length} item{tierItems.length !== 1 ? 's' : ''}
+                    — {tierItems.length} {tierItems.length !== 1 ? t('shop_item_count_plural') : t('shop_item_count_singular')}
                   </span>
                 </div>
                 <div style={styles.itemGrid}>
@@ -501,7 +506,7 @@ export default function ShopPage() {
                   const tierAbilities = heroAbilities.filter((ab) => ab.tier === tier);
                   if (tierAbilities.length === 0) return null;
                   const ATIER_COLORS: Record<number, string> = { 1: '#9ca3af', 2: '#38bdf8', 3: '#a78bfa', 4: '#fb923c' };
-                  const ATIER_LABELS: Record<number, string> = { 1: 'Tier I', 2: 'Tier II', 3: 'Tier III', 4: 'Tier IV' };
+                  const ATIER_LABELS: Record<number, string> = { 1: t('shop_tier_1'), 2: t('shop_tier_2'), 3: t('shop_tier_3'), 4: t('shop_tier_4') };
                   const tc = ATIER_COLORS[tier];
                   return (
                     <div key={tier}>
@@ -537,14 +542,14 @@ export default function ShopPage() {
       {tab === 'upgrades' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 680 }}>
           <p style={{ ...styles.muted, marginBottom: 4 }}>
-            Permanent upgrades for your account. Gold and diamond purchases are independent.
+            {t('upgrades_intro')}
           </p>
 
-          <div style={styles.upgradeSection}>TEAM SETUPS</div>
+          <div style={styles.upgradeSection}>{t('upgrades_sec_team_setups')}</div>
           <UpgradeCard
             icon="📋"
-            name="Extra Team Setup"
-            description="Unlock a 3rd team setup slot. Save and switch between 3 different team configurations."
+            name={t('upg_extra_setup3_name')}
+            description={t('upg_extra_setup3_desc')}
             cost={2000} currency="gold"
             purchased={player?.extraLineupGoldPurchased ?? false}
             canAfford={(player?.gold ?? 0) >= 2000}
@@ -552,63 +557,63 @@ export default function ShopPage() {
           />
           <UpgradeCard
             icon="📋"
-            name="Extra Team Setup"
-            description="Unlock a 4th team setup slot. Save and switch between 4 different team configurations."
+            name={t('upg_extra_setup4_name')}
+            description={t('upg_extra_setup4_desc')}
             cost={100} currency="diamonds"
             purchased={player?.extraLineupDiamondsPurchased ?? false}
             canAfford={(player?.diamonds ?? 0) >= 100}
             onBuy={() => requestConfirm('Extra Team Setup (4th slot)', 100, 'diamonds', () => handleUpgrade(buyExtraLineupDiamonds))}
           />
 
-          <div style={styles.upgradeSection}>ENERGY</div>
+          <div style={styles.upgradeSection}>{t('upgrades_sec_energy')}</div>
           <UpgradeCard
             icon="⚡"
-            name="Energy Plus"
-            description="Permanently increase your max World and Arena Energy limit by 20. Adds a bonus 40 energy refill now, and on each reset!"
+            name={t('upg_energy_plus_name')}
+            description={t('upg_energy_plus_desc')}
             cost={40} currency="diamonds"
             purchased={player?.energyPlusPurchased ?? false}
             canAfford={(player?.diamonds ?? 0) >= 40}
             onBuy={() => requestConfirm('Energy Plus', 40, 'diamonds', () => handleUpgrade(buyEnergyPlus))}
           />
 
-          <div style={styles.upgradeSection}>ROSTER</div>
+          <div style={styles.upgradeSection}>{t('upgrades_sec_roster')}</div>
           <UpgradeCard
             icon="👥"
-            name="Hero Capacity Plus"
-            description="Expand your hero roster from 20 to 40 heroes. More heroes, more possibilities."
+            name={t('upg_hero_cap_name')}
+            description={t('upg_hero_cap_desc')}
             cost={4000} currency="gold"
             purchased={player?.heroPlusCapacityPurchased ?? false}
             canAfford={(player?.gold ?? 0) >= 4000}
             onBuy={() => requestConfirm('Hero Capacity Plus', 4000, 'gold', () => handleUpgrade(buyHeroPlusCapacity))}
           />
 
-          <div style={styles.upgradeSection}>CAPACITY</div>
+          <div style={styles.upgradeSection}>{t('upgrades_sec_capacity')}</div>
           <UpgradeCard
             icon="🛡"
-            name="Capacity Plus"
-            description={`Increase your team's capacity limit by 10. Currently ${player?.teamCapacityMax ?? 100}.`}
+            name={t('upg_capacity_plus_name')}
+            description={t('upg_capacity_plus_desc').replace('{current}', String(player?.teamCapacityMax ?? 100))}
             cost={8000} currency="gold"
             purchased={(player?.capacityPlusCount ?? 0) >= 1}
             canAfford={(player?.gold ?? 0) >= 8000}
             onBuy={() => requestConfirm('Capacity Plus', 8000, 'gold', () => handleUpgrade(buyCapacityPlus))}
           />
 
-          <div style={styles.upgradeSection}>HEROES</div>
+          <div style={styles.upgradeSection}>{t('upgrades_sec_heroes')}</div>
           <UpgradeCard
             icon="🔄"
-            name="Stat Reset"
-            description="Unlock the ability to reset a hero's allocated stat points back into their unallocated pool. First reset costs 1,000g per hero, doubling each time."
+            name={t('upg_stat_reset_name')}
+            description={t('upg_stat_reset_desc')}
             cost={15000} currency="gold"
             purchased={player?.statResetUnlocked ?? false}
             canAfford={(player?.gold ?? 0) >= 15000}
             onBuy={() => requestConfirm('Stat Reset Unlock', 15000, 'gold', () => handleUpgrade(buyStatReset))}
           />
 
-          <div style={styles.upgradeSection}>ARENA</div>
+          <div style={styles.upgradeSection}>{t('upgrades_sec_arena')}</div>
           <UpgradeCard
             icon="📜"
-            name="Battle Log"
-            description="Unlock the battle log in the Arena. View your full history of challenges sent and received, and replay past battles."
+            name={t('upg_battle_log_name')}
+            description={t('upg_battle_log_desc')}
             cost={500} currency="gold"
             purchased={player?.battleLogUnlocked ?? false}
             canAfford={(player?.gold ?? 0) >= 500}
@@ -616,8 +621,8 @@ export default function ShopPage() {
           />
           <UpgradeCard
             icon="↩"
-            name="Return Queue+"
-            description="Increase your return challenge queue from 5 to 10 per opponent. When an opponent floods you with challenges, you can return more of them."
+            name={t('upg_return_queue_name')}
+            description={t('upg_return_queue_desc')}
             cost={8000} currency="gold"
             purchased={player?.returnCapUpgraded ?? false}
             canAfford={(player?.gold ?? 0) >= 8000}
@@ -625,8 +630,8 @@ export default function ShopPage() {
           />
           <UpgradeCard
             icon="⚔"
-            name="Challenge Limit+"
-            description="Increase the daily challenge limit against the same opponent from 7 to 12 per 24 hours."
+            name={t('upg_challenge_limit_name')}
+            description={t('upg_challenge_limit_desc')}
             cost={13000} currency="gold"
             purchased={player?.challengeLimitUpgraded ?? false}
             canAfford={(player?.gold ?? 0) >= 13000}
@@ -634,19 +639,19 @@ export default function ShopPage() {
           />
           <UpgradeCard
             icon="⚡"
-            name="Energy Gain+"
-            description="Increase your energy regeneration from 1 to 1.5 per tick (every 10 minutes). Recover faster and fight more."
+            name={t('upg_energy_gain_name')}
+            description={t('upg_energy_gain_desc')}
             cost={200000} currency="gold"
             purchased={player?.energyGainUpgraded ?? false}
             canAfford={(player?.gold ?? 0) >= 200000}
             onBuy={() => requestConfirm('Energy Gain+', 200000, 'gold', () => handleUpgrade(buyEnergyGainUpgrade))}
           />
 
-          <div style={styles.upgradeSection}>BLACKSMITH</div>
+          <div style={styles.upgradeSection}>{t('upgrades_sec_blacksmith')}</div>
           <UpgradeCard
             icon="⚒️"
-            name="Extra Crafting Slot"
-            description="Increase your active crafting limit from 1 to 2. Run two forge or refinement jobs at the same time."
+            name={t('upg_crafting_slot_name')}
+            description={t('upg_crafting_slot_desc')}
             cost={4000} currency="gold"
             purchased={player?.extraCraftingSlotPurchased ?? false}
             canAfford={(player?.gold ?? 0) >= 4000}
@@ -654,8 +659,8 @@ export default function ShopPage() {
           />
           <UpgradeCard
             icon="🎰"
-            name="Double Daily Spin"
-            description="Get 2 spins on the Blacksmith material wheel every day instead of 1. Double your chances at rare crafting materials."
+            name={t('upg_double_spin_name')}
+            description={t('upg_double_spin_desc')}
             cost={50} currency="diamonds"
             purchased={player?.doubleSpinPurchased ?? false}
             canAfford={(player?.diamonds ?? 0) >= 50}

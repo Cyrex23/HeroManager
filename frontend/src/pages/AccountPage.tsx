@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 const ACCOUNT_CSS = `
 @keyframes statValGlowWhite {
@@ -42,6 +43,7 @@ export default function AccountPage() {
   const [data, setData] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
   const { fetchPlayer } = usePlayer();
+  const { t } = useLanguage();
 
   // Level-up detection
   const heroLevelsRef = useRef<Record<number, number>>({});
@@ -123,11 +125,11 @@ export default function AccountPage() {
     setTeamNameMsg(''); setTeamNameErr('');
     try {
       await changeTeamName(teamNameInput);
-      setTeamNameMsg('Team name updated successfully.');
+      setTeamNameMsg(t('account_team_success'));
       await load();
       await fetchPlayer();
     } catch (err) {
-      setTeamNameErr((err as AxiosError<ErrorResponse>).response?.data?.message || 'Failed to update.');
+      setTeamNameErr((err as AxiosError<ErrorResponse>).response?.data?.message || t('account_team_failed'));
     }
   }
 
@@ -144,17 +146,17 @@ export default function AccountPage() {
   async function handlePassword(e: React.FormEvent) {
     e.preventDefault();
     setPwMsg(''); setPwErr('');
-    if (newPw !== confirmPw) { setPwErr('New passwords do not match.'); return; }
+    if (newPw !== confirmPw) { setPwErr(t('account_passwords_mismatch')); return; }
     try {
       await changePassword(currentPw, newPw);
-      setPwMsg('Password changed successfully.');
+      setPwMsg(t('account_password_success'));
       setCurrentPw(''); setNewPw(''); setConfirmPw('');
     } catch (err) {
-      setPwErr((err as AxiosError<ErrorResponse>).response?.data?.message || 'Failed to change password.');
+      setPwErr((err as AxiosError<ErrorResponse>).response?.data?.message || t('account_password_failed'));
     }
   }
 
-  if (loading || !data) return <div style={{ color: '#a0a0b0' }}>Loading account...</div>;
+  if (loading || !data) return <div style={{ color: '#a0a0b0' }}>{t('account_loading')}</div>;
 
   const memberDate = new Date(data.memberSince).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric',
@@ -163,14 +165,14 @@ export default function AccountPage() {
     ? Math.round((data.wins / data.totalBattles) * 100) : 0;
 
   const statItems = [
-    { value: String(data.totalBattles), label: 'Battles',     color: '#a0a0cc', glowClass: 'stat-val-white', barPct: null },
-    { value: String(data.wins),         label: 'Wins',        color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
-    { value: String(data.losses),       label: 'Losses',      color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
-    { value: `${winRate}%`,             label: 'Win Rate',    color: '#fbbf24', glowClass: 'stat-val-gold',  barPct: winRate },
-    { value: String(data.winStreak),      label: 'Win Streak',      color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
-    { value: String(data.bestWinStreak),  label: 'Best Win Streak',  color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
-    { value: String(data.lossStreak),     label: 'Loss Streak',     color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
-    { value: String(data.bestLossStreak), label: 'Best Loss Streak', color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
+    { value: String(data.totalBattles), label: t('account_battles'),          color: '#a0a0cc', glowClass: 'stat-val-white', barPct: null },
+    { value: String(data.wins),         label: t('account_wins'),             color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
+    { value: String(data.losses),       label: t('account_losses'),           color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
+    { value: `${winRate}%`,             label: t('account_win_rate'),         color: '#fbbf24', glowClass: 'stat-val-gold',  barPct: winRate },
+    { value: String(data.winStreak),      label: t('account_win_streak'),       color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
+    { value: String(data.bestWinStreak),  label: t('account_best_win_streak'),  color: '#4ade80', glowClass: 'stat-val-green', barPct: null },
+    { value: String(data.lossStreak),     label: t('account_loss_streak'),      color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
+    { value: String(data.bestLossStreak), label: t('account_best_loss_streak'), color: '#e94560', glowClass: 'stat-val-red',   barPct: null },
   ];
 
   return (
@@ -193,14 +195,14 @@ export default function AccountPage() {
         </div>
         <div style={styles.profileInfo}>
           <div style={styles.username} className="gradient-title">{data.username}</div>
-          <div style={styles.memberSince}>Member since {memberDate}</div>
+          <div style={styles.memberSince}>{t('account_member_since')} {memberDate}</div>
         </div>
       </div>
 
       {/* ── Combat Record ── */}
       <div style={styles.combatRecord}>
         <div style={styles.combatRecordHeader}>
-          <span style={styles.combatRecordTitle}>⚔ Combat Record</span>
+          <span style={styles.combatRecordTitle}>{t('account_combat_record')}</span>
           <div style={styles.combatRecordLine} />
         </div>
         <div style={styles.statCardsRow}>
@@ -230,10 +232,10 @@ export default function AccountPage() {
 
       {/* ── Avatar selection ── */}
       <section style={styles.section}>
-        <div style={styles.sectionTitle}>Profile Picture</div>
-        <div style={styles.sectionSub}>Select from heroes you have owned</div>
+        <div style={styles.sectionTitle}>{t('account_profile_picture')}</div>
+        <div style={styles.sectionSub}>{t('account_select_heroes')}</div>
         {data.avatarOptions.length === 0 ? (
-          <p style={styles.muted}>No heroes unlocked yet. Buy heroes from the Shop!</p>
+          <p style={styles.muted}>{t('account_no_heroes')}</p>
         ) : (
           <div style={styles.avatarGrid}>
             {data.avatarOptions.map((av) => {
@@ -260,17 +262,17 @@ export default function AccountPage() {
 
       {/* ── Team name ── */}
       <section style={styles.section}>
-        <div style={styles.sectionTitle}>Team Name</div>
+        <div style={styles.sectionTitle}>{t('account_team_name')}</div>
         {!data.canChangeTeamName && (
           <div style={styles.cooldownNote}>
-            Available to change in {data.daysUntilTeamNameChange} day{data.daysUntilTeamNameChange !== 1 ? 's' : ''}
+            {t('account_change_in')} {data.daysUntilTeamNameChange} {data.daysUntilTeamNameChange !== 1 ? t('account_days') : t('account_day')}
           </div>
         )}
         <form onSubmit={handleTeamName} style={styles.form}>
           <input
             value={teamNameInput}
             onChange={(e) => setTeamNameInput(e.target.value)}
-            placeholder="Team name (3–30 chars)"
+            placeholder={t('account_team_placeholder')}
             maxLength={30}
             disabled={!data.canChangeTeamName}
             style={{ ...styles.input, opacity: data.canChangeTeamName ? 1 : 0.5 }}
@@ -280,7 +282,7 @@ export default function AccountPage() {
             disabled={!data.canChangeTeamName}
             style={{ ...styles.btn, opacity: data.canChangeTeamName ? 1 : 0.5 }}
           >
-            Save
+            {t('account_save')}
           </button>
         </form>
         {teamNameMsg && <div style={styles.success}>{teamNameMsg}</div>}
@@ -289,30 +291,30 @@ export default function AccountPage() {
 
       {/* ── Change password ── */}
       <section style={styles.section}>
-        <div style={styles.sectionTitle}>Change Password</div>
+        <div style={styles.sectionTitle}>{t('account_change_password')}</div>
         <form onSubmit={handlePassword} style={styles.form}>
           <input
             type="password"
             value={currentPw}
             onChange={(e) => setCurrentPw(e.target.value)}
-            placeholder="Current password"
+            placeholder={t('account_current_password')}
             style={styles.input}
           />
           <input
             type="password"
             value={newPw}
             onChange={(e) => setNewPw(e.target.value)}
-            placeholder="New password (min 6 chars)"
+            placeholder={t('account_new_password')}
             style={styles.input}
           />
           <input
             type="password"
             value={confirmPw}
             onChange={(e) => setConfirmPw(e.target.value)}
-            placeholder="Confirm new password"
+            placeholder={t('account_confirm_password')}
             style={styles.input}
           />
-          <button type="submit" style={styles.btn}>Change Password</button>
+          <button type="submit" style={styles.btn}>{t('account_change_password')}</button>
         </form>
         {pwMsg && <div style={styles.success}>{pwMsg}</div>}
         {pwErr && <div style={styles.error}>{pwErr}</div>}
@@ -320,7 +322,7 @@ export default function AccountPage() {
 
       {/* ── Chat Notifications ── */}
       <section style={styles.section}>
-        <div style={styles.sectionTitle}>Chat Notifications</div>
+        <div style={styles.sectionTitle}>{t('account_chat_notifications')}</div>
         <label style={styles.toggleRow}>
           <div
             onClick={handleChatSoundToggle}
@@ -335,7 +337,7 @@ export default function AccountPage() {
             }} />
           </div>
           <span style={styles.toggleLabel}>
-            Play sound on new chat messages
+            {t('account_chat_sound')}
           </span>
         </label>
       </section>

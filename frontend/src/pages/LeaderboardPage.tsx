@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import type { LeaderboardHeroEntry, LeaderboardSummonEntry, LeaderboardTeamEntry } from '../types';
 import { getTopHeroes, getTopSummons, getTopTeams } from '../api/leaderboardApi';
 import HeroPortrait from '../components/Hero/HeroPortrait';
@@ -32,6 +33,7 @@ function rankClass(rank: number): string {
 }
 
 export default function LeaderboardPage() {
+  const { t } = useLanguage();
   const [tab, setTab] = useState<Tab>('teams');
   const [heroes, setHeroes] = useState<LeaderboardHeroEntry[]>([]);
   const [summons, setSummons] = useState<LeaderboardSummonEntry[]>([]);
@@ -56,22 +58,22 @@ export default function LeaderboardPage() {
 
   return (
     <div style={styles.page}>
-      <h2 style={styles.title} className="gradient-title">Leaderboards</h2>
+      <h2 style={styles.title} className="gradient-title">{t('lb_title')}</h2>
 
       {/* Tabs */}
       <div style={styles.tabs}>
-        {(['teams', 'heroes', 'summons'] as Tab[]).map((t) => (
+        {(['teams', 'heroes', 'summons'] as Tab[]).map((tabKey) => (
           <button
-            key={t}
-            style={{ ...styles.tab, ...(tab === t ? styles.tabActive : {}) }}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            style={{ ...styles.tab, ...(tab === tabKey ? styles.tabActive : {}) }}
+            onClick={() => setTab(tabKey)}
           >
-            {t === 'teams' ? '⚔ Teams' : t === 'heroes' ? '🗡 Heroes' : '✨ Summons'}
+            {tabKey === 'teams' ? t('lb_tab_teams') : tabKey === 'heroes' ? t('lb_tab_heroes') : t('lb_tab_summons')}
           </button>
         ))}
       </div>
 
-      {loading && <div style={styles.loading}>Loading...</div>}
+      {loading && <div style={styles.loading}>{t('lb_loading')}</div>}
 
       {/* Teams tab */}
       {!loading && tab === 'teams' && (
@@ -79,9 +81,9 @@ export default function LeaderboardPage() {
           <div style={styles.headerRow}>
             <span style={{ ...styles.col, ...styles.colRank }}>#</span>
             <span style={{ ...styles.col, width: 44 }} />
-            <span style={{ ...styles.col, flex: 1 }}>Team</span>
-            <span style={{ ...styles.col, ...styles.colNum }}>Power</span>
-            <span style={{ ...styles.col, ...styles.colNum }}>Heroes</span>
+            <span style={{ ...styles.col, flex: 1 }}>{t('lb_col_team')}</span>
+            <span style={{ ...styles.col, ...styles.colNum }}>{t('lb_col_power')}</span>
+            <span style={{ ...styles.col, ...styles.colNum }}>{t('lb_col_heroes')}</span>
           </div>
           {teams.map((t) => (
             <div key={t.playerId} style={{ ...styles.row, ...(t.rank <= 3 ? styles.topRow : {}) }}>
@@ -110,7 +112,7 @@ export default function LeaderboardPage() {
               <span style={{ ...styles.col, ...styles.colNum, color: '#a0a0b0' }}>{t.heroCount}</span>
             </div>
           ))}
-          {teams.length === 0 && <div style={styles.empty}>No teams yet.</div>}
+          {teams.length === 0 && <div style={styles.empty}>{t('lb_no_teams')}</div>}
         </div>
       )}
 
@@ -120,10 +122,10 @@ export default function LeaderboardPage() {
           <div style={styles.headerRow}>
             <span style={{ ...styles.col, ...styles.colRank }}>#</span>
             <span style={{ ...styles.col, width: 44 }} />
-            <span style={{ ...styles.col, flex: 1 }}>Hero</span>
-            <span style={{ ...styles.col, ...styles.colNum }}>Lv</span>
-            <span style={{ ...styles.col, ...styles.colNum }}>W / L</span>
-            <span style={{ ...styles.col, flex: 1 }}>Owner</span>
+            <span style={{ ...styles.col, flex: 1 }}>{t('lb_col_hero')}</span>
+            <span style={{ ...styles.col, ...styles.colNum }}>{t('lb_col_lv')}</span>
+            <span style={{ ...styles.col, ...styles.colNum }}>{t('lb_col_wl')}</span>
+            <span style={{ ...styles.col, flex: 1 }}>{t('lb_col_owner')}</span>
           </div>
           {heroes.map((h) => {
             const elemColor = h.element ? (ELEMENT_COLOR[h.element] ?? '#a0a0b0') : null;
@@ -166,7 +168,7 @@ export default function LeaderboardPage() {
               </div>
             );
           })}
-          {heroes.length === 0 && <div style={styles.empty}>No heroes yet.</div>}
+          {heroes.length === 0 && <div style={styles.empty}>{t('lb_no_heroes')}</div>}
         </div>
       )}
 
@@ -176,9 +178,9 @@ export default function LeaderboardPage() {
           <div style={styles.headerRow}>
             <span style={{ ...styles.col, ...styles.colRank }}>#</span>
             <span style={{ ...styles.col, width: 44 }} />
-            <span style={{ ...styles.col, flex: 1 }}>Summon</span>
-            <span style={{ ...styles.col, ...styles.colNum }}>Lv</span>
-            <span style={{ ...styles.col, flex: 1 }}>Owner</span>
+            <span style={{ ...styles.col, flex: 1 }}>{t('lb_col_summon')}</span>
+            <span style={{ ...styles.col, ...styles.colNum }}>{t('lb_col_lv')}</span>
+            <span style={{ ...styles.col, flex: 1 }}>{t('lb_col_owner')}</span>
           </div>
           {summons.map((s) => (
             <div key={s.summonId} style={{ ...styles.row, ...(s.rank <= 3 ? styles.topRow : {}) }}>
@@ -203,7 +205,7 @@ export default function LeaderboardPage() {
               </div>
             </div>
           ))}
-          {summons.length === 0 && <div style={styles.empty}>No summons yet.</div>}
+          {summons.length === 0 && <div style={styles.empty}>{t('lb_no_summons')}</div>}
         </div>
       )}
     </div>

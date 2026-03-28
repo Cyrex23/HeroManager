@@ -22,7 +22,7 @@ public class AbilitySpellBuilder {
 
     /** Returns a list of spell maps for the given ability template, or null if none. */
     public List<Map<String, Object>> buildSpellList(AbilityTemplate t) {
-        List<AbilitySpell> spells = abilitySpellRepository.findByAbilityTemplateId(t.getId());
+        List<AbilitySpell> spells = abilitySpellRepository.findByAbilityTemplate(t);
         if (spells.isEmpty()) return null;
         List<Map<String, Object>> result = new ArrayList<>();
         for (AbilitySpell asp : spells) {

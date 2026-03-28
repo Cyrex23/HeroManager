@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { SESSION_EXPIRED_KEY } from '../hooks/useAFKTimeout';
 
 interface AuthState {
   token: string | null;
@@ -19,6 +20,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 function loadAuthState(): AuthState {
+  // If the session expired flag was set (e.g. user refreshed instead of clicking logout),
+  // clear credentials immediately so the user is not still logged in after a refresh.
+  if (localStorage.getItem(SESSION_EXPIRED_KEY)) {
+    localStorage.removeItem(SESSION_EXPIRED_KEY);
+    localStorage.removeItem('token');
+    localStorage.removeItem('playerId');
+    localStorage.removeItem('username');
+    return { token: null, playerId: null, username: null };
+  }
   return {
     token: localStorage.getItem('token'),
     playerId: localStorage.getItem('playerId')
@@ -32,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<AuthState>(loadAuthState);
 
   const login = useCallback((token: string, playerId: number, username: string) => {
+    localStorage.removeItem(SESSION_EXPIRED_KEY);
     localStorage.setItem('token', token);
     localStorage.setItem('playerId', String(playerId));
     localStorage.setItem('username', username);
@@ -39,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    localStorage.removeItem(SESSION_EXPIRED_KEY);
     localStorage.removeItem('token');
     localStorage.removeItem('playerId');
     localStorage.removeItem('username');

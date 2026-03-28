@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 import { motion } from 'framer-motion';
 import { Coins, Gem, User, LogOut, Shield, Users, ChevronDown, ChevronUp, Search, Trophy, Newspaper, BookOpen, Star, MessageCircle } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
@@ -65,6 +66,7 @@ function ResourceCard({
 export default function Sidebar() {
   const { player } = usePlayer();
   const { logout } = useAuth();
+  const { t } = useLanguage();
 
   // ── Friends ───────────────────────────────────────────────
   const [friends, setFriends] = useState<FriendEntry[]>([]);
@@ -178,8 +180,8 @@ export default function Sidebar() {
                   )}
                   <div style={styles.onlineStatus}>
                     {player.isOnline
-                      ? <span style={{ color: '#4ade80', fontSize: 11 }}>Online · {player.onlineMinutesRemaining}m</span>
-                      : <span style={{ color: '#555', fontSize: 11 }}>Offline</span>
+                      ? <span style={{ color: '#4ade80', fontSize: 11 }}>{t('sidebar_online')} · {player.onlineMinutesRemaining}m</span>
+                      : <span style={{ color: '#555', fontSize: 11 }}>{t('sidebar_offline')}</span>
                     }
                   </div>
                 </div>
@@ -192,11 +194,11 @@ export default function Sidebar() {
             <div style={styles.section}>
               <div style={styles.sectionLabel}>
                 <Shield size={10} style={{ opacity: 0.5 }} />
-                Resources
+                {t('sidebar_resources')}
               </div>
-              <ResourceCard icon={<Coins size={18} />} label="Gold" value={player.gold}
+              <ResourceCard icon={<Coins size={18} />} label={t('sidebar_gold')} value={player.gold}
                 textClass="gold-text gold-text-animated" color="#fbbf24" rgb="251,191,36" />
-              <ResourceCard icon={<Gem size={18} />} label="Diamonds" value={player.diamonds}
+              <ResourceCard icon={<Gem size={18} />} label={t('sidebar_diamonds')} value={player.diamonds}
                 textClass="diamond-text" color="#c084fc" rgb="192,132,252" />
             </div>
 
@@ -207,7 +209,7 @@ export default function Sidebar() {
               <button style={styles.friendsHeader} onClick={() => setFriendsOpen((o) => !o)}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Users size={12} color="#a78bfa" />
-                  <span style={styles.sectionLabel}>Friends</span>
+                  <span style={styles.sectionLabel}>{t('sidebar_friends')}</span>
                   {pendingCount > 0 && (
                     <span style={styles.pendingBadge}>{pendingCount}</span>
                   )}
@@ -222,7 +224,7 @@ export default function Sidebar() {
                       <Search size={11} color="#555" style={{ flexShrink: 0 }} />
                       <input
                         type="text"
-                        placeholder="Search players..."
+                        placeholder={t('sidebar_search_placeholder')}
                         value={friendSearch}
                         onChange={(e) => handleSearchInput(e.target.value)}
                         style={styles.searchInput}
@@ -231,12 +233,12 @@ export default function Sidebar() {
                   </div>
 
                   {searching && (
-                    <div style={styles.emptyMsg}>Searching...</div>
+                    <div style={styles.emptyMsg}>{t('sidebar_searching')}</div>
                   )}
                   {!searching && searchResults !== null && (
                     <div style={styles.resultList}>
                       {searchResults.length === 0 ? (
-                        <div style={styles.emptyMsg}>No players found</div>
+                        <div style={styles.emptyMsg}>{t('sidebar_no_players')}</div>
                       ) : (
                         searchResults.map((r) => (
                           <div key={r.playerId} style={styles.resultRow}>
@@ -247,16 +249,16 @@ export default function Sidebar() {
                             </div>
                             <span style={styles.friendName}>{r.username}</span>
                             {r.relationStatus === 'NONE' && (
-                              <button style={styles.addBtn} onClick={() => handleAddFriend(r.playerId)}>+ Add</button>
+                              <button style={styles.addBtn} onClick={() => handleAddFriend(r.playerId)}>{t('sidebar_add')}</button>
                             )}
                             {r.relationStatus === 'PENDING_SENT' && (
-                              <span style={styles.pendingLabel}>Pending</span>
+                              <span style={styles.pendingLabel}>{t('sidebar_pending_label')}</span>
                             )}
                             {r.relationStatus === 'ACCEPTED' && (
-                              <span style={styles.friendsLabel}>Friends</span>
+                              <span style={styles.friendsLabel}>{t('sidebar_friends_label')}</span>
                             )}
                             {r.relationStatus === 'PENDING_RECEIVED' && (
-                              <button style={styles.acceptBtn} onClick={() => handleAccept(r.playerId)}>Accept</button>
+                              <button style={styles.acceptBtn} onClick={() => handleAccept(r.playerId)}>{t('sidebar_accept')}</button>
                             )}
                           </div>
                         ))
@@ -266,7 +268,7 @@ export default function Sidebar() {
 
                   {!searching && searchResults === null && pendingReceived.length > 0 && (
                     <>
-                      <div style={styles.subLabel}>PENDING ({pendingReceived.length})</div>
+                      <div style={styles.subLabel}>{t('sidebar_pending_section')} ({pendingReceived.length})</div>
                       {pendingReceived.map((f) => (
                         <div key={f.playerId} style={styles.friendRow}>
                           <div style={styles.friendAvatar}>
@@ -285,11 +287,11 @@ export default function Sidebar() {
                   {!searching && searchResults === null && (
                     <>
                       {accepted.length > 0 && (
-                        <div style={styles.subLabel}>FRIENDS ({accepted.length})</div>
+                        <div style={styles.subLabel}>{t('sidebar_friends_section')} ({accepted.length})</div>
                       )}
                       <div style={styles.friendList}>
                         {accepted.length === 0 ? (
-                          <div style={styles.emptyMsg}>No friends yet</div>
+                          <div style={styles.emptyMsg}>{t('sidebar_no_friends')}</div>
                         ) : (
                           accepted.map((f) => (
                             <div key={f.playerId} style={styles.friendRow}>
@@ -339,7 +341,7 @@ export default function Sidebar() {
               <button style={styles.friendsHeader} onClick={() => setNewsOpen((o) => !o)}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Newspaper size={12} color="#e94560" />
-                  <span style={styles.sectionLabel}>News</span>
+                  <span style={styles.sectionLabel}>{t('sidebar_news')}</span>
                   <span style={styles.newsBadge}>NEW</span>
                 </div>
                 {newsOpen ? <ChevronUp size={12} color="#555" /> : <ChevronDown size={12} color="#555" />}
@@ -349,12 +351,12 @@ export default function Sidebar() {
                 <Link to="/news" style={{ textDecoration: 'none' }}>
                   <div style={{ ...styles.newsCard, cursor: 'pointer' }}>
                     <div style={styles.newsDateRow}>
-                      <span style={styles.newsDate}>Feb 2026</span>
-                      <span style={styles.newsTagDev}>Dev</span>
+                      <span style={styles.newsDate}>{t('sidebar_news_date')}</span>
+                      <span style={styles.newsTagDev}>{t('sidebar_news_tag')}</span>
                     </div>
-                    <div style={styles.newsTitle}>Development begins!</div>
+                    <div style={styles.newsTitle}>{t('sidebar_news_title')}</div>
                     <div style={styles.newsBody}>
-                      HeroManager is now in active development. Recruit heroes, build your team, and battle your way to the top of the leaderboard. More features coming soon!
+                      {t('sidebar_news_body')}
                     </div>
                   </div>
                 </Link>
@@ -368,37 +370,37 @@ export default function Sidebar() {
               <motion.div whileHover={{ x: 3 }} transition={{ duration: 0.15 }}>
                 <Link to="/guide" style={styles.accountLink}>
                   <BookOpen size={13} />
-                  Guide
+                  {t('sidebar_guide')}
                 </Link>
               </motion.div>
-              <span style={styles.lockedLink} title="Coming soon">
+              <span style={styles.lockedLink} title={t('sidebar_coming_soon')}>
                 <Star size={13} />
-                Achievements
+                {t('sidebar_achievements')}
                 <span style={styles.lockBadge}>🔒</span>
               </span>
               <motion.div whileHover={{ x: 3 }} transition={{ duration: 0.15 }}>
                 <Link to="/leaderboard" style={styles.accountLink}>
                   <Trophy size={13} />
-                  Ranks
+                  {t('sidebar_ranks')}
                 </Link>
               </motion.div>
               <motion.div whileHover={{ x: 3 }} transition={{ duration: 0.15 }}>
                 <Link to="/account" style={styles.accountLink}>
                   <User size={13} />
-                  Account
+                  {t('sidebar_account')}
                 </Link>
               </motion.div>
               <motion.button onClick={logout} whileHover={{ x: 3 }} transition={{ duration: 0.15 }}
                 style={styles.logoutBtn}>
                 <LogOut size={13} />
-                Logout
+                {t('sidebar_logout')}
               </motion.button>
             </div>
           </>
         ) : (
           <div style={styles.section}>
-            <div style={styles.sectionLabel}>Player Info</div>
-            <div style={{ color: '#444', fontSize: 13 }}>Loading...</div>
+            <div style={styles.sectionLabel}>{t('sidebar_player_info')}</div>
+            <div style={{ color: '#444', fontSize: 13 }}>{t('sidebar_loading')}</div>
           </div>
         )}
       </aside>

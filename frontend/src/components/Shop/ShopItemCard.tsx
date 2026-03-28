@@ -1,6 +1,7 @@
 import { Coins } from 'lucide-react';
 import type { ShopItemResponse } from '../../types';
 import EquipmentTooltip from '../Equipment/EquipmentTooltip';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
   item: ShopItemResponse;
@@ -65,11 +66,13 @@ const STAT_CFG: Record<string, { label: string; color: string; icon: string }> =
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function ShopItemCard({ item, onBuy, playerGold, disabled }: Props) {
+  const { t } = useLanguage();
   const bonusEntries = Object.entries(item.bonuses).filter(([, v]) => v !== 0);
   const canAfford    = playerGold >= item.cost;
   const tier         = getItemTier(item.cost);
   const tc           = TIER_CFG[tier];
   const icon         = ITEM_ICON[item.name] ?? '📦';
+  const tierLabel    = tier === 'LEGENDARY' ? t('shop_item_legendary') : tier === 'RARE' ? t('shop_item_rare') : t('shop_item_common');
 
   return (
     <EquipmentTooltip name={item.name} type="item" bonuses={item.bonuses}>
@@ -107,7 +110,7 @@ export default function ShopItemCard({ item, onBuy, playerGold, disabled }: Prop
           border: `1px solid ${tc.color}55`,
           color: tc.color,
         }}>
-          {tc.label}
+          {tierLabel}
         </div>
 
         {/* Icon circle */}
@@ -168,7 +171,7 @@ export default function ShopItemCard({ item, onBuy, playerGold, disabled }: Prop
           </span>
           <span style={{ color: '#fbbf2470', fontSize: 10, fontWeight: 600,
             textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-            gold
+            {t('shop_gold_suffix')}
           </span>
         </div>
 
@@ -194,7 +197,7 @@ export default function ShopItemCard({ item, onBuy, playerGold, disabled }: Prop
             marginTop: 2,
           }}
         >
-          {canAfford ? 'Purchase' : 'Not enough gold'}
+          {canAfford ? t('shop_purchase') : t('shop_not_enough_gold')}
         </button>
       </div>
     </EquipmentTooltip>

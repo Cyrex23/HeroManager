@@ -2711,21 +2711,22 @@ WHERE name = 'Flying Thunder God' AND hero_template_id = (SELECT id FROM hero_te
 UPDATE ability_template SET bonus_cleanse = 0.08
 WHERE name = 'Angel Descent' AND hero_template_id = (SELECT id FROM hero_template WHERE name = 'konan');
 
--- ── Ability spell INSERTs (all idempotent) ────────────────────────────────
+-- ── Ability spell INSERTs ─────────────────────────────────────────────────
+-- Cleared every startup so the JPA seeder (AbilitySpellSeeder) always owns this table.
 -- Column order: ability_template_id, spell_name, spell_trigger, spell_chance, spell_mana_cost,
 --   max_usages, lasts_turns, affects_opponent, pass_on_type,
 --   pa, mp, dex, elem, mana_stat, stam,
 --   attack, magic_prof, spell_mastery, spell_act, dex_prof, dex_posture, dex_max_posture,
 --   crit_chance, crit_dmg, exp_bonus, gold_bonus, item_disc,
 --   phys_imm, magic_imm, dex_evas, mana_rech, tenacity, fat_recov, cleanse, rot, off_pos
+DELETE FROM ability_spell;
 
 -- ── KONOHAMARU-GENIN ──────────────────────────────────────────────────────
 -- T3: Iron Fist — Iron Fist Barrage (ATTACK, PA+stam+critDmg)
 INSERT INTO ability_spell (ability_template_id,spell_name,spell_trigger,spell_chance,spell_mana_cost,max_usages,lasts_turns,affects_opponent,pass_on_type,spell_bonus_pa,spell_bonus_mp,spell_bonus_dex,spell_bonus_elem,spell_bonus_mana,spell_bonus_stam,spell_bonus_attack,spell_bonus_magic_proficiency,spell_bonus_spell_mastery,spell_bonus_spell_activation,spell_bonus_dex_proficiency,spell_bonus_dex_posture,spell_bonus_dex_max_posture,spell_bonus_crit_chance,spell_bonus_crit_damage,spell_bonus_exp_bonus,spell_bonus_gold_bonus,spell_bonus_item_discovery,spell_bonus_physical_immunity,spell_bonus_magic_immunity,spell_bonus_dex_evasiveness,spell_bonus_mana_recharge,spell_bonus_tenacity,spell_bonus_fatigue_recovery,spell_bonus_cleanse,spell_bonus_rot,spell_bonus_off_positioning)
 SELECT at.id,'Iron Fist Barrage','ATTACK',0.35,25,0,0,FALSE,NULL,15,0,0,0,0,10,0,0,0,0,0,0,0,0,0.08,0,0,0,0,0,0,0,0,0,0,0,0
 FROM ability_template at JOIN hero_template ht ON at.hero_template_id=ht.id
-WHERE at.name='Iron Fist' AND ht.name='konohamaru-genin'
-AND NOT EXISTS(SELECT 1 FROM ability_spell WHERE ability_template_id=at.id AND spell_name='Iron Fist Barrage');
+WHERE at.name='Iron Fist' AND ht.name='konohamaru-genin';
 
 -- T4: Sage Mode — Sage Awakening (ENTRANCE, MP+PA+spellMastery)
 INSERT INTO ability_spell (ability_template_id,spell_name,spell_trigger,spell_chance,spell_mana_cost,max_usages,lasts_turns,affects_opponent,pass_on_type,spell_bonus_pa,spell_bonus_mp,spell_bonus_dex,spell_bonus_elem,spell_bonus_mana,spell_bonus_stam,spell_bonus_attack,spell_bonus_magic_proficiency,spell_bonus_spell_mastery,spell_bonus_spell_activation,spell_bonus_dex_proficiency,spell_bonus_dex_posture,spell_bonus_dex_max_posture,spell_bonus_crit_chance,spell_bonus_crit_damage,spell_bonus_exp_bonus,spell_bonus_gold_bonus,spell_bonus_item_discovery,spell_bonus_physical_immunity,spell_bonus_magic_immunity,spell_bonus_dex_evasiveness,spell_bonus_mana_recharge,spell_bonus_tenacity,spell_bonus_fatigue_recovery,spell_bonus_cleanse,spell_bonus_rot,spell_bonus_off_positioning)

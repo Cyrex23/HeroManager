@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Coins } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface UpgradeCardProps {
   icon: ReactNode;
@@ -21,6 +22,7 @@ export default function UpgradeCard({
   icon, name, description, cost, currency,
   purchased = false, maxed = false, canAfford, onBuy,
 }: UpgradeCardProps) {
+  const { t } = useLanguage();
   const currencyColor = currency === 'gold' ? GOLD_COLOR : DIAMOND_COLOR;
   const disabled = purchased || maxed || !canAfford;
   const currencyIcon = currency === 'gold'
@@ -54,8 +56,8 @@ export default function UpgradeCard({
           letterSpacing: 0.3, marginBottom: 3,
         }}>
           {name}
-          {purchased && <span style={{ color: '#4ade80', fontStyle: 'normal', fontWeight: 600, fontSize: 11, marginLeft: 8 }}>✓ OWNED</span>}
-          {maxed && !purchased && <span style={{ color: '#e94560', fontStyle: 'normal', fontWeight: 600, fontSize: 11, marginLeft: 8 }}>MAX</span>}
+          {purchased && <span style={{ color: '#4ade80', fontStyle: 'normal', fontWeight: 600, fontSize: 11, marginLeft: 8 }}>{t('upgrade_owned')}</span>}
+          {maxed && !purchased && <span style={{ color: '#e94560', fontStyle: 'normal', fontWeight: 600, fontSize: 11, marginLeft: 8 }}>{t('upgrade_max')}</span>}
         </div>
         <div style={{ color: '#a08060', fontSize: 11, lineHeight: 1.4 }}>
           {description}
@@ -89,7 +91,7 @@ export default function UpgradeCard({
           onMouseEnter={e => { if (!disabled) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.2)'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = 'none'; }}
         >
-          {purchased ? '✓ OWNED' : maxed ? 'MAXED' : '✓ BUY'}
+          {purchased ? t('upgrade_owned') : maxed ? t('upgrade_maxed') : t('upgrade_buy')}
         </button>
       </div>
     </div>

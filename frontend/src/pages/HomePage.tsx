@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Coins } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
+import { useLanguage } from '../context/LanguageContext';
 import { getDashboard } from '../api/dashboardApi';
 import HeroPortrait from '../components/Hero/HeroPortrait';
 import type { DashboardResponse, DashboardPeriodStats, DashboardHeroSummary } from '../types';
 
-const PERIOD_LABELS = ['Today', 'This Week', 'This Month', 'All Time'] as const;
 type PeriodKey = 'today' | 'week' | 'month' | 'allTime';
 const PERIOD_KEYS: PeriodKey[] = ['today', 'week', 'month', 'allTime'];
 
@@ -94,6 +94,7 @@ function StatCard({ label, value, sub, color, delay }: {
 }
 
 function PeriodPanel({ stats }: { stats: DashboardPeriodStats; label: string }) {
+  const { t } = useLanguage();
   const winColor  = '#4ade80';
   const lossColor = '#e94560';
   const goldColor = '#fbbf24';
@@ -105,10 +106,10 @@ function PeriodPanel({ stats }: { stats: DashboardPeriodStats; label: string }) 
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 16 }}>
         <WinRing winRate={stats.winRate} />
         <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
-          <StatCard label="Battles"  value={stats.battles}  color={batColor}  delay={0}   />
-          <StatCard label="Wins"     value={stats.wins}     color={winColor}  delay={60}  />
-          <StatCard label="Losses"   value={stats.losses}   color={lossColor} delay={120} />
-          <StatCard label="Gold Earned" value={stats.goldEarned.toLocaleString()}
+          <StatCard label={t('home_stat_battles')}  value={stats.battles}  color={batColor}  delay={0}   />
+          <StatCard label={t('home_stat_wins')}     value={stats.wins}     color={winColor}  delay={60}  />
+          <StatCard label={t('home_stat_losses')}   value={stats.losses}   color={lossColor} delay={120} />
+          <StatCard label={t('home_stat_gold_earned')} value={stats.goldEarned.toLocaleString()}
             color={goldColor} delay={180} />
         </div>
       </div>
@@ -118,6 +119,7 @@ function PeriodPanel({ stats }: { stats: DashboardPeriodStats; label: string }) 
 
 function HeroCard({ hero, activePeriod }: { hero: DashboardHeroSummary; activePeriod: PeriodKey }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const xpPct = hero.xpToNextLevel > 0 ? Math.min((hero.currentXp / hero.xpToNextLevel) * 100, 100) : 0;
   const periodXp: Record<PeriodKey, number> = {
     today: hero.xpGainedToday,
@@ -230,7 +232,7 @@ function HeroCard({ hero, activePeriod }: { hero: DashboardHeroSummary; activePe
       {hero.maxDamageDealt > 0 && (
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ color: '#7070a0', fontSize: 9, letterSpacing: '0.08em',
-            textTransform: 'uppercase' }}>Best Hit</div>
+            textTransform: 'uppercase' }}>{t('home_best_hit')}</div>
           <div style={{ color: '#e94560', fontWeight: 800, fontSize: 14,
             fontFamily: 'Inter, sans-serif' }}>{Math.round(hero.maxDamageDealt)}</div>
         </div>
@@ -241,10 +243,13 @@ function HeroCard({ hero, activePeriod }: { hero: DashboardHeroSummary; activePe
 
 export default function HomePage() {
   const { player } = usePlayer();
+  const { t } = useLanguage();
   const [data, setData]           = useState<DashboardResponse | null>(null);
   const [activePeriod, setActive] = useState<PeriodKey>('today');
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
+
+  const PERIOD_LABELS = [t('home_period_today'), t('home_period_week'), t('home_period_month'), t('home_period_alltime')];
 
   useEffect(() => {
     if (!player) return;
@@ -263,7 +268,7 @@ export default function HomePage() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
         height: '100%', color: '#505080' }}>
-        Loading...
+        {t('home_loading')}
       </div>
     );
   }
@@ -272,7 +277,7 @@ export default function HomePage() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
         height: '100%', color: '#e94560', fontSize: 14 }}>
-        {error ?? 'No data available'}
+        {error ?? t('home_no_data')}
       </div>
     );
   }
@@ -294,10 +299,10 @@ export default function HomePage() {
       <div style={{ marginBottom: 24, animation: 'hpFadeIn 0.3s ease both' }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: '#e0e0f0',
           letterSpacing: '0.04em' }}>
-          Dashboard
+          {t('home_title')}
         </h1>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: '#505080' }}>
-          {player?.teamName ?? player?.username}'s overview
+          {t('home_overview').replace('{name}', player?.teamName ?? player?.username ?? '')}
         </p>
       </div>
 
@@ -309,7 +314,7 @@ export default function HomePage() {
           <Coins size={22} color="#fbbf24" />
           <div>
             <div style={{ color: '#7070a0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
-              textTransform: 'uppercase' }}>Gold</div>
+              textTransform: 'uppercase' }}>{t('home_stat_gold')}</div>
             <div style={{ color: '#fbbf24', fontWeight: 900, fontSize: 20 }}>
               {(player?.gold ?? 0).toLocaleString()}
             </div>
@@ -321,7 +326,7 @@ export default function HomePage() {
           <span style={{ fontSize: 20 }}>💎</span>
           <div>
             <div style={{ color: '#7070a0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
-              textTransform: 'uppercase' }}>Diamonds</div>
+              textTransform: 'uppercase' }}>{t('home_stat_diamonds')}</div>
             <div style={{ color: '#60a5fa', fontWeight: 900, fontSize: 20 }}>
               {(player?.diamonds ?? 0).toLocaleString()}
             </div>
@@ -333,7 +338,7 @@ export default function HomePage() {
           <span style={{ fontSize: 20 }}>⚡</span>
           <div>
             <div style={{ color: '#7070a0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
-              textTransform: 'uppercase' }}>Arena Energy</div>
+              textTransform: 'uppercase' }}>{t('home_stat_arena_energy')}</div>
             <div style={{ color: '#4ade80', fontWeight: 900, fontSize: 20 }}>
               {Number(player?.arenaEnergy ?? 0).toFixed(1)}
               <span style={{ color: '#5050a0', fontSize: 13 }}>/{player?.arenaEnergyMax ?? 120}</span>
@@ -346,7 +351,7 @@ export default function HomePage() {
           <span style={{ fontSize: 20 }}>🌍</span>
           <div>
             <div style={{ color: '#7070a0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
-              textTransform: 'uppercase' }}>World Energy</div>
+              textTransform: 'uppercase' }}>{t('home_stat_world_energy')}</div>
             <div style={{ color: '#38bdf8', fontWeight: 900, fontSize: 20 }}>
               {Number(player?.worldEnergy ?? 0).toFixed(1)}
               <span style={{ color: '#5050a0', fontSize: 13 }}>/{player?.worldEnergyMax ?? 120}</span>
@@ -359,7 +364,7 @@ export default function HomePage() {
           <span style={{ fontSize: 20 }}>⚔️</span>
           <div>
             <div style={{ color: '#7070a0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
-              textTransform: 'uppercase' }}>All-time Battles</div>
+              textTransform: 'uppercase' }}>{t('home_stat_alltime_battles')}</div>
             <div style={{ color: '#e94560', fontWeight: 900, fontSize: 20 }}>
               {data.allTime.battles.toLocaleString()}
             </div>
@@ -405,8 +410,8 @@ export default function HomePage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between',
                   color: '#5050a0', fontSize: 10, marginBottom: 5, letterSpacing: '0.08em',
                   textTransform: 'uppercase', fontWeight: 700 }}>
-                  <span style={{ color: '#4ade80' }}>{currentStats.wins} wins</span>
-                  <span style={{ color: '#e94560' }}>{currentStats.losses} losses</span>
+                  <span style={{ color: '#4ade80' }}>{t('home_wins_bar').replace('{n}', String(currentStats.wins))}</span>
+                  <span style={{ color: '#e94560' }}>{t('home_losses_bar').replace('{n}', String(currentStats.losses))}</span>
                 </div>
                 <div style={{ height: 8, borderRadius: 4, overflow: 'hidden',
                   background: 'rgba(233,69,96,0.3)', position: 'relative' }}>
@@ -425,7 +430,7 @@ export default function HomePage() {
             {currentStats.battles === 0 && (
               <div style={{ textAlign: 'center', color: '#404060', fontSize: 13,
                 padding: '20px 0', fontStyle: 'italic' }}>
-                No battles recorded for this period yet.
+                {t('home_no_battles')}
               </div>
             )}
           </div>
@@ -437,12 +442,12 @@ export default function HomePage() {
             borderRadius: 12, padding: 16 }}>
             <h3 style={{ margin: '0 0 14px', fontSize: 12, fontWeight: 800,
               color: '#6060a0', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-              Your Heroes
+              {t('home_heroes_title')}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {data.heroes.length === 0 && (
                 <div style={{ color: '#404060', fontSize: 13, padding: '12px 0',
-                  textAlign: 'center', fontStyle: 'italic' }}>No heroes yet.</div>
+                  textAlign: 'center', fontStyle: 'italic' }}>{t('home_no_heroes')}</div>
               )}
               {data.heroes
                 .sort((a, b) => b.level - a.level || b.clashesWon - a.clashesWon)

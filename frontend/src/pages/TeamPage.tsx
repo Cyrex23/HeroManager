@@ -80,6 +80,7 @@ function itemSlotColor(sellPrice: number | null) {
 }
 import ShopPage from './ShopPage';
 import { AxiosError } from 'axios';
+import { useLanguage } from '../context/LanguageContext';
 
 type PendingOp =
   | { type: 'equipHero'; heroId: number; slotNumber: number }
@@ -123,6 +124,7 @@ export default function TeamPage() {
   const pickerCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { fetchPlayer, player } = usePlayer();
   const { refreshTeam } = useTeam();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const refresh = useCallback(async () => {
@@ -148,7 +150,7 @@ export default function TeamPage() {
       setHeroEquipment(Object.fromEntries(eqEntries));
     } catch (err) {
       console.error('Failed to load team data:', err);
-      setError('Failed to load team data.');
+      setError(t('team_load_failed'));
     } finally {
       setLoading(false);
     }
@@ -177,7 +179,7 @@ export default function TeamPage() {
       window.location.reload();
     } catch (err) {
       const msg = (err as import('axios').AxiosError<{ message?: string }>).response?.data?.message;
-      setError(msg || 'Failed to switch setup.');
+      setError(msg || t('team_switch_failed'));
       setSetupSwitching(false);
     }
   }
@@ -344,7 +346,7 @@ export default function TeamPage() {
     return options;
   }
 
-  if (loading) return <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}><span className="spinner" style={{ width: 18, height: 18 }} />Loading team...</div>;
+  if (loading) return <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}><span className="spinner" style={{ width: 18, height: 18 }} />{t('team_loading')}</div>;
 
   const benchHeroes = stagedHeroes.filter((h) => !h.isEquipped);
   const benchSummons = stagedSummons.filter((s) => !s.isEquipped);
@@ -367,19 +369,19 @@ export default function TeamPage() {
           onClick={() => setPendingSwitchIdx(null)}>
           <div style={{ background: '#1a1a2e', border: '1px solid #2a2a4a', borderRadius: 14, padding: '28px 32px', minWidth: 300, textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}
             onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#e0e0e0', marginBottom: 8 }}>Switch Setup?</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#e0e0e0', marginBottom: 8 }}>{t('team_switch_title')}</div>
             <div style={{ fontSize: 13, color: '#a0a0b0', marginBottom: 24, lineHeight: 1.6 }}>
-              Switch to <span style={{ color: '#fbbf24', fontWeight: 600 }}>{pendingSetupName}</span>?<br />
-              Your current active setup will be replaced.
+              {t('team_switch_body_prefix')} <span style={{ color: '#fbbf24', fontWeight: 600 }}>{pendingSetupName}</span>?<br />
+              {t('team_switch_body_suffix')}
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button onClick={() => setPendingSwitchIdx(null)}
                 style={{ padding: '8px 22px', borderRadius: 8, border: '1px solid #2a2a4a', background: 'transparent', color: '#a0a0b0', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-                Cancel
+                {t('team_cancel')}
               </button>
               <button onClick={confirmSwitchSetup}
                 style={{ padding: '8px 22px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#e94560,#c73652)', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
-                Switch
+                {t('team_switch_btn')}
               </button>
             </div>
           </div>
@@ -393,19 +395,19 @@ export default function TeamPage() {
           style={{ ...styles.tabBtn, ...(tab === 'team' ? styles.tabBtnActive : {}) }}
           onClick={(e) => { e.stopPropagation(); setTab('team'); }}
         >
-          Team
+          {t('team_tab_team')}
         </button>
         <button
           style={{ ...styles.tabBtn, ...(tab === 'shop' ? styles.tabBtnActive : {}) }}
           onClick={(e) => { e.stopPropagation(); setTab('shop'); }}
         >
-          Shop
+          {t('team_tab_shop')}
         </button>
         <button
           style={{ ...styles.tabBtn, ...(tab === 'inventory' ? styles.tabBtnActive : {}) }}
           onClick={(e) => { e.stopPropagation(); setTab('inventory'); }}
         >
-          Inventory
+          {t('team_tab_inventory')}
         </button>
       </div>
 
@@ -457,7 +459,7 @@ export default function TeamPage() {
                     {(isActive || isHovered) && (
                       <span
                         style={styles.pencilIcon}
-                        title="Double-click to rename"
+                        title={t('team_double_click_rename')}
                         onClick={(e) => { e.stopPropagation(); setRenamingIdx(setup.setupIndex); setRenameValue(setup.name); }}
                       >✎</span>
                     )}
@@ -478,7 +480,7 @@ export default function TeamPage() {
             <div style={styles.powerBadge} className="power-badge-anim">
               <span style={styles.powerIcon}>⚔</span>
               <div style={styles.powerInner}>
-                <span style={styles.powerLabel}>Power</span>
+                <span style={styles.powerLabel}>{t('team_power')}</span>
                 <span style={styles.powerValue} className="power-value-anim">
                   {(team?.teamPower ?? stagedTeam.teamPower).toFixed(0)}
                 </span>
@@ -488,18 +490,18 @@ export default function TeamPage() {
 
           {hasPendingChanges && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '8px 0 4px', padding: '8px 16px', background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 10 }}>
-              <span style={{ color: '#a0a0b0', fontSize: 12 }}>{pendingOps.length} unsaved change{pendingOps.length !== 1 ? 's' : ''}</span>
+              <span style={{ color: '#a0a0b0', fontSize: 12 }}>{pendingOps.length} {pendingOps.length !== 1 ? t('team_unsaved_changes') : t('team_unsaved_change')}</span>
               <button
                 onClick={handleApplyChanges}
                 disabled={applyingChanges}
                 style={{ padding: '6px 20px', borderRadius: 8, border: 'none', background: applyingChanges ? '#2a4a2a' : 'linear-gradient(135deg,#22c55e,#16a34a)', color: '#fff', cursor: applyingChanges ? 'default' : 'pointer', fontSize: 13, fontWeight: 700, boxShadow: applyingChanges ? 'none' : '0 0 12px rgba(34,197,94,0.4)' }}>
-                {applyingChanges ? 'Updating...' : '✓ Update Team'}
+                {applyingChanges ? t('team_updating') : t('team_update_btn')}
               </button>
               <button
                 onClick={handleDiscardChanges}
                 disabled={applyingChanges}
                 style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#a0a0b0', cursor: 'pointer', fontSize: 12 }}>
-                Discard
+                {t('team_discard')}
               </button>
             </div>
           )}
@@ -507,9 +509,9 @@ export default function TeamPage() {
           {(selectedBenchHeroId !== null || selectedBenchSummonId !== null) && (
             <div style={styles.selectionHint}>
               {selectedBenchSummonId === null
-                ? 'Hero selected — click an empty slot to equip.'
-                : 'Summon selected — click the summon slot to equip.'}
-              {' '}Click the card again to cancel.
+                ? t('team_hero_selected')
+                : t('team_summon_selected')}
+              {' '}{t('team_click_cancel')}
             </div>
           )}
 
@@ -574,12 +576,12 @@ export default function TeamPage() {
             );
           })()}
 
-          <h3 style={styles.subtitle} className="section-title">Bench Heroes</h3>
+          <h3 style={styles.subtitle} className="section-title">{t('team_bench_heroes')}</h3>
           {benchHeroes.length === 0 ? (
-            <p style={styles.muted}>No heroes on bench. Buy heroes from the Shop!</p>
+            <p style={styles.muted}>{t('team_no_bench_heroes')}</p>
           ) : (
             <>
-              <p style={styles.benchHint}>Click a hero to select them, then click an empty team slot above to equip.</p>
+              <p style={styles.benchHint}>{t('team_bench_heroes_hint')}</p>
               <div style={styles.benchGrid}>
                 {benchHeroes.map((hero) => {
                   const isSelected = selectedBenchHeroId === hero.id;
@@ -599,7 +601,7 @@ export default function TeamPage() {
                         onClick={() => navigate(`/hero/${hero.id}`)}
                         type="button"
                       >
-                        View Hero
+                        {t('team_view_hero')}
                       </button>
                     </div>
                   );
@@ -609,12 +611,12 @@ export default function TeamPage() {
           )}
 
           <>
-              <h3 style={styles.subtitle} className="section-title">Bench Summons</h3>
+              <h3 style={styles.subtitle} className="section-title">{t('team_bench_summons')}</h3>
               {benchSummons.length === 0 ? (
-                <p style={styles.muted}>No summons on bench. Buy summons from the Shop!</p>
+                <p style={styles.muted}>{t('team_no_bench_summons')}</p>
               ) : (
               <>
-              <p style={styles.benchHint}>Click a summon to select it, then click the summon slot above to equip.</p>
+              <p style={styles.benchHint}>{t('team_bench_summons_hint')}</p>
               <div style={styles.benchGrid}>
                 {benchSummons.map((summon) => {
                   const isSelected = selectedBenchSummonId === summon.id;
@@ -670,7 +672,7 @@ export default function TeamPage() {
                         onClick={() => navigate(`/summon/${summon.id}`)}
                         type="button"
                       >
-                        View Summon
+                        {t('team_view_summon')}
                       </button>
                     </div>
                   );
@@ -684,14 +686,14 @@ export default function TeamPage() {
           {heroes.length > 0 && (
             <>
               <h3 style={styles.subtitle} className="section-title">
-                Equipment
+                {t('team_equipment')}
                 <span style={{ marginLeft: 10, fontSize: 13, fontWeight: 700, letterSpacing: 1 }}>
                   <span style={{ color: '#e94560', textShadow: '0 0 8px #e9456099' }}>{heroes.length}</span>
                   <span style={{ color: '#4a3a28', margin: '0 4px' }}>/</span>
                   <span style={{ color: '#fbbf24', textShadow: '0 0 8px #fbbf2466' }}>{player?.heroRosterMax ?? 20}</span>
                 </span>
               </h3>
-              <p style={styles.equipHint}>Each hero has 3 slots for items and abilities.</p>
+              <p style={styles.equipHint}>{t('team_equipment_hint')}</p>
               <div style={styles.equipSection}>
                 {heroes.map((hero) => {
                   const eq = heroEquipment[hero.id];
@@ -718,7 +720,7 @@ export default function TeamPage() {
                         <div>
                           <div style={styles.heroEquipName}>
                             {hero.name}
-                            {!hero.isEquipped && <span style={{ color: '#a0a0b0', fontSize: 11, marginLeft: 6 }}>(Bench)</span>}
+                            {!hero.isEquipped && <span style={{ color: '#a0a0b0', fontSize: 11, marginLeft: 6 }}>{t('team_bench_label')}</span>}
                           </div>
                         </div>
                       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 import { ChevronLeft, ChevronDown } from 'lucide-react';
 import { getHero, sellHero, halveCapacity, buyStats, allocateStats, resetHeroStats, changeSeal, changeElement } from '../api/playerApi';
 import { getHeroEquipment, unequipItemFromSlot, sellInventoryItem, unequipAbilityFromSlot, equipItemToSlot, equipAbilityToSlot } from '../api/equipmentApi';
@@ -181,6 +182,7 @@ const SUB_STATS: { key: string; label: string; color: string }[] = [
 ];
 
 export default function HeroDetailPage() {
+  const { t } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { player, fetchPlayer } = usePlayer();
@@ -405,8 +407,8 @@ export default function HeroDetailPage() {
     }
   }
 
-  if (loading) return <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}><span className="spinner" style={{ width: 18, height: 18 }} />Loading hero...</div>;
-  if (!hero) return <div style={{ color: '#e94560' }}>Hero not found.</div>;
+  if (loading) return <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}><span className="spinner" style={{ width: 18, height: 18 }} />{t('hd_loading')}</div>;
+  if (!hero) return <div style={{ color: '#e94560' }}>{t('hd_not_found')}</div>;
 
   const xpPct = hero.xpToNextLevel > 0
     ? Math.min((hero.currentXp / hero.xpToNextLevel) * 100, 100) : 0;
@@ -420,12 +422,12 @@ export default function HeroDetailPage() {
       {confirmHeroSell && (
         <div style={styles.confirmOverlay}>
           <div style={styles.confirmCard}>
-            <div style={styles.confirmTitle}>Sell Hero?</div>
+            <div style={styles.confirmTitle}>{t('hd_confirm_sell_hero')}</div>
             <div style={styles.confirmHeroName}>{hero.name}</div>
-            <div style={styles.confirmSub}>This hero and all their abilities will be removed. Equipped items will return to your inventory.</div>
+            <div style={styles.confirmSub}>{t('hd_confirm_sell_hero_body')}</div>
             <div style={styles.confirmBtns}>
-              <button style={styles.confirmYes} onClick={handleSellHero}>Sell</button>
-              <button style={styles.confirmNo} onClick={() => setConfirmHeroSell(false)}>Cancel</button>
+              <button style={styles.confirmYes} onClick={handleSellHero}>{t('hd_confirm_sell')}</button>
+              <button style={styles.confirmNo} onClick={() => setConfirmHeroSell(false)}>{t('hd_confirm_cancel')}</button>
             </div>
           </div>
         </div>
@@ -434,16 +436,16 @@ export default function HeroDetailPage() {
       {confirmReset && (
         <div style={styles.confirmOverlay}>
           <div style={styles.confirmCard}>
-            <div style={styles.confirmTitle}>Reset Stats?</div>
+            <div style={styles.confirmTitle}>{t('hd_confirm_reset_stats')}</div>
             <div style={styles.confirmHeroName}>{hero.name}</div>
             <div style={styles.confirmSub}>
-              All allocated stat points will be returned to the unallocated pool.
-              <br />Costs <strong style={{ color: '#fbbf24' }}>{hero.nextResetCost}g</strong>
-              {hero.statResetCount > 0 && <> · next reset: <strong style={{ color: '#fbbf24' }}>{hero.nextResetCost * 2}g</strong></>}.
+              {t('hd_confirm_reset_stats_body')}
+              <br />{t('hd_confirm_costs')} <strong style={{ color: '#fbbf24' }}>{hero.nextResetCost}g</strong>
+              {hero.statResetCount > 0 && <> · {t('hd_next_reset')}: <strong style={{ color: '#fbbf24' }}>{hero.nextResetCost * 2}g</strong></>}.
             </div>
             <div style={styles.confirmBtns}>
-              <button style={styles.confirmYes} onClick={handleResetStats}>Reset</button>
-              <button style={styles.confirmNo} onClick={() => setConfirmReset(false)}>Cancel</button>
+              <button style={styles.confirmYes} onClick={handleResetStats}>{t('hd_confirm_reset')}</button>
+              <button style={styles.confirmNo} onClick={() => setConfirmReset(false)}>{t('hd_confirm_cancel')}</button>
             </div>
           </div>
         </div>
@@ -456,10 +458,10 @@ export default function HeroDetailPage() {
         return (
           <div style={styles.confirmOverlay}>
             <div style={styles.confirmCard}>
-              <div style={styles.confirmTitle}>Change Seal?</div>
+              <div style={styles.confirmTitle}>{t('hd_confirm_change_seal')}</div>
               <div style={styles.confirmHeroName}>{hero.name}</div>
               <div style={styles.confirmSub}>
-                Seal will change from <strong style={{ color: hero.seal > 0 ? '#4ade80' : hero.seal < 0 ? '#e94560' : '#a0a0b0' }}>{hero.seal > 0 ? `+${hero.seal}` : hero.seal}</strong>
+                {t('hd_confirm_seal_from')} <strong style={{ color: hero.seal > 0 ? '#4ade80' : hero.seal < 0 ? '#e94560' : '#a0a0b0' }}>{hero.seal > 0 ? `+${hero.seal}` : hero.seal}</strong>
                 {' → '}
                 <strong style={{ color: sealColor }}>{nextSeal > 0 ? `+${nextSeal}` : nextSeal}</strong>
                 <br />
@@ -467,14 +469,14 @@ export default function HeroDetailPage() {
                 <span style={{ color: '#fb923c' }}>Crit</span>: {cc}% &nbsp;·&nbsp;
                 <span style={{ color: '#e879f9' }}>Spell Act.</span>: {sa}%
                 <br />
-                <span style={{ color: '#f97316', fontSize: 11 }}>This uses 1 seal point and cannot be undone for free.</span>
+                <span style={{ color: '#f97316', fontSize: 11 }}>{t('hd_confirm_seal_warning')}</span>
               </div>
               <div style={styles.confirmBtns}>
                 <button style={{ ...styles.confirmYes, backgroundColor: '#1a3a20', color: '#4ade80', border: '1px solid #4ade8044' }}
                   onClick={() => { setConfirmSeal(null); handleChangeSeal(confirmSeal); }}>
-                  Confirm
+                  {t('hd_confirm_confirm')}
                 </button>
-                <button style={styles.confirmNo} onClick={() => setConfirmSeal(null)}>Cancel</button>
+                <button style={styles.confirmNo} onClick={() => setConfirmSeal(null)}>{t('hd_confirm_cancel')}</button>
               </div>
             </div>
           </div>
@@ -484,10 +486,10 @@ export default function HeroDetailPage() {
       {confirmElement && selectedElement && hero && (
         <div style={styles.confirmOverlay}>
           <div style={styles.confirmCard}>
-            <div style={styles.confirmTitle}>Change Element?</div>
+            <div style={styles.confirmTitle}>{t('hd_confirm_change_element')}</div>
             <div style={styles.confirmHeroName}>{hero.name}</div>
             <div style={styles.confirmSub}>
-              Change element from{' '}
+              {t('hd_confirm_change_element_from')}{' '}
               <strong style={{ color: ELEMENT_COLOR[hero.element ?? ''] ?? '#a0a0b0' }}>
                 {ELEMENT_SYMBOL[hero.element ?? ''] ?? hero.element ?? 'None'}
               </strong>
@@ -496,16 +498,16 @@ export default function HeroDetailPage() {
                 {ELEMENT_SYMBOL[selectedElement]} {selectedElement.charAt(0) + selectedElement.slice(1).toLowerCase()}
               </strong>
               <br />
-              Costs <strong style={{ color: '#fbbf24' }}>
+              {t('hd_confirm_costs')} <strong style={{ color: '#fbbf24' }}>
                 {hero.tier === 'LEGENDARY' ? 300 : hero.tier === 'ELITE' ? 150 : 75}g
               </strong>
             </div>
             <div style={styles.confirmBtns}>
               <button style={{ ...styles.confirmYes, backgroundColor: '#1a2a3a', color: ELEMENT_COLOR[selectedElement], border: `1px solid ${ELEMENT_COLOR[selectedElement]}44` }}
                 onClick={() => { setConfirmElement(false); handleChangeElement(); }}>
-                Confirm
+                {t('hd_confirm_confirm')}
               </button>
-              <button style={styles.confirmNo} onClick={() => setConfirmElement(false)}>Cancel</button>
+              <button style={styles.confirmNo} onClick={() => setConfirmElement(false)}>{t('hd_confirm_cancel')}</button>
             </div>
           </div>
         </div>
@@ -514,17 +516,17 @@ export default function HeroDetailPage() {
       {confirmBuyStats && hero && (
         <div style={styles.confirmOverlay}>
           <div style={styles.confirmCard}>
-            <div style={styles.confirmTitle}>Buy Stats?</div>
+            <div style={styles.confirmTitle}>{t('hd_confirm_buy_stats')}</div>
             <div style={styles.confirmHeroName}>{hero.name}</div>
             <div style={styles.confirmSub}>
-              Purchase +1 stat point to allocate.<br />
-              Costs <strong style={{ color: '#fbbf24' }}>{hero.nextStatCost}g</strong>
+              {t('hd_confirm_buy_stats_body')}<br />
+              {t('hd_confirm_costs')} <strong style={{ color: '#fbbf24' }}>{hero.nextStatCost}g</strong>
             </div>
             <div style={styles.confirmBtns}>
               <button style={styles.confirmYes} onClick={() => { setConfirmBuyStats(false); handleBuyStats(); }}>
-                Buy
+                {t('hd_confirm_buy')}
               </button>
-              <button style={styles.confirmNo} onClick={() => setConfirmBuyStats(false)}>Cancel</button>
+              <button style={styles.confirmNo} onClick={() => setConfirmBuyStats(false)}>{t('hd_confirm_cancel')}</button>
             </div>
           </div>
         </div>
@@ -533,15 +535,15 @@ export default function HeroDetailPage() {
       {confirmHalve && (
         <div style={styles.confirmOverlay}>
           <div style={styles.confirmCard}>
-            <div style={styles.confirmTitle}>Halve Capacity?</div>
+            <div style={styles.confirmTitle}>{t('hd_confirm_halve')}</div>
             <div style={styles.confirmHeroName}>{hero.name}</div>
             <div style={styles.confirmSub}>
-              Reduces capacity from <strong style={{ color: '#a78bfa' }}>{hero.capacity}</strong> to <strong style={{ color: '#a78bfa' }}>{Math.max(1, Math.floor(hero.capacity / 2))}</strong>.
-              <br />Costs <strong style={{ color: '#fbbf24' }}>{hero.sellPrice}g</strong> (half of buy price).
+              {t('hd_confirm_halve_body_from')} <strong style={{ color: '#a78bfa' }}>{hero.capacity}</strong> {t('hd_confirm_halve_body_to')} <strong style={{ color: '#a78bfa' }}>{Math.max(1, Math.floor(hero.capacity / 2))}</strong>.
+              <br />{t('hd_confirm_costs')} <strong style={{ color: '#fbbf24' }}>{hero.sellPrice}g</strong> {t('hd_confirm_half_buy')}.
             </div>
             <div style={styles.confirmBtns}>
-              <button style={styles.confirmYes} onClick={handleHalveCapacity}>Confirm</button>
-              <button style={styles.confirmNo} onClick={() => setConfirmHalve(false)}>Cancel</button>
+              <button style={styles.confirmYes} onClick={handleHalveCapacity}>{t('hd_confirm_confirm')}</button>
+              <button style={styles.confirmNo} onClick={() => setConfirmHalve(false)}>{t('hd_confirm_cancel')}</button>
             </div>
           </div>
         </div>
@@ -562,10 +564,10 @@ export default function HeroDetailPage() {
         return (
           <div style={styles.confirmOverlay} onClick={() => setShowAllocate(false)}>
             <div style={{ ...styles.confirmCard, maxWidth: 380 }} onClick={(e) => e.stopPropagation()}>
-              <div style={styles.confirmTitle}>Allocate Points</div>
+              <div style={styles.confirmTitle}>{t('hd_allocate_points')}</div>
               <div style={{ color: '#a0a0b0', fontSize: 12, marginBottom: 4 }}>
-                <strong style={{ color: '#4ade80' }}>{pool}</strong> unallocated point{pool !== 1 ? 's' : ''}
-                &nbsp;·&nbsp; <strong style={{ color: remaining > 0 ? '#fbbf24' : '#4ade80' }}>{remaining}</strong> remaining
+                <strong style={{ color: '#4ade80' }}>{pool}</strong> {pool !== 1 ? t('hd_unallocated_points') : t('hd_unallocated_point')}
+                &nbsp;·&nbsp; <strong style={{ color: remaining > 0 ? '#fbbf24' : '#4ade80' }}>{remaining}</strong> {t('hd_remaining')}
               </div>
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
                 {STAT_ROWS.map(({ key, label, color }) => (
@@ -588,8 +590,8 @@ export default function HeroDetailPage() {
                 ))}
               </div>
               <div style={styles.confirmBtns}>
-                <button style={{ ...styles.confirmYes, opacity: spent > 0 ? 1 : 0.4 }} onClick={handleAllocateStats} disabled={spent === 0}>Allocate</button>
-                <button style={styles.confirmNo} onClick={() => { setShowAllocate(false); setStatAlloc({ physicalAttack: 0, magicPower: 0, dexterity: 0, element: 0, mana: 0, stamina: 0 }); }}>Cancel</button>
+                <button style={{ ...styles.confirmYes, opacity: spent > 0 ? 1 : 0.4 }} onClick={handleAllocateStats} disabled={spent === 0}>{t('hd_do_allocate')}</button>
+                <button style={styles.confirmNo} onClick={() => { setShowAllocate(false); setStatAlloc({ physicalAttack: 0, magicPower: 0, dexterity: 0, element: 0, mana: 0, stamina: 0 }); }}>{t('hd_confirm_cancel')}</button>
               </div>
             </div>
           </div>
@@ -599,7 +601,7 @@ export default function HeroDetailPage() {
       <div style={{ marginBottom: 20 }}>
         <Link to="/team" style={{ ...styles.backLink, marginBottom: setups.length > 0 ? 14 : 0 }}>
           <ChevronLeft size={14} style={{ flexShrink: 0 }} />
-          Back to Team
+          {t('hd_back_to_team')}
         </Link>
 
         {/* ── Team Setup Tabs ── */}
@@ -658,7 +660,7 @@ export default function HeroDetailPage() {
                       {(isActive || isHovered) && (
                         <span
                           style={{ fontSize: 12, color: 'rgba(233,69,96,0.55)', cursor: 'pointer', lineHeight: 1, marginLeft: 2 }}
-                          title="Double-click to rename"
+                          title={t('hd_double_click_rename')}
                           onClick={(e) => { e.stopPropagation(); setRenamingIdx(setup.setupIndex); setRenameValue(setup.name); }}
                         >✎</span>
                       )}
@@ -714,7 +716,7 @@ export default function HeroDetailPage() {
             </div>
             <CapBadge value={hero.capacity} />
             <div style={styles.equippedStatus}>
-              {hero.isEquipped ? `Equipped — Slot ${hero.teamSlot}` : 'On Bench'}
+              {hero.isEquipped ? `${t('hd_equipped_slot')} ${hero.teamSlot}` : t('hd_on_bench')}
             </div>
             <div style={styles.xpBlock}>
               <div style={styles.xpTopRow}>
@@ -777,7 +779,7 @@ export default function HeroDetailPage() {
                       {seal > 0 ? `+${seal}` : seal}
                     </span>
                     <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: sealBtnHovered ? '#d0c0ff' : '#c0c0d8', fontFamily: 'Inter, sans-serif', transition: 'color 0.2s' }}>
-                      Change Seal
+                      {t('hd_change_seal')}
                     </span>
                     {pts > 0 && (
                       <span style={{
@@ -827,22 +829,22 @@ export default function HeroDetailPage() {
                         <div style={{ display: 'flex', gap: 14, alignItems: 'center', flex: 1 }}>
                           <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
                             <span style={{ color: '#60a5fa', fontSize: 15, fontWeight: 900, lineHeight: 1 }}>{mp}%</span>
-                            <span style={{ color: '#60a5fa77', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', marginTop: 2 }}>MAGIC PROF</span>
+                            <span style={{ color: '#60a5fa77', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', marginTop: 2 }}>{t('hd_magic_prof')}</span>
                           </div>
                           <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.07)' }} />
                           <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
                             <span style={{ color: '#fb923c', fontSize: 15, fontWeight: 900, lineHeight: 1 }}>{cc}%</span>
-                            <span style={{ color: '#fb923c77', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', marginTop: 2 }}>CRIT CHANCE</span>
+                            <span style={{ color: '#fb923c77', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', marginTop: 2 }}>{t('hd_crit_chance')}</span>
                           </div>
                           <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.07)' }} />
                           <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
                             <span style={{ color: '#e879f9', fontSize: 15, fontWeight: 900, lineHeight: 1 }}>{sa}%</span>
-                            <span style={{ color: '#e879f977', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', marginTop: 2 }}>SPELL ACT.</span>
+                            <span style={{ color: '#e879f977', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', marginTop: 2 }}>{t('hd_spell_act')}</span>
                           </div>
                         </div>
                         {/* Damage range */}
                         <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-end', gap: 3 }}>
-                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: '#44446a', textTransform: 'uppercase' as const }}>Damage Range</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: '#44446a', textTransform: 'uppercase' as const }}>{t('hd_damage_range')}</span>
                           <span style={{ fontSize: 16, fontWeight: 900, color: '#f97316', lineHeight: 1, fontFamily: 'Inter, sans-serif', fontVariantNumeric: 'tabular-nums' as const }}>
                             {dmgMin === dmgMax ? dmgMin : `${dmgMin} – ${dmgMax}`}
                           </span>
@@ -872,19 +874,19 @@ export default function HeroDetailPage() {
           {/* ── Combat Record ── */}
           <div style={styles.combatSection}>
             <div style={styles.hdCombatHeader}>
-              <span style={styles.hdCombatTitle}>⚔ Combat Record</span>
+              <span style={styles.hdCombatTitle}>{t('hd_combat_record')}</span>
               <div style={styles.hdCombatLine} />
-              <span style={styles.battleTotalTag}>{totalBattles} battles</span>
+              <span style={styles.battleTotalTag}>{totalBattles} {t('hd_battles')}</span>
             </div>
 
             {/* Overview */}
-            <div style={styles.hdGroupLabel}>Overview</div>
+            <div style={styles.hdGroupLabel}>{t('hd_overview')}</div>
             <div style={styles.hdStatCardsRow}>
               {([
-                { value: String(hero.clashesWon),                                     label: 'Wins',        color: '#4ade80', glow: 'hd-sv-green',  barPct: null },
-                { value: String(hero.clashesLost),                                    label: 'Losses',      color: '#e94560', glow: 'hd-sv-red',    barPct: null },
-                { value: `${winRate}%`,                                               label: 'Win Rate',    color: '#fbbf24', glow: 'hd-sv-gold',   barPct: winRate },
-                { value: String(totalBattles),                                        label: 'Battles',     color: '#a0a0cc', glow: 'hd-sv-white',  barPct: null },
+                { value: String(hero.clashesWon),  label: t('hd_wins'),        color: '#4ade80', glow: 'hd-sv-green',  barPct: null },
+                { value: String(hero.clashesLost), label: t('hd_losses'),      color: '#e94560', glow: 'hd-sv-red',    barPct: null },
+                { value: `${winRate}%`,            label: t('hd_win_rate'),    color: '#fbbf24', glow: 'hd-sv-gold',   barPct: winRate },
+                { value: String(totalBattles),     label: t('hd_battles_label'), color: '#a0a0cc', glow: 'hd-sv-white', barPct: null },
               ] as const).map(({ value, label, color, glow, barPct }) => (
                 <div key={label} style={{ ...styles.hdStatCard, borderTop: `3px solid ${color}`, background: `linear-gradient(160deg,rgba(0,0,0,0) 0%,${color}09 100%)`, boxShadow: `0 2px 16px rgba(0,0,0,.35),inset 0 1px 0 ${color}18` }}>
                   <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: `linear-gradient(90deg,transparent,${color}88,transparent)` }} />
@@ -900,13 +902,13 @@ export default function HeroDetailPage() {
             </div>
 
             {/* Streaks */}
-            <div style={styles.hdGroupLabel}>Streaks</div>
+            <div style={styles.hdGroupLabel}>{t('hd_streaks')}</div>
             <div style={styles.hdStatCardsRow}>
               {([
-                { value: String(hero.currentWinStreak),  label: 'Win Streak',       color: '#4ade80', glow: 'hd-sv-green' },
-                { value: String(hero.bestWinStreak),     label: 'Best Win Streak',  color: '#4ade80', glow: 'hd-sv-green' },
-                { value: String(hero.currentLossStreak), label: 'Loss Streak',      color: '#e94560', glow: 'hd-sv-red'   },
-                { value: String(hero.bestLossStreak),    label: 'Best Loss Streak', color: '#e94560', glow: 'hd-sv-red'   },
+                { value: String(hero.currentWinStreak),  label: t('hd_win_streak'),       color: '#4ade80', glow: 'hd-sv-green' },
+                { value: String(hero.bestWinStreak),     label: t('hd_best_win_streak'),  color: '#4ade80', glow: 'hd-sv-green' },
+                { value: String(hero.currentLossStreak), label: t('hd_loss_streak'),      color: '#e94560', glow: 'hd-sv-red'   },
+                { value: String(hero.bestLossStreak),    label: t('hd_best_loss_streak'), color: '#e94560', glow: 'hd-sv-red'   },
               ] as const).map(({ value, label, color, glow }) => (
                 <div key={label} style={{ ...styles.hdStatCard, borderTop: `3px solid ${color}`, background: `linear-gradient(160deg,rgba(0,0,0,0) 0%,${color}09 100%)`, boxShadow: `0 2px 16px rgba(0,0,0,.35),inset 0 1px 0 ${color}18` }}>
                   <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: `linear-gradient(90deg,transparent,${color}88,transparent)` }} />
@@ -917,15 +919,15 @@ export default function HeroDetailPage() {
             </div>
 
             {/* Best Hits */}
-            <div style={styles.hdGroupLabel}>Best Hits</div>
+            <div style={styles.hdGroupLabel}>{t('hd_best_hits')}</div>
             <div style={styles.hdStatCardsRow}>
               {([
-                { value: hero.maxDamageDealt.toFixed(1),    label: 'Max Dealt',   color: '#fbbf24', glow: 'hd-sv-gold'   },
-                { value: hero.maxDamageReceived.toFixed(1), label: 'Max Taken',   color: '#a78bfa', glow: 'hd-sv-purple' },
-                { value: hero.maxPaDamage.toFixed(1),       label: 'Best PA',     color: '#f97316', glow: 'hd-sv-orange' },
-                { value: hero.maxMpDamage.toFixed(1),       label: 'Best MP',     color: '#818cf8', glow: 'hd-sv-indigo' },
-                { value: hero.maxDexDamage.toFixed(1),      label: 'Best DEX',    color: '#d8d455', glow: 'hd-sv-yellow' },
-                { value: hero.maxElemDamage.toFixed(1),     label: 'Best Elem',   color: '#34d399', glow: 'hd-sv-teal'   },
+                { value: hero.maxDamageDealt.toFixed(1),    label: t('hd_max_dealt'), color: '#fbbf24', glow: 'hd-sv-gold'   },
+                { value: hero.maxDamageReceived.toFixed(1), label: t('hd_max_taken'), color: '#a78bfa', glow: 'hd-sv-purple' },
+                { value: hero.maxPaDamage.toFixed(1),       label: t('hd_best_pa'),   color: '#f97316', glow: 'hd-sv-orange' },
+                { value: hero.maxMpDamage.toFixed(1),       label: t('hd_best_mp'),   color: '#818cf8', glow: 'hd-sv-indigo' },
+                { value: hero.maxDexDamage.toFixed(1),      label: t('hd_best_dex'),  color: '#d8d455', glow: 'hd-sv-yellow' },
+                { value: hero.maxElemDamage.toFixed(1),     label: t('hd_best_elem'), color: '#34d399', glow: 'hd-sv-teal'   },
               ] as const).map(({ value, label, color, glow }) => (
                 <div key={label} style={{ ...styles.hdStatCard, borderTop: `3px solid ${color}`, background: `linear-gradient(160deg,rgba(0,0,0,0) 0%,${color}09 100%)`, boxShadow: `0 2px 16px rgba(0,0,0,.35),inset 0 1px 0 ${color}18` }}>
                   <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: `linear-gradient(90deg,transparent,${color}88,transparent)` }} />
@@ -936,13 +938,13 @@ export default function HeroDetailPage() {
             </div>
 
             {/* Total Damage */}
-            <div style={styles.hdGroupLabel}>Total Damage</div>
+            <div style={styles.hdGroupLabel}>{t('hd_total_damage')}</div>
             <div style={styles.hdStatCardsRow}>
               {([
-                { value: hero.totalPaDamage.toFixed(1),   label: 'Total PA',    color: '#f97316', glow: 'hd-sv-orange' },
-                { value: hero.totalMpDamage.toFixed(1),   label: 'Total MP',    color: '#818cf8', glow: 'hd-sv-indigo' },
-                { value: hero.totalDexDamage.toFixed(1),  label: 'Total DEX',   color: '#d8d455', glow: 'hd-sv-yellow' },
-                { value: hero.totalElemDamage.toFixed(1), label: 'Total Elem',  color: '#34d399', glow: 'hd-sv-teal'   },
+                { value: hero.totalPaDamage.toFixed(1),   label: t('hd_total_pa'),   color: '#f97316', glow: 'hd-sv-orange' },
+                { value: hero.totalMpDamage.toFixed(1),   label: t('hd_total_mp'),   color: '#818cf8', glow: 'hd-sv-indigo' },
+                { value: hero.totalDexDamage.toFixed(1),  label: t('hd_total_dex'),  color: '#d8d455', glow: 'hd-sv-yellow' },
+                { value: hero.totalElemDamage.toFixed(1), label: t('hd_total_elem'), color: '#34d399', glow: 'hd-sv-teal'   },
               ] as const).map(({ value, label, color, glow }) => (
                 <div key={label} style={{ ...styles.hdStatCard, borderTop: `3px solid ${color}`, background: `linear-gradient(160deg,rgba(0,0,0,0) 0%,${color}09 100%)`, boxShadow: `0 2px 16px rgba(0,0,0,.35),inset 0 1px 0 ${color}18` }}>
                   <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: `linear-gradient(90deg,transparent,${color}88,transparent)` }} />
@@ -956,18 +958,18 @@ export default function HeroDetailPage() {
           {/* Stats Breakdown section header */}
           <div style={styles.statsSectionHeader}>
             <span style={styles.statsSectionDiamond}>◆</span>
-            <span style={styles.statsSectionTitle}>Stats Breakdown</span>
+            <span style={styles.statsSectionTitle}>{t('hd_stats_breakdown')}</span>
             <div style={styles.statsSectionLine} />
           </div>
 
           <div style={styles.statsTable}>
             <div style={styles.tableHeader}>
-              <span style={styles.thStat}>Stat</span>
-              <span style={styles.th}>Base</span>
-              <span style={{ ...styles.th, color: '#8b6fd4' }}>Bought</span>
-              <span style={{ ...styles.th, color: '#4a7ab0' }}>Equip</span>
-              <span style={{ ...styles.th, color: '#22d3ee' }}>Summon</span>
-              <span style={styles.thTotal}>Total</span>
+              <span style={styles.thStat}>{t('hd_col_stat')}</span>
+              <span style={styles.th}>{t('hd_col_base')}</span>
+              <span style={{ ...styles.th, color: '#8b6fd4' }}>{t('hd_col_bought')}</span>
+              <span style={{ ...styles.th, color: '#4a7ab0' }}>{t('hd_col_equip')}</span>
+              <span style={{ ...styles.th, color: '#22d3ee' }}>{t('hd_col_summon')}</span>
+              <span style={styles.thTotal}>{t('hd_col_total')}</span>
             </div>
             {Object.entries(STAT_LABELS).map(([key, label]) => {
               const statColor = STAT_COLORS[key] ?? '#a0a0b0';
@@ -1003,7 +1005,7 @@ export default function HeroDetailPage() {
             onClick={() => setShowSubStats(prev => !prev)}
           >
             <span style={styles.statsSectionDiamond}>◆</span>
-            <span style={styles.statsSectionTitle}>Sub Stats</span>
+            <span style={styles.statsSectionTitle}>{t('hd_sub_stats')}</span>
             <div style={styles.statsSectionLine} />
             <ChevronDown size={14} style={{ color: '#6060a0', flexShrink: 0, transition: 'transform 0.25s', transform: showSubStats ? 'rotate(180deg)' : 'rotate(0deg)' }} />
           </div>
@@ -1012,12 +1014,12 @@ export default function HeroDetailPage() {
           <div style={styles.statsTable}>
             {/* Sub stats header */}
             <div style={styles.tableHeader}>
-              <span style={styles.thStat}>Stat</span>
-              <span style={styles.th}>Base</span>
-              <span style={{ ...styles.th, color: '#8b6fd4' }}>Bought</span>
-              <span style={{ ...styles.th, color: '#4a7ab0' }}>Equip</span>
-              <span style={{ ...styles.th, color: '#22d3ee' }}>Summon</span>
-              <span style={styles.thTotal}>Total</span>
+              <span style={styles.thStat}>{t('hd_col_stat')}</span>
+              <span style={styles.th}>{t('hd_col_base')}</span>
+              <span style={{ ...styles.th, color: '#8b6fd4' }}>{t('hd_col_bought')}</span>
+              <span style={{ ...styles.th, color: '#4a7ab0' }}>{t('hd_col_equip')}</span>
+              <span style={{ ...styles.th, color: '#22d3ee' }}>{t('hd_col_summon')}</span>
+              <span style={styles.thTotal}>{t('hd_col_total')}</span>
             </div>
             {SUB_STATS.map(({ key, label, color }) => {
               const sealRow = SEAL_STATS_TABLE[hero.seal ?? 0] ?? [18, 13, 7];
@@ -1153,7 +1155,7 @@ export default function HeroDetailPage() {
 
       {equipment && (
         <>
-          <h3 style={styles.subtitle}>Equipment Slots (3)</h3>
+          <h3 style={styles.subtitle}>{t('hd_equipment_slots')}</h3>
           <div style={styles.slotsGrid}>
             {equipment.slots.map((slot) => {
               if (slot.type) {
@@ -1175,16 +1177,16 @@ export default function HeroDetailPage() {
               return (
                 <div key={slot.slotNumber} style={styles.emptySlotCard} onClick={(e) => e.stopPropagation()}>
                   <span style={styles.emptySlotNum}>#{slot.slotNumber}</span>
-                  <span style={styles.emptySlotText}>Empty Slot</span>
+                  <span style={styles.emptySlotText}>{t('hd_empty_slot')}</span>
                   <div style={{ flex: 1 }} />
                   <div style={{ position: 'relative' }}>
                     <button
                       style={options.length === 0 ? styles.emptySlotBtnDisabled : styles.emptySlotBtn}
                       disabled={options.length === 0}
                       onClick={(e) => { e.stopPropagation(); setActivePicker(isOpen ? null : slot.slotNumber); }}
-                      title={options.length === 0 ? 'No abilities in inventory' : 'Equip ability to this slot'}
+                      title={options.length === 0 ? t('hd_no_abilities_in_inv') : t('hd_equip_ability_hint')}
                     >
-                      {options.length === 0 ? 'No Abilities' : '+ Equip'}
+                      {options.length === 0 ? t('hd_no_abilities_slot') : t('hd_equip_btn')}
                     </button>
                     {isOpen && (
                       <div style={styles.pickerDropdown} onClick={(e) => e.stopPropagation()}>
@@ -1209,7 +1211,7 @@ export default function HeroDetailPage() {
           {/* ── Inventory Items ── */}
           {equipment.inventoryItems.length > 0 && (
             <>
-              <h3 style={styles.subtitle}>Inventory Items</h3>
+              <h3 style={styles.subtitle}>{t('hd_inventory_items')}</h3>
               <div style={styles.abilityCardGrid}>
                 {equipment.inventoryItems.map((item) => {
                   const tier = getInvItemTier(item.sellPrice);
@@ -1272,7 +1274,7 @@ export default function HeroDetailPage() {
                             boxShadow: emptySlots.length > 0 ? `0 2px 10px ${tc.glow}` : 'none',
                           }}
                         >
-                          {emptySlots.length === 0 ? 'No Empty Slots' : '+ Equip'}
+                          {emptySlots.length === 0 ? t('hd_no_empty_slots') : t('hd_equip_btn')}
                         </button>
                       </div>
                       </EquipmentTooltip>
@@ -1280,7 +1282,7 @@ export default function HeroDetailPage() {
                       {pickerOpen && emptySlots.length > 0 && (
                         <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 50, backgroundColor: '#0e0e1e', border: '1px solid #2a2a4e', borderRadius: 7, padding: '4px', boxShadow: '0 4px 16px rgba(0,0,0,0.8)', minWidth: 130 }} onClick={(e) => e.stopPropagation()}>
                           <div style={{ color: '#44446a', fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, padding: '3px 8px 5px', borderBottom: '1px solid #1a1a35' }}>
-                            Choose slot
+                            {t('hd_choose_slot')}
                           </div>
                           {emptySlots.map((s) => (
                             <button
@@ -1290,7 +1292,7 @@ export default function HeroDetailPage() {
                               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ffffff10'; }}
                               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
                             >
-                              Slot {s.slotNumber}
+                              {t('hd_slot_prefix')} {s.slotNumber}
                             </button>
                           ))}
                         </div>
@@ -1302,7 +1304,7 @@ export default function HeroDetailPage() {
             </>
           )}
 
-          <h3 style={styles.subtitle}>Abilities</h3>
+          <h3 style={styles.subtitle}>{t('hd_abilities')}</h3>
           {equipment.heroAbilities.length > 0 ? (
             <div style={styles.abilityCardGrid}>
               {equipment.heroAbilities.map((ab) => (
@@ -1316,7 +1318,7 @@ export default function HeroDetailPage() {
               ))}
             </div>
           ) : (
-            <p style={styles.muted}>No abilities owned.</p>
+            <p style={styles.muted}>{t('hd_no_abilities')}</p>
           )}
 
         </>
@@ -1333,7 +1335,7 @@ export default function HeroDetailPage() {
         const canChange = selectedElement !== null && (player?.gold ?? 0) >= elementCost;
         return (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '28px 16px', backgroundColor: '#0e0e1c', flexWrap: 'wrap' as const }}>
-            <span style={{ color: '#f97316', fontStyle: 'italic', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>Change Element to...</span>
+            <span style={{ color: '#f97316', fontStyle: 'italic', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{t('hd_change_element_to')}</span>
             <div style={{ display: 'flex', gap: 6 }}>
               {ELEMENTS.map((el) => {
                 const isActive = selectedElement === el;
@@ -1342,7 +1344,7 @@ export default function HeroDetailPage() {
                   <button
                     key={el}
                     onClick={() => setSelectedElement(isActive ? null : el)}
-                    title={el.charAt(0) + el.slice(1).toLowerCase() + (isCurrent ? ' (current)' : '')}
+                    title={el.charAt(0) + el.slice(1).toLowerCase() + (isCurrent ? ` ${t('hd_current_suffix')}` : '')}
                     style={{
                       width: 34, height: 34, borderRadius: 6, border: `2px solid ${isActive ? ELEMENT_COLOR[el] : isCurrent ? ELEMENT_COLOR[el] + '66' : '#2a2a44'}`,
                       background: isActive ? ELEMENT_COLOR[el] + '28' : isCurrent ? ELEMENT_COLOR[el] + '10' : 'transparent',
@@ -1372,7 +1374,7 @@ export default function HeroDetailPage() {
                 letterSpacing: '0.05em',
               }}
             >
-              CHANGE
+              {t('hd_change_btn')}
             </button>
           </div>
         );
@@ -1383,18 +1385,18 @@ export default function HeroDetailPage() {
           style={{ ...styles.halveCapBtn, ...(hero.capacityHalved ? styles.halveCapBtnDone : {}) }}
           onClick={() => !hero.capacityHalved && setConfirmHalve(true)}
           disabled={hero.capacityHalved}
-          title={hero.capacityHalved ? 'Capacity already halved' : undefined}
+          title={hero.capacityHalved ? t('hd_capacity_already_halved') : undefined}
         >
-          ½ Capacity
+          {t('hd_halve_capacity')}
         </button>
         <span style={styles.halveCapPrice}>
-          {hero.capacityHalved ? '✓ Done' : `💰 ${hero.sellPrice}g`}
+          {hero.capacityHalved ? t('hd_capacity_halved_done') : `💰 ${hero.sellPrice}g`}
         </span>
 
         <div style={styles.sellHeroSep} />
 
         <button style={styles.buyStatsBtn} onClick={() => setConfirmBuyStats(true)}>
-          Buy Stats
+          {t('hd_buy_stats')}
         </button>
         <span style={styles.buyStatsPrice}>💰 {hero.nextStatCost}g</span>
 
@@ -1402,7 +1404,7 @@ export default function HeroDetailPage() {
           <>
             <div style={styles.sellHeroSep} />
             <button style={{ ...styles.buyStatsBtn, borderColor: 'rgba(74,222,128,0.5)', color: '#4ade80' }} onClick={() => setShowAllocate(true)}>
-              Allocate
+              {t('hd_allocate')}
             </button>
             <span style={{ ...styles.buyStatsPrice, color: '#4ade80' }}>🟢 {hero.unallocatedStatPoints} pts</span>
           </>
@@ -1417,9 +1419,9 @@ export default function HeroDetailPage() {
                 style={{ ...styles.buyStatsBtn, borderColor: 'rgba(251,191,36,0.5)', color: hasAllocated ? '#fbbf24' : '#5a4a20', cursor: hasAllocated ? 'pointer' : 'not-allowed' }}
                 onClick={() => hasAllocated && setConfirmReset(true)}
                 disabled={!hasAllocated}
-                title={!hasAllocated ? 'No stats allocated to reset' : undefined}
+                title={!hasAllocated ? t('hd_no_stats_to_reset') : undefined}
               >
-                Reset Stats
+                {t('hd_reset_stats')}
               </button>
               <span style={{ ...styles.buyStatsPrice, color: hasAllocated ? '#fbbf24' : '#5a4a20' }}>💰 {hero.nextResetCost}g</span>
             </>
@@ -1429,7 +1431,7 @@ export default function HeroDetailPage() {
         <div style={styles.sellHeroSep} />
 
         <button style={styles.sellHeroBtn} onClick={() => setConfirmHeroSell(true)}>
-          Sell Hero
+          {t('hd_sell_hero')}
         </button>
         <span style={styles.sellHeroPrice}>💰 {hero.sellPrice}g</span>
       </div>

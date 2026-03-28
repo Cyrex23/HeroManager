@@ -4,6 +4,7 @@ import type { MaterialTemplate, WeaponRecipe, WeaponSpellInfo, MaterialRecipe } 
 import { getMaterials, getWeaponRecipes, getMaterialRecipes, craftWeapon, craftMaterial, getSpinStatus, claimDailySpin, claimSpinReward, finishCraftNow } from '../api/blacksmithApi';
 import type { SpinStatus, SpinResult } from '../api/blacksmithApi';
 import { usePlayer } from '../context/PlayerContext';
+import { useLanguage } from '../context/LanguageContext';
 
 // ─── Sprite Icon ──────────────────────────────────────────────────────────────
 const SHEET_PARAMS: Record<string, { cw: number; ch: number; ox?: number; oy?: number }> = {
@@ -55,7 +56,7 @@ function fmtStat(val: number, pct: boolean): string {
 }
 
 const TIER_COLOR: Record<number, string> = { 1: '#9ca3af', 2: '#60a5fa', 3: '#a78bfa', 4: '#f97316', 5: '#fbbf24' };
-const TIER_LABEL: Record<number, string> = { 1: 'T1 Primal', 2: 'T2 Refined', 3: 'T3 Exotic', 4: 'T4 Mythic', 5: 'T5 Celestial' };
+const TIER_LABEL_EN: Record<number, string> = { 1: 'T1 Primal', 2: 'T2 Refined', 3: 'T3 Exotic', 4: 'T4 Mythic', 5: 'T5 Celestial' };
 const WEAPON_COLOR: Record<string, string> = { COMMON: '#9ca3af', EPIC: '#a78bfa', LEGENDARY: '#fbbf24' };
 const FINISH_COST = (tier: string): number => tier === 'LEGENDARY' ? 30 : tier === 'EPIC' ? 20 : 10;
 
@@ -217,6 +218,7 @@ function SpellBadge({ spell }: { spell: WeaponSpellInfo }) {
 }
 
 function WeaponPopup({ r, canForge, onForge, onClose }: { r: WeaponRecipe; canForge: boolean; onForge: () => void; onClose: () => void }) {
+  const { t } = useLanguage();
   const stats = WEAPON_STATS.filter(s => (r[s.key] as number) > 0);
 
   return (
@@ -245,7 +247,7 @@ function WeaponPopup({ r, canForge, onForge, onClose }: { r: WeaponRecipe; canFo
         {/* Stats */}
         {stats.length > 0 && (
           <>
-            <div style={{ fontSize: 9, fontWeight: 800, color: '#4b5563', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>Bonuses</div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#4b5563', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>{t('blacksmith_bonuses')}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 6px', marginBottom: 14 }}>
               {stats.map(s => (
                 <span key={String(s.key)} style={{ fontSize: 11, fontWeight: 700, color: s.color, background: `${s.color}12`, border: `1px solid ${s.color}30`, borderRadius: 5, padding: '2px 7px' }}>
@@ -260,14 +262,14 @@ function WeaponPopup({ r, canForge, onForge, onClose }: { r: WeaponRecipe; canFo
         {r.spells && r.spells.length > 0 && (
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 9, fontWeight: 800, color: '#4b5563', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
-              {r.spells.length === 1 ? 'Spell' : `Spells (${r.spells.length})`}
+              {r.spells.length === 1 ? t('blacksmith_spell_single') : `${t('blacksmith_spell_single')}s (${r.spells.length})`}
             </div>
             {r.spells.map((spell, i) => <SpellBadge key={i} spell={spell} />)}
           </div>
         )}
 
         {/* Ingredients */}
-        <div style={{ fontSize: 9, fontWeight: 800, color: '#4b5563', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>Recipe</div>
+        <div style={{ fontSize: 9, fontWeight: 800, color: '#4b5563', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>{t('blacksmith_recipe')}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
           {r.ingredients.map(i => {
             const met = i.have >= i.required;
@@ -288,7 +290,7 @@ function WeaponPopup({ r, canForge, onForge, onClose }: { r: WeaponRecipe; canFo
           color: canForge ? '#fbbf24' : '#4b5563',
           border: `1px solid ${canForge ? '#fbbf2466' : '#374151'}`,
         }}>
-          {canForge ? '⚒  CRAFT RECIPE' : '⚒  INSUFFICIENT MATERIALS'}
+          {canForge ? t('blacksmith_craft_btn') : t('blacksmith_insufficient')}
         </button>
       </div>
     </div>
@@ -296,6 +298,7 @@ function WeaponPopup({ r, canForge, onForge, onClose }: { r: WeaponRecipe; canFo
 }
 
 function RefinePopup({ r, canRefine, onRefine, onClose }: { r: MaterialRecipe; canRefine: boolean; onRefine: () => void; onClose: () => void }) {
+  const { t } = useLanguage();
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', zIndex: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
@@ -309,7 +312,7 @@ function RefinePopup({ r, canRefine, onRefine, onClose }: { r: MaterialRecipe; c
             <div>
               <div style={{ fontSize: 16, fontWeight: 900, color: '#e0e0f0' }}>{r.outputName}</div>
               <div style={{ display: 'flex', gap: 8, marginTop: 4, alignItems: 'center' }}>
-                <span style={{ fontSize: 10, color: TIER_COLOR[r.outputTier], fontWeight: 700 }}>{TIER_LABEL[r.outputTier]}</span>
+                <span style={{ fontSize: 10, color: TIER_COLOR[r.outputTier], fontWeight: 700 }}>{TIER_LABEL_EN[r.outputTier]}</span>
                 <span style={{ fontSize: 11, color: '#6b7280' }}>&#x2192; &times;{r.outputQuantity}</span>
                 <span style={{ fontSize: 11, color: '#6b7280' }}>&#9201; {fmtCraftTime(r.craftHours)}</span>
               </div>
@@ -318,7 +321,7 @@ function RefinePopup({ r, canRefine, onRefine, onClose }: { r: MaterialRecipe; c
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#4b5563', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 4 }}>&#x2715;</button>
         </div>
 
-        <div style={{ fontSize: 9, fontWeight: 800, color: '#4b5563', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>Ingredients</div>
+        <div style={{ fontSize: 9, fontWeight: 800, color: '#4b5563', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>{t('blacksmith_ingredients')}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
           {r.ingredients.map(i => {
             const met = i.have >= i.required;
@@ -339,7 +342,7 @@ function RefinePopup({ r, canRefine, onRefine, onClose }: { r: MaterialRecipe; c
           color: canRefine ? TIER_COLOR[r.outputTier] : '#4b5563',
           border: `1px solid ${canRefine ? TIER_COLOR[r.outputTier] + '66' : '#374151'}`,
         }}>
-          {canRefine ? '&#128293;  REFINE MATERIALS' : '&#128293;  INSUFFICIENT MATERIALS'}
+          {canRefine ? t('blacksmith_refine_btn') : t('blacksmith_refine_insufficient')}
         </button>
       </div>
     </div>
@@ -352,10 +355,11 @@ function CraftingProgress({ queue, tick, diamonds, maxSlots, onFinish, onFinishN
   onFinish: (id: string) => void;
   onFinishNow: (entry: CraftQueueEntry) => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div style={{ marginTop: 32, borderTop: '1px solid #1a1a2a', paddingTop: 24, marginBottom: 36 }}>
       <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 20, fontWeight: 900, color: '#e0e0f0' }}>Crafting In Progress</span>
+        <span style={{ fontSize: 20, fontWeight: 900, color: '#e0e0f0' }}>{t('blacksmith_crafting_progress')}</span>
         <span style={{
           fontSize: 11, fontWeight: 700, fontFamily: 'Inter, sans-serif',
           color: queue.length >= maxSlots ? '#ef4444' : '#6b7280',
@@ -363,11 +367,11 @@ function CraftingProgress({ queue, tick, diamonds, maxSlots, onFinish, onFinishN
           border: `1px solid ${queue.length >= maxSlots ? 'rgba(239,68,68,0.3)' : 'rgba(107,114,128,0.2)'}`,
           borderRadius: 6, padding: '2px 8px',
         }}>
-          {queue.length} / {maxSlots} slots
+          {queue.length} / {maxSlots} {t('blacksmith_slots')}
         </span>
       </div>
       <p style={{ color: '#6b7280', fontSize: 12, margin: '0 0 16px' }}>
-        {queue.length === 0 ? 'No active crafting jobs. Start forging a weapon or refining materials!' : 'These recipes are currently being crafted. The time can be reduced by finishing now.'}
+        {queue.length === 0 ? t('blacksmith_no_jobs') : t('blacksmith_jobs_active')}
       </p>
       {queue.length === 0 ? (
         <div style={{
@@ -377,8 +381,8 @@ function CraftingProgress({ queue, tick, diamonds, maxSlots, onFinish, onFinishN
         }}>
           <div style={{ fontSize: 32 }}>⚒</div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#4b5563' }}>The forge is idle</div>
-            <div style={{ fontSize: 11, color: '#374151', marginTop: 2 }}>Craft a weapon or refine materials to see progress here</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4b5563' }}>{t('blacksmith_forge_idle')}</div>
+            <div style={{ fontSize: 11, color: '#374151', marginTop: 2 }}>{t('blacksmith_forge_idle_sub')}</div>
           </div>
         </div>
       ) : (
@@ -396,7 +400,7 @@ function CraftingProgress({ queue, tick, diamonds, maxSlots, onFinish, onFinishN
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
-                  {entry.type === 'weapon' ? 'Crafting Recipe' : 'Refining Recipe'}
+                  {entry.type === 'weapon' ? t('blacksmith_crafting_recipe') : t('blacksmith_refining_recipe')}
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 900, color: tierColor }}>{entry.name.toUpperCase()}</div>
                 {entry.ingredients.length > 0 && (
@@ -412,14 +416,14 @@ function CraftingProgress({ queue, tick, diamonds, maxSlots, onFinish, onFinishN
                 )}
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 9, color: '#6b7280', letterSpacing: 1.2, fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Time Until Completion</div>
+                <div style={{ fontSize: 9, color: '#6b7280', letterSpacing: 1.2, fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>{t('blacksmith_time_completion')}</div>
                 <div style={{
                   fontFamily: 'monospace', fontSize: 20, fontWeight: 900,
                   color: done ? '#4ade80' : '#fbbf24',
                   background: '#07080f', border: `1px solid ${done ? '#4ade8033' : '#fbbf2433'}`,
                   borderRadius: 6, padding: '4px 14px', letterSpacing: 1, display: 'inline-block',
                 }}>
-                  {done ? 'READY!' : fmtCountdown(remaining)}
+                  {done ? t('blacksmith_ready') : fmtCountdown(remaining)}
                 </div>
                 <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                   <button onClick={() => done ? onFinish(entry.id) : onFinishNow(entry)} style={{
@@ -436,14 +440,14 @@ function CraftingProgress({ queue, tick, diamonds, maxSlots, onFinish, onFinishN
                     display: 'flex', alignItems: 'center', gap: 6,
                     transition: 'all 0.2s',
                   }}>
-                    {done ? 'COLLECT' : (
+                    {done ? t('blacksmith_collect') : (
                       <>
-                        FINISH NOW &nbsp;<Gem size={12} color="#c4b5fd" />{FINISH_COST(entry.tier)}
+                        {t('blacksmith_finish_now')} &nbsp;<Gem size={12} color="#c4b5fd" />{FINISH_COST(entry.tier)}
                       </>
                     )}
                   </button>
                   {!done && diamonds < FINISH_COST(entry.tier) && (
-                    <div style={{ fontSize: 9, color: '#6b7280' }}>Need {FINISH_COST(entry.tier)} diamonds</div>
+                    <div style={{ fontSize: 9, color: '#6b7280' }}>{t('blacksmith_need_diamonds')} {FINISH_COST(entry.tier)} {t('blacksmith_need_diamonds_suffix')}</div>
                   )}
                 </div>
               </div>
@@ -470,6 +474,7 @@ function fmtCountdownShort(ms: number): string {
 }
 
 function DailyWheel({ materials, onSpun }: { materials: MaterialTemplate[]; onSpun: () => void }) {
+  const { t } = useLanguage();
   const pool = materials.filter(m => m.tier <= 2);
   const [status, setStatus] = useState<SpinStatus | null>(null);
   const [strip, setStrip] = useState<MaterialTemplate[]>([]);
@@ -736,8 +741,8 @@ function DailyWheel({ materials, onSpun }: { materials: MaterialTemplate[]; onSp
             boxShadow: '0 0 60px #fbbf2433',
             animation: 'wonPop 0.35s ease-out',
           }}>
-            <div style={{ fontSize: 26, fontWeight: 900, color: '#fbbf24', marginBottom: 4 }}>Congratulations!</div>
-            <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 24 }}>The wheel has spoken. Choose your reward:</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: '#fbbf24', marginBottom: 4 }}>{t('blacksmith_congratulations')}</div>
+            <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 24 }}>{t('blacksmith_wheel_spoken')}</div>
 
             {/* Won item */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 28 }}>
@@ -745,7 +750,7 @@ function DailyWheel({ materials, onSpun }: { materials: MaterialTemplate[]; onSp
                 <SpriteIcon iconKey={pendingResult.iconKey} size={72} />
               </div>
               <div style={{ fontSize: 14, fontWeight: 900, color: TIER_COLOR[pendingResult.tier] }}>×{pendingResult.wonQty} {pendingResult.name}</div>
-              <div style={{ fontSize: 10, color: '#6b7280' }}>{TIER_LABEL[pendingResult.tier]}</div>
+              <div style={{ fontSize: 10, color: '#6b7280' }}>{TIER_LABEL_EN[pendingResult.tier]}</div>
             </div>
 
             {/* Choices */}
@@ -808,6 +813,7 @@ function DailyWheel({ materials, onSpun }: { materials: MaterialTemplate[]; onSp
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function BlacksmithPage() {
+  const { t } = useLanguage();
   const { player, fetchPlayer } = usePlayer();
   const [materials, setMaterials] = useState<MaterialTemplate[]>([]);
   const [weaponRecipes, setWeaponRecipes] = useState<WeaponRecipe[]>([]);
@@ -976,14 +982,14 @@ export default function BlacksmithPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <h2 className="gradient-title" style={{ margin: '0 0 4px', fontSize: 24 }}>Blacksmith</h2>
-          <p style={{ margin: 0, fontSize: 12, color: '#6b6b90', fontFamily: 'Inter, sans-serif' }}>Forge legendary weapons &middot; Refine ancient materials</p>
+          <h2 className="gradient-title" style={{ margin: '0 0 4px', fontSize: 24 }}>{t('blacksmith_title')}</h2>
+          <p style={{ margin: 0, fontSize: 12, color: '#6b6b90', fontFamily: 'Inter, sans-serif' }}>{t('blacksmith_subtitle')}</p>
         </div>
         <div style={{ display: 'flex', gap: 24, alignItems: 'flex-end' }}>
           {[
-            { val: ownedCount,   label: 'materials owned', color: '#fbbf24' },
-            { val: readyWeapons, label: 'weapons ready',   color: readyWeapons > 0 ? '#4ade80' : '#4b5563' },
-            { val: readyRefine,  label: 'refines ready',   color: readyRefine  > 0 ? '#60a5fa' : '#4b5563' },
+            { val: ownedCount,   label: t('blacksmith_materials_owned'), color: '#fbbf24' },
+            { val: readyWeapons, label: t('blacksmith_weapons_ready'),   color: readyWeapons > 0 ? '#4ade80' : '#4b5563' },
+            { val: readyRefine,  label: t('blacksmith_refines_ready'),   color: readyRefine  > 0 ? '#60a5fa' : '#4b5563' },
           ].map(({ val, label, color }) => (
             <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
               <span style={{ fontSize: 22, fontWeight: 900, color, lineHeight: 1 }}>{val}</span>
@@ -1004,20 +1010,20 @@ export default function BlacksmithPage() {
 
         {/* ── LEFT: Materials ── */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 800, fontSize: 13, color: '#9ca3af', marginBottom: 10, letterSpacing: 1, textTransform: 'uppercase' }}>Materials</div>
+          <div style={{ fontWeight: 800, fontSize: 13, color: '#9ca3af', marginBottom: 10, letterSpacing: 1, textTransform: 'uppercase' }}>{t('blacksmith_materials_section')}</div>
 
           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
-            {([null, 1, 2, 3, 4, 5] as (number | null)[]).map(t => (
-              <button key={t ?? 'all'} onClick={() => setMatTierF(t)} style={{
-                background: matTierF === t ? (t ? `${TIER_COLOR[t]}22` : '#fbbf2415') : 'transparent',
-                border: `1px solid ${matTierF === t ? (t ? TIER_COLOR[t] : '#fbbf24') : '#1e1e3a'}`,
-                color: matTierF === t ? (t ? TIER_COLOR[t] : '#fbbf24') : '#6b7280',
+            {([null, 1, 2, 3, 4, 5] as (number | null)[]).map(tier => (
+              <button key={tier ?? 'all'} onClick={() => setMatTierF(tier)} style={{
+                background: matTierF === tier ? (tier ? `${TIER_COLOR[tier]}22` : '#fbbf2415') : 'transparent',
+                border: `1px solid ${matTierF === tier ? (tier ? TIER_COLOR[tier] : '#fbbf24') : '#1e1e3a'}`,
+                color: matTierF === tier ? (tier ? TIER_COLOR[tier] : '#fbbf24') : '#6b7280',
                 borderRadius: 20, cursor: 'pointer', padding: '3px 12px', fontSize: 10, fontWeight: 700, transition: 'all 0.12s',
-              }}>{t === null ? 'All' : TIER_LABEL[t]}</button>
+              }}>{tier === null ? t('blacksmith_all') : TIER_LABEL_EN[tier]}</button>
             ))}
           </div>
 
-          <input value={matSearch} onChange={e => setMatSearch(e.target.value)} placeholder="Search materials..."
+          <input value={matSearch} onChange={e => setMatSearch(e.target.value)} placeholder={t('blacksmith_search_materials')}
             style={{ width: '100%', boxSizing: 'border-box', marginBottom: 10, padding: '6px 12px', background: '#0b0d1e', border: '1px solid #1e1e3a', borderRadius: 6, color: '#e0e0e0', fontSize: 12, outline: 'none' }} />
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 6 }}>
@@ -1028,7 +1034,7 @@ export default function BlacksmithPage() {
                   <div style={{ display: 'flex', justifyContent: 'center' }}>
                     <SpriteIcon iconKey={m.iconKey} size={44} />
                   </div>
-                  <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.6, textTransform: 'uppercase', color, margin: '5px 0 2px' }}>{TIER_LABEL[m.tier]}</div>
+                  <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.6, textTransform: 'uppercase', color, margin: '5px 0 2px' }}>{TIER_LABEL_EN[m.tier]}</div>
                   <div style={{ fontSize: 9, fontWeight: 600, color: '#b0b0c8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
                   <div style={{ position: 'absolute', bottom: 2, right: 3, fontSize: 11, fontWeight: 900, color: m.quantity > 0 ? color : '#4b5563', background: '#0b0d1e', border: `1px solid ${m.quantity > 0 ? color + '55' : '#1e1e3a'}`, borderRadius: 3, padding: '0 3px', lineHeight: '15px' }}>{m.quantity}</div>
                 </div>
@@ -1042,15 +1048,15 @@ export default function BlacksmithPage() {
 
           {/* Craft Weapons */}
           <div>
-            <div style={{ fontWeight: 800, fontSize: 13, color: '#9ca3af', marginBottom: 10, letterSpacing: 1, textTransform: 'uppercase' }}>Craft Weapons</div>
+            <div style={{ fontWeight: 800, fontSize: 13, color: '#9ca3af', marginBottom: 10, letterSpacing: 1, textTransform: 'uppercase' }}>{t('blacksmith_craft_weapons')}</div>
             <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-              {([null, 'COMMON', 'EPIC', 'LEGENDARY'] as (string | null)[]).map(t => (
-                <button key={t ?? 'all'} onClick={() => { setWeaponTierF(t); }} style={{
-                  background: weaponTierF === t ? (t ? `${WEAPON_COLOR[t]}22` : '#fbbf2415') : 'transparent',
-                  border: `1px solid ${weaponTierF === t ? (t ? WEAPON_COLOR[t] : '#fbbf24') : '#1e1e3a'}`,
-                  color: weaponTierF === t ? (t ? WEAPON_COLOR[t] : '#fbbf24') : '#6b7280',
+              {([null, 'COMMON', 'EPIC', 'LEGENDARY'] as (string | null)[]).map(tier => (
+                <button key={tier ?? 'all'} onClick={() => { setWeaponTierF(tier); }} style={{
+                  background: weaponTierF === tier ? (tier ? `${WEAPON_COLOR[tier]}22` : '#fbbf2415') : 'transparent',
+                  border: `1px solid ${weaponTierF === tier ? (tier ? WEAPON_COLOR[tier] : '#fbbf24') : '#1e1e3a'}`,
+                  color: weaponTierF === tier ? (tier ? WEAPON_COLOR[tier] : '#fbbf24') : '#6b7280',
                   borderRadius: 20, cursor: 'pointer', padding: '3px 8px', fontSize: 10, fontWeight: 700, flex: 1,
-                }}>{t ?? 'All'}</button>
+                }}>{tier ?? t('blacksmith_all')}</button>
               ))}
             </div>
 
@@ -1060,9 +1066,9 @@ export default function BlacksmithPage() {
               border: '1px solid #1e1e3a', borderRadius: 6, color: weaponSortKey ? '#fbbf24' : '#6b7280',
               fontSize: 11, cursor: 'pointer', outline: 'none',
             }}>
-              <option value="">Sort: Default</option>
+              <option value="">{t('blacksmith_sort_default')}</option>
               {WEAPON_STATS.map(s => (
-                <option key={String(s.key)} value={String(s.key)}>Sort: {s.label}</option>
+                <option key={String(s.key)} value={String(s.key)}>{t('blacksmith_sort_prefix')}{s.label}</option>
               ))}
             </select>
 
@@ -1101,15 +1107,15 @@ export default function BlacksmithPage() {
 
           {/* Refine */}
           <div>
-            <div style={{ fontWeight: 800, fontSize: 13, color: '#9ca3af', marginBottom: 10, letterSpacing: 1, textTransform: 'uppercase' }}>Refine Materials</div>
+            <div style={{ fontWeight: 800, fontSize: 13, color: '#9ca3af', marginBottom: 10, letterSpacing: 1, textTransform: 'uppercase' }}>{t('blacksmith_refine_materials')}</div>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
-              {([null, 2, 3, 4, 5] as (number | null)[]).map(t => (
-                <button key={t ?? 'all'} onClick={() => setRefineTierF(t)} style={{
-                  background: refineTierF === t ? (t ? `${TIER_COLOR[t]}22` : '#fbbf2415') : 'transparent',
-                  border: `1px solid ${refineTierF === t ? (t ? TIER_COLOR[t] : '#fbbf24') : '#1e1e3a'}`,
-                  color: refineTierF === t ? (t ? TIER_COLOR[t] : '#fbbf24') : '#6b7280',
+              {([null, 2, 3, 4, 5] as (number | null)[]).map(tier => (
+                <button key={tier ?? 'all'} onClick={() => setRefineTierF(tier)} style={{
+                  background: refineTierF === tier ? (tier ? `${TIER_COLOR[tier]}22` : '#fbbf2415') : 'transparent',
+                  border: `1px solid ${refineTierF === tier ? (tier ? TIER_COLOR[tier] : '#fbbf24') : '#1e1e3a'}`,
+                  color: refineTierF === tier ? (tier ? TIER_COLOR[tier] : '#fbbf24') : '#6b7280',
                   borderRadius: 20, cursor: 'pointer', padding: '3px 9px', fontSize: 10, fontWeight: 700,
-                }}>{t === null ? 'All' : TIER_LABEL[t]}</button>
+                }}>{tier === null ? t('blacksmith_all') : TIER_LABEL_EN[tier]}</button>
               ))}
             </div>
 
@@ -1125,7 +1131,7 @@ export default function BlacksmithPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#e0e0f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.outputName}</div>
                       <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginTop: 1 }}>
-                        <span style={{ fontSize: 8, fontWeight: 700, color: TIER_COLOR[r.outputTier] }}>{TIER_LABEL[r.outputTier]}</span>
+                        <span style={{ fontSize: 8, fontWeight: 700, color: TIER_COLOR[r.outputTier] }}>{TIER_LABEL_EN[r.outputTier]}</span>
                         <span style={{ fontSize: 9, color: '#4b5563' }}>&#x2192; &times;{r.outputQuantity}</span>
                         <span style={{ fontSize: 9, color: '#4b5563' }}>&#9201; {fmtCraftTime(r.craftHours)}</span>
                       </div>

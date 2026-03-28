@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Users, Hammer, Swords } from 'lucide-react';
 import { useTeam } from '../../context/TeamContext';
 import { usePlayer } from '../../context/PlayerContext';
+import { useLanguage } from '../../context/LanguageContext';
 import HeroPortrait from '../Hero/HeroPortrait';
 import HeroManagerLogo from '../brand/HeroManagerLogo';
 import EnergyBar from './EnergyBar';
@@ -14,15 +15,6 @@ const NAV_ICONS: Record<string, React.ReactElement> = {
   '/blacksmith': <Hammer  size={13} strokeWidth={2.2} color="#f97316" />,
   '/arena':      <Swords  size={13} strokeWidth={2.2} color="#e94560" />,
 };
-
-const navItems: Array<{ path: string; label: string; locked?: boolean }> = [
-  { path: '/team',         label: 'Team' },
-  { path: '/blacksmith',   label: 'Blacksmith' },
-  { path: '/world',        label: 'World',        locked: true },
-  { path: '/arena',        label: 'Arena' },
-  { path: '/championship', label: 'Championship', locked: true },
-  { path: '/guild',        label: 'Guild',        locked: true },
-];
 
 const ELEMENT_COLOR: Record<string, string> = {
   FIRE: '#f97316', WATER: '#38bdf8', WIND: '#86efac',
@@ -237,7 +229,17 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { team } = useTeam();
   const { player, fetchPlayer } = usePlayer();
+  const { t } = useLanguage();
   const [onlineCount, setOnlineCount] = useState<number | null>(null);
+
+  const navItems: Array<{ path: string; label: string; locked?: boolean }> = [
+    { path: '/team',         label: t('nav_team') },
+    { path: '/blacksmith',   label: t('nav_blacksmith') },
+    { path: '/world',        label: t('nav_world'),        locked: true },
+    { path: '/arena',        label: t('nav_arena') },
+    { path: '/championship', label: t('nav_championship'), locked: true },
+    { path: '/guild',        label: t('nav_guild'),        locked: true },
+  ];
 
   useEffect(() => {
     let active = true;
@@ -261,7 +263,7 @@ export default function Navbar() {
       {onlineCount !== null && (
         <div style={styles.onlinePill}>
           <span style={styles.onlineDot} />
-          <span style={styles.onlinePillText}>{onlineCount} players online</span>
+          <span style={styles.onlinePillText}>{onlineCount} {t('nav_players_online')}</span>
         </div>
       )}
 
@@ -312,10 +314,10 @@ export default function Navbar() {
               tier === 'ELITE'     ? 'empty-elite'     :
                                      'empty-commoner';
             const tierLabel =
-              isSummonSlot         ? 'SUMMON'    :
-              tier === 'LEGENDARY' ? 'LEGENDARY' :
-              tier === 'ELITE'     ? 'ELITE'     :
-                                     'COMMONER';
+              isSummonSlot         ? t('nav_slot_summon')    :
+              tier === 'LEGENDARY' ? t('nav_slot_legendary') :
+              tier === 'ELITE'     ? t('nav_slot_elite')     :
+                                     t('nav_slot_commoner');
             slotEl = (
               <div key={slot.slotNumber} style={styles.slot} onClick={() => navigate('/team')} title={`Empty ${tierLabel.toLowerCase()} slot`}>
                 <div
@@ -460,7 +462,7 @@ export default function Navbar() {
             return (
               <span
                 key={item.path}
-                title="Coming soon"
+                title={t('nav_coming_soon')}
                 style={{ ...styles.link, ...styles.lockedLink }}
               >
                 {item.label}

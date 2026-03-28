@@ -2,6 +2,7 @@ import type { ShopSummonResponse } from '../../types';
 import HeroPortrait from '../Hero/HeroPortrait';
 import CapBadge from '../Hero/CapBadge';
 import { SUMMON_STAT_CONFIG } from '../../utils/summonStatConfig';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
   summon: ShopSummonResponse;
@@ -11,6 +12,7 @@ interface Props {
 
 export default function ShopSummonCard({ summon, playerGold, onBuy }: Props) {
   const canBuy = !summon.owned && playerGold >= summon.cost;
+  const { t } = useLanguage();
 
   return (
     <div style={{ ...styles.card, opacity: summon.owned ? 0.6 : 1 }} className="card-hover">
@@ -31,9 +33,9 @@ export default function ShopSummonCard({ summon, playerGold, onBuy }: Props) {
           {/* Attributes table */}
           <div style={styles.statTable}>
             <div style={styles.statHeader}>
-              <span style={styles.statHeaderAttr}>Attribute</span>
-              <span style={styles.statHeaderNum}>Base</span>
-              <span style={styles.statHeaderNum}>Growth</span>
+              <span style={styles.statHeaderAttr}>{t('shop_summon_attribute')}</span>
+              <span style={styles.statHeaderNum}>{t('shop_summon_base')}</span>
+              <span style={styles.statHeaderNum}>{t('shop_summon_growth')}</span>
             </div>
             {Object.entries(summon.baseStats)
               .filter(([key]) => SUMMON_STAT_CONFIG[key])
@@ -59,7 +61,7 @@ export default function ShopSummonCard({ summon, playerGold, onBuy }: Props) {
           <span style={styles.gold}>{summon.cost}g</span>
         </div>
         {summon.owned ? (
-          <div style={styles.ownedBadge}>Owned</div>
+          <div style={styles.ownedBadge}>{t('shop_owned')}</div>
         ) : (
           <button
             onClick={onBuy}
@@ -72,7 +74,7 @@ export default function ShopSummonCard({ summon, playerGold, onBuy }: Props) {
               cursor: canBuy ? 'pointer' : 'not-allowed',
             }}
           >
-            Buy
+            {t('shop_buy')}
           </button>
         )}
       </div>

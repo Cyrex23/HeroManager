@@ -5,13 +5,14 @@ import { sellInventoryItem, sellAbility } from '../api/equipmentApi';
 import { usePlayer } from '../context/PlayerContext';
 import AbilityTierIcon from '../components/Equipment/AbilityTierIcon';
 import EquipmentTooltip from '../components/Equipment/EquipmentTooltip';
+import { useLanguage } from '../context/LanguageContext';
 
 // ── Tier configs ────────────────────────────────────────────────────────────
 type ItemTier = 'COMMON' | 'RARE' | 'LEGENDARY';
-const ITEM_TIER: Record<ItemTier, { label: string; color: string; glow: string }> = {
-  COMMON:    { label: 'Common',    color: '#9ca3af', glow: 'rgba(156,163,175,0.15)' },
-  RARE:      { label: 'Rare',      color: '#a78bfa', glow: 'rgba(167,139,250,0.22)' },
-  LEGENDARY: { label: 'Legendary', color: '#f97316', glow: 'rgba(249,115,22,0.28)'  },
+const ITEM_TIER_STYLE: Record<ItemTier, { labelKey: string; color: string; glow: string }> = {
+  COMMON:    { labelKey: 'inv_tier_common',    color: '#9ca3af', glow: 'rgba(156,163,175,0.15)' },
+  RARE:      { labelKey: 'inv_tier_rare',      color: '#a78bfa', glow: 'rgba(167,139,250,0.22)' },
+  LEGENDARY: { labelKey: 'inv_tier_legendary', color: '#f97316', glow: 'rgba(249,115,22,0.28)'  },
 };
 const ABILITY_TIER_COLOR: Record<number, string> = {
   1: '#9ca3af', 2: '#38bdf8', 3: '#a78bfa', 4: '#fb923c',
@@ -68,6 +69,7 @@ function StatChips({ bonuses }: { bonuses: Record<string, number> }) {
 export default function InventoryPage() {
   const navigate = useNavigate();
   const { fetchPlayer } = usePlayer();
+  const { t } = useLanguage();
   const [items, setItems] = useState<FullInventoryItem[]>([]);
   const [abilities, setAbilities] = useState<FullInventoryAbility[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +83,7 @@ export default function InventoryPage() {
       setItems(data.items);
       setAbilities(data.abilities);
     } catch {
-      setError('Failed to load inventory.');
+      setError(t('inv_err_load'));
     } finally {
       setLoading(false);
     }
@@ -95,7 +97,7 @@ export default function InventoryPage() {
       const res = await sellInventoryItem(equippedItemId);
       setMessage(res.message);
       await Promise.all([load(), fetchPlayer()]);
-    } catch { setError('Failed to sell item.'); }
+    } catch { setError(t('inv_err_sell_item')); }
     finally { setConfirmSell(null); }
   }
 
@@ -105,7 +107,7 @@ export default function InventoryPage() {
       const res = await sellAbility(equippedAbilityId);
       setMessage(res.message);
       await Promise.all([load(), fetchPlayer()]);
-    } catch { setError('Failed to sell ability.'); }
+    } catch { setError(t('inv_err_sell_ability')); }
     finally { setConfirmSell(null); }
   }
 
@@ -117,7 +119,7 @@ export default function InventoryPage() {
 
   if (loading) return (
     <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}>
-      <span className="spinner" style={{ width: 18, height: 18 }} />Loading inventory...
+      <span className="spinner" style={{ width: 18, height: 18 }} />{t('inv_loading')}
     </div>
   );
 
@@ -127,14 +129,14 @@ export default function InventoryPage() {
       {/* Page title */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
         <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#e8e8f0', letterSpacing: 1 }} className="gradient-title">
-          Inventory
+          {t('inv_title')}
         </h2>
         <span style={{
           color: '#a78bfa', fontSize: 12, fontWeight: 700,
           background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.25)',
           padding: '2px 10px', borderRadius: 20,
         }}>
-          {items.length + abilities.length} items total
+          {t('inv_items_total').replace('{count}', String(items.length + abilities.length))}
         </span>
       </div>
 
@@ -166,16 +168,16 @@ export default function InventoryPage() {
           }}>
             <div style={{ fontSize: 28 }}>💰</div>
             <div style={{ color: '#fca5a5', fontSize: 15, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
-              Sell Item?
+              {t('inv_confirm_title')}
             </div>
             <div style={{ color: '#e0e0e0', fontSize: 14, fontWeight: 600 }}>{confirmSell.name}</div>
             <div style={{
               background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
               borderRadius: 8, padding: '8px 20px', color: '#a0a0b0', fontSize: 13,
             }}>
-              You will receive{' '}
+              {t('inv_confirm_receive')}{' '}
               <span style={{ color: '#fbbf24', fontWeight: 800, fontSize: 15 }}>{confirmSell.price}</span>
-              <span style={{ color: '#fbbf24aa', fontSize: 11, marginLeft: 3 }}>GOLD</span>
+              <span style={{ color: '#fbbf24aa', fontSize: 11, marginLeft: 3 }}>{t('inv_confirm_gold')}</span>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
               <button
@@ -186,7 +188,7 @@ export default function InventoryPage() {
                   fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em',
                 }}
               >
-                Sell
+                {t('inv_sell_btn')}
               </button>
               <button
                 onClick={() => setConfirmSell(null)}
@@ -196,7 +198,7 @@ export default function InventoryPage() {
                   fontSize: 13, cursor: 'pointer',
                 }}
               >
-                Cancel
+                {t('inv_cancel_btn')}
               </button>
             </div>
           </div>
@@ -216,7 +218,7 @@ export default function InventoryPage() {
           borderBottom: '1px solid rgba(255,255,255,0.05)',
         }}>
           <span style={{ fontSize: 18 }}>🎒</span>
-          <span style={{ color: '#e8e8f0', fontSize: 15, fontWeight: 700, letterSpacing: '0.04em' }}>Items</span>
+          <span style={{ color: '#e8e8f0', fontSize: 15, fontWeight: 700, letterSpacing: '0.04em' }}>{t('inv_section_items')}</span>
           <span style={{
             background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.25)',
             color: '#fbbf24', fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20,
@@ -227,13 +229,13 @@ export default function InventoryPage() {
 
         {items.length === 0 ? (
           <div style={{ color: '#2a2a4a', fontSize: 13, padding: '28px 22px', textAlign: 'center', fontStyle: 'italic' }}>
-            Your inventory is empty. Visit the Shop to acquire items.
+            {t('inv_empty_items')}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {items.map((item, i) => {
               const tier = getItemTier(item.sellPrice);
-              const tc = ITEM_TIER[tier];
+              const tc = ITEM_TIER_STYLE[tier];
               return (
                 <EquipmentTooltip key={item.equippedItemId} name={item.name} type="item" bonuses={item.bonuses} sellPrice={item.sellPrice} block>
                   <div style={{
@@ -266,7 +268,7 @@ export default function InventoryPage() {
                         padding: '1px 6px', borderRadius: 4,
                         background: tc.color + '20', border: `1px solid ${tc.color}50`, color: tc.color,
                       }}>
-                        {tc.label}
+                        {t(tc.labelKey as Parameters<typeof t>[0])}
                       </span>
                     </div>
 
@@ -290,7 +292,7 @@ export default function InventoryPage() {
                           background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                           color: '#3a3a5a', borderRadius: 6, padding: '3px 10px', fontSize: 11,
                         }}>
-                          Unequipped
+                          {t('inv_unequipped')}
                         </span>
                       )}
                     </div>
@@ -312,7 +314,7 @@ export default function InventoryPage() {
                         cursor: 'pointer', letterSpacing: '0.06em', textTransform: 'uppercase',
                       }}
                     >
-                      Sell
+                      {t('inv_sell_btn')}
                     </button>
                   </div>
                 </EquipmentTooltip>
@@ -335,7 +337,7 @@ export default function InventoryPage() {
           borderBottom: '1px solid rgba(255,255,255,0.05)',
         }}>
           <span style={{ fontSize: 18 }}>✦</span>
-          <span style={{ color: '#e8e8f0', fontSize: 15, fontWeight: 700, letterSpacing: '0.04em' }}>Abilities</span>
+          <span style={{ color: '#e8e8f0', fontSize: 15, fontWeight: 700, letterSpacing: '0.04em' }}>{t('inv_section_abilities')}</span>
           <span style={{
             background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.25)',
             color: '#a78bfa', fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20,
@@ -346,7 +348,7 @@ export default function InventoryPage() {
 
         {abilities.length === 0 ? (
           <div style={{ color: '#2a2a4a', fontSize: 13, padding: '28px 22px', textAlign: 'center', fontStyle: 'italic' }}>
-            No abilities owned. Purchase them in the Shop.
+            {t('inv_empty_abilities')}
           </div>
         ) : (
           Object.entries(abilitiesByHero).map(([heroName, heroAbilities], groupIdx, arr) => (
@@ -400,7 +402,7 @@ export default function InventoryPage() {
                               fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 4,
                               background: 'rgba(96,165,250,0.12)', border: '1px solid rgba(96,165,250,0.3)',
                               color: '#60a5fa', letterSpacing: '0.06em', textTransform: 'uppercase',
-                            }}>{ab.spells.length > 1 ? `${ab.spells.length} SPELLS` : 'SPELL'}</span>
+                            }}>{ab.spells.length > 1 ? t('inv_spells_badge').replace('{n}', String(ab.spells.length)) : t('inv_spell_badge')}</span>
                           )}
                         </div>
                         <span style={{
@@ -424,14 +426,14 @@ export default function InventoryPage() {
                             background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
                             color: '#4ade80', borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 600,
                           }}>
-                            ✓ Slot {ab.slotNumber}
+                            {t('inv_slot_badge').replace('{n}', String(ab.slotNumber))}
                           </span>
                         ) : (
                           <span style={{
                             background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                             color: '#3a3a5a', borderRadius: 6, padding: '3px 10px', fontSize: 11,
                           }}>
-                            Unslotted
+                            {t('inv_unslotted')}
                           </span>
                         )}
                       </div>

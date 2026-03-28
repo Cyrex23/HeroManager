@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { getSummon, sellSummon, halveSummonCapacity } from '../api/playerApi';
 import { usePlayer } from '../context/PlayerContext';
+import { useLanguage } from '../context/LanguageContext';
 import type { SummonResponse } from '../types';
 import HeroPortrait from '../components/Hero/HeroPortrait';
 import CapBadge from '../components/Hero/CapBadge';
@@ -57,6 +58,7 @@ export default function SummonDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { fetchPlayer } = usePlayer();
+  const { t } = useLanguage();
   const [summon, setSummon] = useState<SummonResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -71,7 +73,7 @@ export default function SummonDetailPage() {
       const data = await getSummon(summonId);
       setSummon(data);
     } catch {
-      setError('Failed to load summon data.');
+      setError(t('sd_err_load'));
     } finally {
       setLoading(false);
     }
@@ -87,7 +89,7 @@ export default function SummonDetailPage() {
       await fetchPlayer();
       navigate('/team');
     } catch {
-      setError('Failed to sell summon.');
+      setError(t('sd_err_sell'));
     } finally {
       setConfirmSell(false);
     }
@@ -100,7 +102,7 @@ export default function SummonDetailPage() {
       setMessage(res.message);
       await Promise.all([refresh(), fetchPlayer()]);
     } catch {
-      setError('Failed to halve capacity.');
+      setError(t('sd_err_halve'));
     } finally {
       setConfirmHalve(false);
     }
@@ -108,10 +110,10 @@ export default function SummonDetailPage() {
 
   if (loading) return (
     <div style={{ color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: 10 }}>
-      <span className="spinner" style={{ width: 18, height: 18 }} />Loading summon...
+      <span className="spinner" style={{ width: 18, height: 18 }} />{t('sd_loading')}
     </div>
   );
-  if (!summon) return <div style={{ color: '#e94560' }}>Summon not found.</div>;
+  if (!summon) return <div style={{ color: '#e94560' }}>{t('sd_not_found')}</div>;
 
   const xpPct = summon.xpToNextLevel > 0
     ? Math.min((summon.currentXp / summon.xpToNextLevel) * 100, 100) : 0;
@@ -122,12 +124,16 @@ export default function SummonDetailPage() {
       {confirmSell && (
         <div style={styles.confirmOverlay}>
           <div style={styles.confirmCard}>
-            <div style={styles.confirmTitle}>Sell Summon?</div>
+            <div style={styles.confirmTitle}>{t('sd_sell_title')}</div>
             <div style={styles.confirmName}>{summon.name}</div>
-            <div style={styles.confirmSub}>This summon will be permanently removed. You will receive <strong style={{ color: '#fbbf24' }}>{summon.sellPrice}g</strong>.</div>
+            <div style={styles.confirmSub}>
+              {t('sd_sell_sub').split('{price}')[0]}
+              <strong style={{ color: '#fbbf24' }}>{summon.sellPrice}g</strong>
+              {t('sd_sell_sub').split('{price}')[1]}
+            </div>
             <div style={styles.confirmBtns}>
-              <button style={styles.confirmYes} onClick={handleSell}>Sell</button>
-              <button style={styles.confirmNo} onClick={() => setConfirmSell(false)}>Cancel</button>
+              <button style={styles.confirmYes} onClick={handleSell}>{t('sd_sell_btn')}</button>
+              <button style={styles.confirmNo} onClick={() => setConfirmSell(false)}>{t('sd_cancel_btn')}</button>
             </div>
           </div>
         </div>
@@ -137,16 +143,16 @@ export default function SummonDetailPage() {
       {confirmHalve && (
         <div style={styles.confirmOverlay}>
           <div style={styles.confirmCard}>
-            <div style={styles.confirmTitle}>Halve Capacity?</div>
+            <div style={styles.confirmTitle}>{t('sd_halve_title')}</div>
             <div style={styles.confirmName}>{summon.name}</div>
             <div style={styles.confirmSub}>
-              Reduces capacity from <strong style={{ color: '#a78bfa' }}>{summon.capacity}</strong> to{' '}
+              {t('sd_halve_sub_from')} <strong style={{ color: '#a78bfa' }}>{summon.capacity}</strong> {t('sd_halve_sub_to')}{' '}
               <strong style={{ color: '#a78bfa' }}>{Math.max(1, Math.floor(summon.capacity / 2))}</strong>.
-              <br />Costs <strong style={{ color: '#fbbf24' }}>{summon.sellPrice}g</strong> (half of buy price).
+              <br />{t('sd_halve_sub_cost').split('{price}')[0]}<strong style={{ color: '#fbbf24' }}>{summon.sellPrice}g</strong>{t('sd_halve_sub_cost').split('{price}')[1]}
             </div>
             <div style={styles.confirmBtns}>
-              <button style={styles.confirmYes} onClick={handleHalve}>Confirm</button>
-              <button style={styles.confirmNo} onClick={() => setConfirmHalve(false)}>Cancel</button>
+              <button style={styles.confirmYes} onClick={handleHalve}>{t('sd_halve_btn')}</button>
+              <button style={styles.confirmNo} onClick={() => setConfirmHalve(false)}>{t('sd_cancel_btn')}</button>
             </div>
           </div>
         </div>
@@ -154,7 +160,7 @@ export default function SummonDetailPage() {
 
       <Link to="/team" style={styles.backLink}>
         <ChevronLeft size={14} style={{ flexShrink: 0 }} />
-        Back to Team
+        {t('sd_back')}
       </Link>
 
 
@@ -180,7 +186,7 @@ export default function SummonDetailPage() {
           <h2 style={styles.summonName} className="gradient-title">{summon.name}</h2>
           <CapBadge value={summon.capacity} />
           <div style={styles.equippedStatus}>
-            {summon.isEquipped ? 'Equipped in summon slot' : 'On Bench'}
+            {summon.isEquipped ? t('sd_equipped') : t('sd_on_bench')}
           </div>
           <div style={styles.xpBlock}>
             <div style={styles.xpTopRow}>
@@ -203,11 +209,11 @@ export default function SummonDetailPage() {
 
       {/* ── Stats ── */}
       <div style={styles.section}>
-        <div style={styles.sectionTitle}>Stats</div>
+        <div style={styles.sectionTitle}>{t('sd_section_stats')}</div>
         <div style={styles.statTable}>
           <div style={styles.statHeaderRow}>
-            <span style={styles.statHeaderAttr}>Attribute</span>
-            <span style={styles.statHeaderNum}>Value</span>
+            <span style={styles.statHeaderAttr}>{t('sd_attr_header')}</span>
+            <span style={styles.statHeaderNum}>{t('sd_value_header')}</span>
           </div>
           {Object.entries(summon.stats)
             .filter(([key]) => SUMMON_STAT_CONFIG[key])
@@ -235,18 +241,18 @@ export default function SummonDetailPage() {
           style={{ ...styles.halveCapBtn, ...(summon.capacityHalved ? styles.halveCapBtnDone : {}) }}
           disabled={summon.capacityHalved}
           onClick={() => !summon.capacityHalved && setConfirmHalve(true)}
-          title={summon.capacityHalved ? 'Capacity already halved' : undefined}
+          title={summon.capacityHalved ? t('sd_already_halved') : undefined}
         >
-          ½ Capacity
+          {t('sd_halve_cap_btn')}
         </button>
         <span style={styles.halveCapPrice}>
-          {summon.capacityHalved ? '✓ Done' : `💰 ${summon.sellPrice}g`}
+          {summon.capacityHalved ? t('sd_halve_cap_done') : `💰 ${summon.sellPrice}g`}
         </span>
 
         <div style={styles.sep} />
 
         <button style={styles.sellBtn} onClick={() => setConfirmSell(true)}>
-          Sell Summon
+          {t('sd_sell_summon_btn')}
         </button>
         <span style={styles.sellPrice}>💰 {summon.sellPrice}g</span>
       </div>

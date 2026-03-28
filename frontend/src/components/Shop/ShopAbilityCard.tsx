@@ -2,6 +2,7 @@ import { Coins } from 'lucide-react';
 import type { ShopAbilityResponse } from '../../types';
 import EquipmentTooltip from '../Equipment/EquipmentTooltip';
 import AbilityTierIcon from '../Equipment/AbilityTierIcon';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
   ability: ShopAbilityResponse;
@@ -48,6 +49,7 @@ const STAT_CFG: Record<string, { label: string; color: string; icon: string }> =
 };
 
 export default function ShopAbilityCard({ ability: ab, canAfford, onBuy }: Props) {
+  const { t } = useLanguage();
   const tc          = TIER_CFG[ab.tier] ?? TIER_CFG[1];
   const bonusEntries = Object.entries(ab.bonuses).filter(([, v]) => v !== 0);
 
@@ -106,7 +108,7 @@ export default function ShopAbilityCard({ ability: ab, canAfford, onBuy }: Props
             color: '#60a5fa',
             textTransform: 'uppercase' as const,
           }}>
-            {ab.spells.length > 1 ? `${ab.spells.length} SPELLS` : 'SPELL'}
+            {ab.spells.length > 1 ? `${ab.spells.length} ${t('shop_ability_spells')}` : t('shop_ability_spell')}
           </div>
         )}
 
@@ -169,7 +171,7 @@ export default function ShopAbilityCard({ ability: ab, canAfford, onBuy }: Props
             color: '#fbbf2470', fontSize: 10, fontWeight: 600,
             textTransform: 'uppercase' as const, letterSpacing: '0.05em',
           }}>
-            gold
+            {t('shop_gold_suffix')}
           </span>
         </div>
 
@@ -184,7 +186,7 @@ export default function ShopAbilityCard({ ability: ab, canAfford, onBuy }: Props
             letterSpacing: '0.08em', textTransform: 'uppercase' as const,
             textAlign: 'center',
           }}>
-            ✓ Owned
+            {t('shop_ability_owned')}
           </div>
         ) : (
           <button
@@ -204,7 +206,7 @@ export default function ShopAbilityCard({ ability: ab, canAfford, onBuy }: Props
               transition: 'all 0.15s',
             }}
           >
-            {canAfford ? 'Purchase' : 'Not enough gold'}
+            {canAfford ? t('shop_purchase') : t('shop_not_enough_gold')}
           </button>
         )}
       </div>

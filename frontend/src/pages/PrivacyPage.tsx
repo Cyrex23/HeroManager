@@ -3,6 +3,7 @@ import { Shield, Cookie, Globe, Baby, Lock, Database, Trash2, RefreshCw } from '
 import HeroManagerLogo from '../components/brand/HeroManagerLogo';
 import Footer from '../components/Layout/Footer';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 function Section({
   icon, title, color = '#a78bfa', children,
@@ -46,8 +47,9 @@ function Section({
 
 export default function PrivacyPage() {
   const { isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const backTo = isAuthenticated ? '/team' : '/login';
-  const backLabel = isAuthenticated ? '← Back to Game' : '← Back to Login';
+  const backLabel = isAuthenticated ? t('back_to_game') : t('back_to_login');
   return (
     <div style={{ height: '100vh', overflowY: 'auto', background: '#07061a', position: 'relative' }}>
 
@@ -82,100 +84,59 @@ export default function PrivacyPage() {
         }}>
           <Shield size={12} color="#a78bfa" />
           <span style={{ color: '#a78bfa', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Your Trust Matters
+            {t('privacy_badge')}
           </span>
         </div>
         <h1 className="gradient-title" style={{ fontSize: 46, margin: '0 0 16px', letterSpacing: 2 }}>
-          Privacy Policy
+          {t('privacy_title')}
         </h1>
         <p style={{ color: '#555577', fontSize: 15, maxWidth: 500, margin: '0 auto', lineHeight: 1.7, fontFamily: 'Inter, sans-serif' }}>
-          How we handle your data — clearly and honestly
+          {t('privacy_subtitle')}
         </p>
       </div>
 
       {/* Content */}
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '0 24px 100px', position: 'relative', zIndex: 1 }}>
 
-        <Section icon={<Shield size={18} />} title="Our Privacy Commitment" color="#a78bfa">
-          <p style={{ margin: 0 }}>
-            Your privacy is a priority, not an afterthought. We've put together this policy so you know exactly how your
-            personal information is collected, used, and protected within HeroManager. We safeguard your data against
-            unauthorized access, loss, or misuse using reasonable and industry-standard security measures.
-          </p>
+        <Section icon={<Shield size={18} />} title={t('privacy_s1_title')} color="#a78bfa">
+          <p style={{ margin: 0 }}>{t('privacy_s1_body')}</p>
         </Section>
 
-        <Section icon={<Cookie size={18} />} title="Cookies & Preferences" color="#60a5fa">
-          <p style={{ margin: 0 }}>
-            Cookies are small text files stored on your device by your browser when you visit HeroManager. We use them
-            to keep you logged in when you've chosen that option, remember your settings and preferences, record past
-            activity so returning visits feel seamless, and tailor content to your browser and device. You may disable
-            cookies in your browser settings, though some features — like auto-login — may not function without them.
-          </p>
+        <Section icon={<Cookie size={18} />} title={t('privacy_s2_title')} color="#60a5fa">
+          <p style={{ margin: 0 }}>{t('privacy_s2_body')}</p>
         </Section>
 
-        <Section icon={<Globe size={18} />} title="Third-Party Services" color="#4ade80">
-          <p style={{ margin: 0 }}>
-            When you visit HeroManager, third-party services such as analytics and advertising platforms may collect
-            general technical data about your session — things like your domain type, approximate IP address, and
-            navigation patterns. This is standard practice across the web. For details on how those parties handle
-            your data, please refer to the privacy policies published by Google and other services linked to the game.
-          </p>
+        <Section icon={<Globe size={18} />} title={t('privacy_s3_title')} color="#4ade80">
+          <p style={{ margin: 0 }}>{t('privacy_s3_body')}</p>
         </Section>
 
-        <Section icon={<Baby size={18} />} title="Children Under 13" color="#fbbf24">
-          <p style={{ margin: 0 }}>
-            HeroManager is committed to protecting the privacy of younger users. We do not knowingly collect or store
-            personal information from anyone under the age of 13. If you are younger than 13, please do not submit
-            any information through this site. Parents or guardians who believe their child has provided us with
-            personal data are encouraged to contact us so we can promptly remove it.
-          </p>
+        <Section icon={<Baby size={18} />} title={t('privacy_s4_title')} color="#fbbf24">
+          <p style={{ margin: 0 }}>{t('privacy_s4_body')}</p>
         </Section>
 
-        <Section icon={<Lock size={18} />} title="Account Security" color="#e94560">
-          <p style={{ margin: 0 }}>
-            While no system can guarantee absolute security, we take precautions including encryption where applicable
-            to protect your credentials. You are responsible for keeping your password confidential. Passwords must
-            meet our complexity requirements — a mix of uppercase letters, lowercase letters, and numbers — to ensure
-            a reasonable baseline of protection. Write it down somewhere safe, and never share it with anyone.
-          </p>
+        <Section icon={<Lock size={18} />} title={t('privacy_s5_title')} color="#e94560">
+          <p style={{ margin: 0 }}>{t('privacy_s5_body')}</p>
         </Section>
 
-        <Section icon={<Database size={18} />} title="What We Collect" color="#a78bfa">
-          <p style={{ margin: '0 0 14px' }}>
-            We store the minimum amount of information needed to provide you with a working account:
-          </p>
+        <Section icon={<Database size={18} />} title={t('privacy_s6_title')} color="#a78bfa">
+          <p style={{ margin: '0 0 14px' }}>{t('privacy_s6_intro')}</p>
           <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <li><span style={{ color: '#c8c8e8' }}>Preference cookies</span> — auto-login settings and UI preferences you've selected.</li>
-            <li><span style={{ color: '#c8c8e8' }}>Registration data</span> — your email address, username, hashed password, and IP address, stored privately to create and maintain your unique account.</li>
-            <li><span style={{ color: '#c8c8e8' }}>Login IP</span> — recorded privately on each login to help detect and prevent multi-account abuse.</li>
+            <li><span style={{ color: '#c8c8e8' }}>{t('privacy_s6_li1_label')}</span> — {t('privacy_s6_li1_text')}</li>
+            <li><span style={{ color: '#c8c8e8' }}>{t('privacy_s6_li2_label')}</span> — {t('privacy_s6_li2_text')}</li>
+            <li><span style={{ color: '#c8c8e8' }}>{t('privacy_s6_li3_label')}</span> — {t('privacy_s6_li3_text')}</li>
           </ul>
-          <p style={{ margin: '14px 0 0' }}>
-            Your email is used solely to provide account access. Your IP is used solely to maintain fair play.
-            Neither is sold, rented, or traded to third parties.
-          </p>
+          <p style={{ margin: '14px 0 0' }}>{t('privacy_s6_footer')}</p>
         </Section>
 
-        <Section icon={<Trash2 size={18} />} title="Data Deletion" color="#60a5fa">
+        <Section icon={<Trash2 size={18} />} title={t('privacy_s7_title')} color="#60a5fa">
           <p style={{ margin: '0 0 14px' }}>
-            You have the right to request removal of your data at any time. To do so, send an email from your
-            registered address with the subject line <span style={{ color: '#c8c8e8' }}>"Data deletion"</span> and
-            we will process your request promptly.
+            {t('privacy_s7_p1')} <span style={{ color: '#c8c8e8' }}>{t('privacy_s7_subject')}</span> {t('privacy_s7_p1_end')}
           </p>
-          <p style={{ margin: 0 }}>
-            Upon deletion, your public profile details will be anonymized and any third-party sign-in connections
-            will be severed. Please note that after deletion, the same email address cannot be used to register
-            a new account. If you want to know exactly what data we hold on you, feel free to ask — same process,
-            just a different subject line.
-          </p>
+          <p style={{ margin: 0 }}>{t('privacy_s7_p2')}</p>
         </Section>
 
-        <Section icon={<RefreshCw size={18} />} title="Policy Updates" color="#fbbf24">
-          <p style={{ margin: 0 }}>
-            We reserve the right to update this Privacy Policy as the game evolves. Significant changes will be
-            announced, but it is your responsibility to review this page periodically. Continuing to use HeroManager
-            after a policy change constitutes acceptance of the updated terms. If you disagree with any revision,
-            you may stop using the service or contact us to have your account removed.
-          </p>
+        <Section icon={<RefreshCw size={18} />} title={t('privacy_s8_title')} color="#fbbf24">
+          <p style={{ margin: 0 }}>{t('privacy_s8_body')}</p>
         </Section>
 
       </div>
