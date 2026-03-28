@@ -769,6 +769,91 @@ const ptBR: Record<TranslationKeys, string> = {
   guide_rot_counter_title: 'Contra-Imunidade',
   guide_rot_counter_desc: 'Podridão é um contador direto para builds de alta imunidade. Um herói acumulando imunidades Física e Mágica torna-se significativamente mais fraco sob pressão sustentada de Podridão.',
 
+  // ── Guide § Spell Conditions ──────────────────────────────────────────────
+  guide_spellcond_title: 'Condições de Feitiço',
+  guide_spellcond_body: 'Todo feitiço possui uma condição de gatilho que determina quando ele realiza sua rolagem de ativação. Escolher a condição certa para sua build é tão importante quanto o efeito do feitiço.',
+  guide_spellcond_pre_header: 'Gatilhos Pré-Confronto',
+  guide_spellcond_pre_sub: 'Estes disparam durante a preparação do turno, antes do cálculo de dano.',
+  guide_spellcond_post_header: 'Gatilhos Pós-Confronto',
+  guide_spellcond_post_sub: 'Estes disparam após o dano ser resolvido ao final de cada confronto.',
+  guide_spellcond_note_header: 'Observação de Escopo',
+  guide_spellcond_note_body: 'ANTES DO TURNO X e APÓS O TURNO X são exclusivos de feitiços de arma atualmente. Os três gatilhos pós-confronto (APÓS CONFRONTO, APÓS CRÍTICO, APÓS PROF. MÁGICA) também são exclusivos de armas — feitiços de habilidade usam apenas gatilhos pré-confronto.',
+
+  guide_spellcond_maxuses_header: 'Usos Máximos por Batalha',
+  guide_spellcond_maxuses_body: 'Todo feitiço pode opcionalmente ter um limite de Usos Máximos. Quando definido, o feitiço só pode disparar essa quantidade de vezes por herói por batalha — após atingir o limite, sua rolagem de ativação é completamente ignorada pelo restante da luta, independente do gatilho ou mana. Um feitiço sem limite listado dispara ilimitadas vezes.',
+  guide_spellcond_maxuses_0_title: 'Sem Limite (padrão)',
+  guide_spellcond_maxuses_0_desc: 'A maioria dos feitiços não possui limite de uso. Eles rolam sua chance toda vez que sua condição de gatilho é atendida, desde que o herói tenha mana suficiente.',
+  guide_spellcond_maxuses_1_title: 'Máx 1×',
+  guide_spellcond_maxuses_1_desc: 'O feitiço dispara no máximo uma vez por batalha. Comum em efeitos poderosos de entrada ou feitiços de equipe — garante um impacto forte mas não pode ser contado repetidamente.',
+  guide_spellcond_maxuses_n_title: 'Máx N×',
+  guide_spellcond_maxuses_n_desc: 'O feitiço dispara até N vezes. Quando o contador atinge N, é permanentemente ignorado. Exibido no tooltip como "Max N×" junto ao gatilho e à chance.',
+
+  guide_spellcond_duration_header: 'Duração do Efeito (Dura X Turnos)',
+  guide_spellcond_duration_body: 'Quando um feitiço dispara, seus bônus de atributo podem ser aplicados instantaneamente (permanentes para o confronto) ou persistir como um buff por vários turnos. Se um feitiço possui um valor "Dura X turnos", seus bônus são adicionados aos atributos do herói naquele turno e em cada turno subsequente até o contador se esgotar.',
+  guide_spellcond_duration_instant_title: 'Sem Duração (Instantâneo)',
+  guide_spellcond_duration_instant_desc: 'Os bônus são aplicados diretamente aos atributos apenas para o confronto atual. O efeito é consumido imediatamente — se o feitiço disparar no próximo turno, aplica novamente do zero. A maioria dos feitiços de ATAQUE sem duração listada funciona assim.',
+  guide_spellcond_duration_lasting_title: 'Dura X Turnos',
+  guide_spellcond_duration_lasting_desc: 'Os bônus são colocados em um buff ativo que persiste por X turnos. A cada rodada, no início da preparação do turno, todos os buffs ativos são aplicados aos atributos antes de qualquer rolagem de feitiço ou cálculo de dano. O contador diminui em 1 a cada turno e o buff é removido quando chega a 0.',
+  guide_spellcond_duration_stack_title: 'Acumulação',
+  guide_spellcond_duration_stack_desc: 'Se o mesmo feitiço disparar novamente enquanto seu buff ainda está ativo, uma segunda cópia é adicionada por cima. Ambas correm independentemente — uma pode expirar antes da outra. Isso significa que um feitiço duradouro com alta chance pode acumular uma pilha de bônus sobrepostos.',
+  guide_spellcond_duration_hero_title: 'Troca de Herói',
+  guide_spellcond_duration_hero_desc: 'Os buffs ativos estão vinculados à lista de buffs da equipe, não ao herói individual. Quando um herói é derrotado e substituído, o novo herói entra com os mesmos buffs ativos ainda em vigor — eles não são resetados na troca de herói.',
+
+  guide_spellcond_entrance_name: 'ENTRADA',
+  guide_spellcond_entrance_when: 'Quando este herói entra na batalha pela primeira vez',
+  guide_spellcond_entrance_desc: 'Dispara uma única vez no primeiro confronto que este herói participa. Poderoso para aberturas explosivas: um feitiço de ENTRADA com alta chance garante uma primeira impressão forte. Após o primeiro confronto, nunca mais dispara — por isso combina melhor com bônus de longa duração ou permanentes.',
+
+  guide_spellcond_opp_entrance_name: 'ENTRADA DO OPONENTE',
+  guide_spellcond_opp_entrance_when: 'Quando qualquer um dos heróis no confronto é novo na batalha',
+  guide_spellcond_opp_entrance_desc: 'Dispara quando o herói atual OU o oponente está entrando pela primeira vez. Mais amplo que ENTRADA — pode se reativar quando o oponente troca um herói derrotado por um novo. Ideal para builds reativas que querem punir trocas de herói adversário.',
+
+  guide_spellcond_attack_name: 'ATAQUE',
+  guide_spellcond_attack_when: 'Todo turno, em todo confronto',
+  guide_spellcond_attack_desc: 'O gatilho mais comum. Rola a chance de ativação em absolutamente todo confronto, sem condições. Combinado com alta chance %, produz o output mais consistente e total ao longo de uma batalha longa. A espinha dorsal da maioria das builds sustentadas.',
+
+  guide_spellcond_attack_rotted_name: 'ATAQUE + APODRECIDO',
+  guide_spellcond_attack_rotted_when: 'Cada ataque, mas apenas enquanto o oponente está com Podridão ativa',
+  guide_spellcond_attack_rotted_desc: 'Dispara em todo turno como ATAQUE, mas somente quando o oponente está atualmente afligido por Podridão. Se o inimigo não tiver Podridão ativa naquele turno, a rolagem é completamente ignorada. Combina naturalmente com qualquer fonte de Podridão na sua equipe — seu invocador, a habilidade de outro herói ou uma arma — para criar um combo condicional poderoso: aplique Podridão primeiro, então explore para efeitos de feitiço amplificados.',
+
+  guide_spellcond_before_turn_name: 'ANTES DO TURNO X',
+  guide_spellcond_before_turn_when: 'Enquanto o número de confrontos deste herói está abaixo do limiar N',
+  guide_spellcond_before_turn_desc: 'Dispara em todo confronto enquanto o herói tiver menos do que N confrontos no total. Pense como um bônus de "início de jogo" — recompensa estratégias de abertura agressiva e perde valor conforme a batalha se estende. Exclusivo de feitiços de arma atualmente.',
+
+  guide_spellcond_after_turn_name: 'APÓS O TURNO X',
+  guide_spellcond_after_turn_when: 'Quando o número de confrontos deste herói atinge ou supera o limiar N',
+  guide_spellcond_after_turn_desc: 'O oposto de ANTES DO TURNO X — dispara apenas depois que o herói sobreviveu a N confrontos. Recompensa builds de resistência. Um herói que alcança o final da batalha fica progressivamente mais forte. Exclusivo de feitiços de arma atualmente.',
+
+  guide_spellcond_after_clash_name: 'APÓS CONFRONTO',
+  guide_spellcond_after_clash_when: 'Após todo confronto, independente do resultado',
+  guide_spellcond_after_clash_desc: 'Dispara após o dano ser resolvido, em todo confronto, sem condições. O equivalente pós-confronto de ATAQUE — consistente, mas dispara um pouco depois na sequência, após todos os efeitos pré-confronto já terem sido aplicados.',
+
+  guide_spellcond_after_crit_name: 'APÓS CRÍTICO',
+  guide_spellcond_after_crit_when: 'Após um confronto em que este herói causou um acerto crítico',
+  guide_spellcond_after_crit_desc: 'Só dispara se o confronto produziu um crítico. Combina naturalmente com builds de alta Chance de Crítico — quanto mais críticos você acerta, mais frequentemente esse bônus ativa. Recompensa o comprometimento com uma setup focada em críticos.',
+
+  guide_spellcond_after_magic_name: 'APÓS PROF. MÁGICA',
+  guide_spellcond_after_magic_when: 'Após um confronto em que um proc de Proficiência Mágica ocorreu',
+  guide_spellcond_after_magic_desc: 'Dispara quando o confronto acionou um efeito de Proficiência Mágica. Combina com builds de alta Proficiência Mágica. Mais raro que um gatilho de crítico, mas pode se acumular com outras sinergias focadas em magia para setups especializadas de alto Poder Mágico.',
+
+  // ── Guide — Condições de Feitiço: ON_DEATH ───────────────────────────
+  guide_spellcond_on_death_name: 'NA MORTE',
+  guide_spellcond_on_death_when: 'Quando este herói perde um confronto e é eliminado',
+  guide_spellcond_on_death_desc: 'Dispara exatamente uma vez, no momento em que este herói é derrotado. Um ato final antes de sair do campo — útil para deixar um debuff no inimigo, fortalecer o próximo aliado ou conceder um bônus a toda a equipe como último presente. Bônus exclusivos para si mesmo (sem passOnType e sem affectsOpponent) são perdidos, pois o herói já foi eliminado.',
+
+  // ── Guide § Team Spells ───────────────────────────────────────────────────
+  guide_teamspell_title: 'Feitiços de Equipe',
+  guide_teamspell_body: 'Alguns feitiços de habilidade possuem um sub-feitiço de equipe anexado a eles. Quando o feitiço pai dispara pela primeira vez, ele desbloqueia permanentemente o efeito do sub-feitiço de equipe para toda a equipe pelo resto da batalha.',
+  guide_teamspell_how_header: 'Como Funciona',
+  guide_teamspell_how_body: 'O feitiço pai dispara sob sua condição de gatilho e chance de ativação normais. No momento em que ele dispara com sucesso pela primeira vez, o sub-feitiço de equipe é ativado. A partir desse ponto, todos os heróis da equipe se beneficiam dos bônus do feitiço de equipe — não apenas o herói que possui a habilidade.',
+  guide_teamspell_once_title: 'Dispara Uma Vez, Dura a Batalha',
+  guide_teamspell_once_desc: 'O sub-feitiço de equipe só precisa ser desbloqueado uma vez. Uma única ativação bem-sucedida do feitiço pai é suficiente para conceder seu efeito a toda a equipe pelo restante da batalha.',
+  guide_teamspell_owner_title: 'Dono Ainda Dispara o Pai',
+  guide_teamspell_owner_desc: 'O herói que possui a habilidade continua rolando o feitiço pai em cada gatilho aplicável. O sub-feitiço de equipe é um bônus adicional — os próprios bônus do feitiço pai continuam se aplicando ao dono cada vez que ele dispara.',
+  guide_teamspell_tooltip_title: 'Exibido nos Tooltips',
+  guide_teamspell_tooltip_desc: 'Em qualquer tooltip de habilidade ou item, um sub-feitiço de equipe é mostrado aninhado abaixo do feitiço pai com o conector "⤷ aciona feitiço de equipe". Você pode ver o gatilho/chance do pai e os atributos do sub-feitiço de equipe em um só lugar.',
+  guide_teamspell_log_title: 'Log de Batalha',
+  guide_teamspell_log_desc: 'Quando o sub-feitiço de equipe é ativado pela primeira vez em uma batalha, ele aparece como um evento separado no log de batalha, claramente marcado para indicar que é um efeito para toda a equipe.',
+
   // ── Shared back-nav (static pages) ────────────────────────────────────────
   back_to_game: '\u2190 Voltar ao Jogo',
   back_to_login: '\u2190 Voltar ao Login',
@@ -999,6 +1084,35 @@ const ptBR: Record<TranslationKeys, string> = {
   sd_err_load: 'Falha ao carregar dados da invocação.',
   sd_err_sell: 'Falha ao vender invocação.',
   sd_err_halve: 'Falha ao reduzir capacidade.',
+
+  // ── Guia — Habilidades com Múltiplos Feitiços ─────────────────────────
+  guide_multispell_title: 'Habilidades com Múltiplos Feitiços',
+  guide_multispell_body: 'Uma habilidade pode conter mais de um feitiço. Cada feitiço é um efeito totalmente independente, com sua própria condição de disparo, chance de ativação, custo de mana e bônus. Eles são avaliados e rolados separadamente toda vez que a janela de disparo se abre.',
+  guide_multispell_rolls_title: 'Rolagens Independentes',
+  guide_multispell_rolls_desc: 'Cada feitiço da mesma habilidade rola sua própria chance de ativação de forma independente. Um feitiço ativar não consome nem bloqueia os outros — todos os feitiços elegíveis têm sua própria chance a cada turno.',
+  guide_multispell_conditions_title: 'Condições de Disparo Diferentes',
+  guide_multispell_conditions_desc: 'Os feitiços de uma mesma habilidade podem ter condições de disparo distintas. Por exemplo, um feitiço pode ativar em todo ATAQUE enquanto o segundo só ativa quando ATAQUE_SE_PODRE for verdadeiro. Ambos coexistem na mesma habilidade sem conflito.',
+  guide_multispell_stacking_title: 'Poder Acumulado',
+  guide_multispell_stacking_desc: 'Como cada feitiço é independente, uma única habilidade pode acumular múltiplos bônus no mesmo turno. Um herói com dois feitiços em uma habilidade pode, no melhor caso, se beneficiar de ambos os efeitos simultaneamente se as duas rolagens forem bem-sucedidas.',
+  guide_multispell_tooltip_title: 'Exibição no Tooltip',
+  guide_multispell_tooltip_desc: 'Quando uma habilidade possui múltiplos feitiços, cada um é rotulado como "FEITIÇO 1", "FEITIÇO 2", etc., com uma nota "rolagem independente", para que você possa identificá-los facilmente e entender que são mecânicas separadas, não um efeito combinado.',
+
+  // ── Guia — Sobrecarga de Feitiço ──────────────────────────────────────
+  guide_overcharge_title: 'Sobrecarga de Feitiço',
+  guide_overcharge_body: 'Todo feitiço tem uma chance de ativação base. Ativação de Feitiço é um atributo que se soma diretamente a essa chance. Quando o total ultrapassa 100%, o feitiço é garantido — e o excesso se torna Sobrecarga, amplificando os bônus do feitiço.',
+  guide_overcharge_how_header: 'Como Funciona a Sobrecarga',
+  guide_overcharge_how_body: 'Cada 100% completo acima da base garante um nível extra de poder. Qualquer fração restante é rolada como chance de alcançar o próximo nível. Os níveis de poder seguem uma progressão de ×0,6 por nível acima da base.',
+  guide_overcharge_levels_header: 'Níveis de Poder',
+  guide_overcharge_level_1: '0–100% total → rolagem normal de ativação, poder ×1,0',
+  guide_overcharge_level_2: '100–200% total → disparo garantido em ×1,0; % fracionária de chance para ×1,6',
+  guide_overcharge_level_3: '200–300% total → ×1,6 garantido; % fracionária de chance para ×2,2',
+  guide_overcharge_level_4: '300%+ total → ×2,2 garantido; e assim por diante (×2,8, ×3,4…)',
+  guide_overcharge_example_header: 'Exemplo',
+  guide_overcharge_example_body: 'Um feitiço com 65% de chance base em um herói com +90% de Ativação de Feitiço = 155% no total. O feitiço sempre dispara. Em seguida, há 55% de chance de disparar com poder ×1,6 em vez de ×1,0. Se a rolagem for bem-sucedida, todos os bônus daquele feitiço são multiplicados por 1,6 naquele turno.',
+  guide_overcharge_display_header: 'Exibição na Batalha',
+  guide_overcharge_display_body: 'Quando um feitiço dispara com Sobrecarga, um emblema dourado ×1,6 (ou ×2,2 etc.) aparece ao lado do seu nome no log de batalha e na notificação animada de feitiço acima do retrato do herói.',
+  guide_overcharge_activation_header: 'Acumulando Sobrecarga',
+  guide_overcharge_activation_body: 'Ativação de Feitiço vem de habilidades, itens equipados e bônus de invocação. Acumula de forma aditiva. Heróis com alta Ativação de Feitiço conseguem atingir ×1,6 e além consistentemente, transformando bônus de feitiço moderados em efeitos de burst decisivos.',
 };
 
 export default ptBR;

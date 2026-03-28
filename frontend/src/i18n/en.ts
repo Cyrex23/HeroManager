@@ -767,6 +767,86 @@ const en = {
   guide_rot_counter_title: 'Immunity Counter',
   guide_rot_counter_desc: 'Rot is a direct counter to high-immunity builds. A hero stacking Physical and Magic immunities becomes significantly weaker under sustained Rot pressure.',
 
+  // ── Guide § Spell Conditions ──────────────────────────────────────────────
+  guide_spellcond_title: 'Spell Conditions',
+  guide_spellcond_body: 'Every spell has a trigger condition that determines when it gets its activation roll. Choosing the right condition for your build is just as important as the spell\'s effect.',
+  guide_spellcond_pre_header: 'Pre-Clash Triggers',
+  guide_spellcond_pre_sub: 'These fire during turn setup, before damage is calculated.',
+  guide_spellcond_post_header: 'Post-Clash Triggers',
+  guide_spellcond_post_sub: 'These fire after damage is resolved at the end of each clash.',
+  guide_spellcond_note_header: 'Scope Note',
+  guide_spellcond_note_body: 'BEFORE TURN X and AFTER TURN X are currently weapon-spell only. The three post-clash triggers (AFTER CLASH, AFTER CRIT, AFTER MAGIC PROF) are also weapon-spell only — ability spells use pre-clash triggers exclusively.',
+
+  guide_spellcond_maxuses_header: 'Max Usages Per Battle',
+  guide_spellcond_maxuses_body: 'Every spell optionally has a Max Usages cap. When set, the spell can only fire that many times per hero per battle — after reaching the cap, its activation roll is skipped entirely for the remainder of the fight, regardless of trigger or mana. A spell with no cap listed fires unlimited times.',
+  guide_spellcond_maxuses_0_title: 'No Limit (default)',
+  guide_spellcond_maxuses_0_desc: 'Most spells have no usage cap. They roll their chance every time their trigger condition is met, as long as the hero has enough mana.',
+  guide_spellcond_maxuses_1_title: 'Max 1×',
+  guide_spellcond_maxuses_1_desc: 'The spell fires at most once per battle. Common on powerful entrance-style effects or team spells — guarantees a strong impact but cannot be relied on repeatedly.',
+  guide_spellcond_maxuses_n_title: 'Max N×',
+  guide_spellcond_maxuses_n_desc: 'The spell fires up to N times. Once the counter reaches N, it is permanently skipped. Shown in the tooltip as "Max N×" alongside the trigger and chance.',
+
+  guide_spellcond_duration_header: 'Effect Duration (Lasts X Turns)',
+  guide_spellcond_duration_body: 'When a spell fires, its stat bonuses can either apply instantly (permanent for the clash) or persist as a buff for several turns. If a spell has a "Lasts X turns" value, its bonuses are added to the hero\'s stats on that turn and every subsequent turn until the counter runs out.',
+  guide_spellcond_duration_instant_title: 'No Duration (Instant)',
+  guide_spellcond_duration_instant_desc: 'Bonuses apply directly to stats for the current clash only. The effect is consumed immediately — if the spell fires next turn, it applies fresh again. Most ATTACK spells without a duration listed work this way.',
+  guide_spellcond_duration_lasting_title: 'Lasts X Turns',
+  guide_spellcond_duration_lasting_desc: 'Bonuses are placed into an active buff that persists for X turns. Each round at the start of turn setup, all active buffs are applied to stats before any spell rolls or damage calculation. The counter ticks down by 1 each turn and the buff is removed when it reaches 0.',
+  guide_spellcond_duration_stack_title: 'Stacking',
+  guide_spellcond_duration_stack_desc: 'If the same spell fires again while its buff is still active, a second copy is added on top. Both run independently — one may expire sooner than the other. This means a high-chance lasting spell can build up a stack of overlapping bonuses.',
+  guide_spellcond_duration_hero_title: 'Hero Changes',
+  guide_spellcond_duration_hero_desc: 'Active buffs are tied to the team\'s buff list, not to the individual hero. When a hero is defeated and replaced, the new hero enters with the same active buffs still running — they do not reset on hero swap.',
+
+  guide_spellcond_entrance_name: 'ENTRANCE',
+  guide_spellcond_entrance_when: 'When this hero enters the fight for the first time',
+  guide_spellcond_entrance_desc: 'Fires once on the very first clash this hero participates in. Powerful for burst openers: a high-chance ENTRANCE spell guarantees a strong first impression. After the first clash it never fires again, so this trigger pairs best with high-uptime bonuses (long duration or permanent stat boosts).',
+
+  guide_spellcond_opp_entrance_name: 'OPPONENT ENTRANCE',
+  guide_spellcond_opp_entrance_when: 'When either hero in the clash is new to the fight',
+  guide_spellcond_opp_entrance_desc: 'Fires when the current hero OR the opponent is entering for the first time. Broader than ENTRANCE — it can re-trigger when the opponent rotates out a defeated hero and brings in a fresh one. Good for reactive builds that want to punish opponent hero swaps.',
+
+  guide_spellcond_attack_name: 'ATTACK',
+  guide_spellcond_attack_when: 'Every turn, every clash',
+  guide_spellcond_attack_desc: 'The most common trigger. Rolls the activation chance on every single clash with no conditions. Combined with a high chance %, this produces the most consistent and highest total output over a long battle. The backbone of most sustained builds.',
+
+  guide_spellcond_attack_rotted_name: 'ATTACK + ROTTED',
+  guide_spellcond_attack_rotted_when: 'Each attack, but only while the opponent has active Rot',
+  guide_spellcond_attack_rotted_desc: 'Fires on every turn like ATTACK, but only when the opponent is currently afflicted by Rot. If the enemy has no active Rot this turn, the roll is skipped entirely. Pairs naturally with any Rot source on your team — your summon, another hero\'s ability, or a weapon — to create a powerful conditional combo: apply Rot first, then exploit it for amplified spell effects.',
+
+  guide_spellcond_before_turn_name: 'BEFORE TURN X',
+  guide_spellcond_before_turn_when: 'While this hero\'s clash count is below threshold N',
+  guide_spellcond_before_turn_desc: 'Fires on every clash while the hero has fought fewer than N total clashes. Think of it as an "early game" buff — it rewards aggressive opening strategies and loses value as the battle extends. Currently weapon-spell only.',
+
+  guide_spellcond_after_turn_name: 'AFTER TURN X',
+  guide_spellcond_after_turn_when: 'Once this hero\'s clash count reaches or exceeds threshold N',
+  guide_spellcond_after_turn_desc: 'The opposite of BEFORE TURN X — fires only after the hero has survived N clashes. Rewards endurance builds. A hero who reaches the late game gets progressively stronger. Currently weapon-spell only.',
+
+  guide_spellcond_after_clash_name: 'AFTER CLASH',
+  guide_spellcond_after_clash_when: 'After every clash, regardless of outcome',
+  guide_spellcond_after_clash_desc: 'Fires after damage is resolved, every clash, no conditions. The post-clash equivalent of ATTACK — consistent but fires slightly later in the sequence, after all pre-clash effects have already been applied.',
+
+  guide_spellcond_after_crit_name: 'AFTER CRIT',
+  guide_spellcond_after_crit_when: 'After a clash in which this hero landed a critical hit',
+  guide_spellcond_after_crit_desc: 'Only fires if the clash produced a crit. Pairs naturally with high Crit Chance builds — the more crits you land, the more often this bonus activates. Rewards committing to a crit-focused stat setup.',
+
+  guide_spellcond_after_magic_name: 'AFTER MAGIC PROF',
+  guide_spellcond_after_magic_when: 'After a clash in which a Magic Proficiency proc occurred',
+  guide_spellcond_after_magic_desc: 'Fires when the clash triggered a Magic Proficiency effect. Pairs with high Magic Proficiency builds. Rarer than a crit trigger but can stack with other magic-focused synergies for specialised high-Magic Power setups.',
+
+  // ── Guide § Team Spells ───────────────────────────────────────────────────
+  guide_teamspell_title: 'Team Spells',
+  guide_teamspell_body: 'Some ability spells have a team sub-spell attached to them. When the parent spell triggers once, it permanently unlocks the team sub-spell\'s effect for the entire team for the rest of the battle.',
+  guide_teamspell_how_header: 'How It Works',
+  guide_teamspell_how_body: 'The parent spell fires under its normal trigger condition and activation chance. The moment it fires successfully for the first time, the attached team sub-spell activates. From that point forward, every hero on the team benefits from the team spell\'s bonuses — not just the hero who owns the ability.',
+  guide_teamspell_once_title: 'Triggers Once, Lasts the Battle',
+  guide_teamspell_once_desc: 'The team sub-spell only needs to be unlocked once. A single successful parent activation is enough to grant its effect to the whole team for the entire remainder of the battle.',
+  guide_teamspell_owner_title: 'Owner Still Fires the Parent',
+  guide_teamspell_owner_desc: 'The hero who owns the ability keeps rolling the parent spell on every applicable trigger. The team sub-spell is a bonus that rides along — the parent spell\'s own bonuses still apply to the owner each time it fires.',
+  guide_teamspell_tooltip_title: 'Shown in Tooltips',
+  guide_teamspell_tooltip_desc: 'In any ability or item tooltip, a team sub-spell is shown nested below its parent spell with a "⤷ triggers team spell" connector. You can see both the parent\'s trigger/chance and the team sub-spell\'s own stats in one place.',
+  guide_teamspell_log_title: 'Battle Log',
+  guide_teamspell_log_desc: 'When the team sub-spell activates for the first time in a battle, it appears as a separate event in the battle log, clearly marked to indicate it is a team-wide effect.',
+
   // ── Shared back-nav (static pages) ────────────────────────────────────────
   back_to_game: '\u2190 Back to Game',
   back_to_login: '\u2190 Back to Login',
@@ -997,6 +1077,40 @@ const en = {
   sd_err_load: 'Failed to load summon data.',
   sd_err_sell: 'Failed to sell summon.',
   sd_err_halve: 'Failed to halve capacity.',
+
+  // ── Guide — Spell Conditions: ON_DEATH ───────────────────────────────
+  guide_spellcond_on_death_name: 'ON DEATH',
+  guide_spellcond_on_death_when: 'When this hero loses a clash and is eliminated',
+  guide_spellcond_on_death_desc: 'Fires exactly once, at the moment this hero is defeated. A final act before leaving the field — useful for leaving a debuff on the enemy, buffing the next ally, or granting a team-wide bonus as a last gift. Self-only bonuses (no passOnType, not affectsOpponent) are wasted since the hero is already gone.',
+
+  // ── Guide — Multi-Spell Abilities ─────────────────────────────────────
+  guide_multispell_title: 'Multi-Spell Abilities',
+  guide_multispell_body: 'An ability can carry more than one spell. Each spell is a fully independent effect with its own trigger condition, activation chance, mana cost, and bonuses. They are evaluated and rolled separately every time the trigger window opens.',
+  guide_multispell_rolls_title: 'Independent Rolls',
+  guide_multispell_rolls_desc: 'Each spell on the same ability rolls its own activation chance independently. One spell firing does not consume or block the others — all eligible spells get their own shot every turn.',
+  guide_multispell_conditions_title: 'Different Trigger Conditions',
+  guide_multispell_conditions_desc: 'Spells on the same ability can have different trigger conditions. For example, one spell might fire on every ATTACK while a second only fires when ATTACK_IF_ROTTED is true. Both coexist on the same ability without conflict.',
+  guide_multispell_stacking_title: 'Stacking Power',
+  guide_multispell_stacking_desc: 'Because each spell is independent, a single ability can layer multiple bonuses on the same turn. A hero with two spells on one ability can, in the best case, benefit from both effects simultaneously if both rolls succeed.',
+  guide_multispell_tooltip_title: 'Tooltip Display',
+  guide_multispell_tooltip_desc: 'When an ability has multiple spells, each one is labelled "SPELL 1", "SPELL 2", etc. with an "independent roll" note so you can identify them at a glance and understand they are separate mechanics, not one combined effect.',
+
+  // ── Guide — Spell Overcharge ──────────────────────────────────────────
+  guide_overcharge_title: 'Spell Overcharge',
+  guide_overcharge_body: 'Every spell has a base activation chance. Spell Activation is a stat that adds directly on top of that chance. When the total exceeds 100%, the spell is guaranteed to fire — and the excess becomes Overcharge, amplifying the spell\'s bonuses.',
+  guide_overcharge_how_header: 'How Overcharge Works',
+  guide_overcharge_how_body: 'Each full 100% above the base guarantees one extra power level. Any remaining fraction is rolled as a chance to reach the next level. Power levels follow a ×0.6 progression per level above the base.',
+  guide_overcharge_levels_header: 'Power Levels',
+  guide_overcharge_level_1: '0–100% total → normal activation roll, ×1.0 power',
+  guide_overcharge_level_2: '100–200% total → guaranteed fire at ×1.0; fractional % chance to become ×1.6',
+  guide_overcharge_level_3: '200–300% total → guaranteed ×1.6; fractional % chance to become ×2.2',
+  guide_overcharge_level_4: '300%+ total → guaranteed ×2.2; and so on (×2.8, ×3.4…)',
+  guide_overcharge_example_header: 'Example',
+  guide_overcharge_example_body: 'A spell with 65% base chance on a hero with +90% Spell Activation = 155% total. The spell always fires. There is then a 55% chance it fires at ×1.6 power instead of ×1.0. If the roll succeeds, all bonuses from that spell are multiplied by 1.6 for that turn.',
+  guide_overcharge_display_header: 'Battle Display',
+  guide_overcharge_display_body: 'When a spell fires with Overcharge, a gold ×1.6 (or ×2.2, etc.) badge appears next to its name in the battle log and in the animated spell notification above the hero portrait.',
+  guide_overcharge_activation_header: 'Building Overcharge',
+  guide_overcharge_activation_body: 'Spell Activation comes from abilities, equipped items, and summon bonuses. It stacks additively. High Spell Activation heroes can consistently reach ×1.6 and beyond, turning moderate spell bonuses into decisive burst effects.',
 } as const;
 
 export default en;

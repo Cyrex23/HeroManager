@@ -105,6 +105,7 @@ export interface HeroStats {
   fatigueRecovery?: number;
   cleanse?: number;
   dexMaxPosture?: number;
+  rot?: number;
 }
 
 export type SummonStats = Record<string, number>;
@@ -364,6 +365,8 @@ export interface SpellInfo {
   lastsTurns?: number;
   affectsOpponent?: boolean;
   passOnType?: 'NEXT' | 'TEAM' | 'BATTLEFIELD';
+  /** Team sub-spell that activates for all teammates when this parent spell triggers once */
+  teamSpell?: SpellInfo;
 }
 
 export interface SpellEvent {
@@ -380,6 +383,7 @@ export interface SpellEvent {
   fromLearned?: boolean;
   bonuses?: Record<string, number>;
   lastsTurns?: number;
+  overflowMult?: number;
 }
 
 export interface ShopAbilityResponse {

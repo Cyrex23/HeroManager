@@ -220,8 +220,8 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
   const [dmgR, setDmgR] = useState<{ v: number; k: number; elemBonus?: number; elem?: string; rawAttack?: number; staminaLost?: number; crit?: boolean; magicProf?: boolean; attackFlat?: number; highDex?: boolean; physImmunity?: number; magicImmunity?: number; dexEvasiveness?: number } | null>(null);
   const [roundRes, setRoundRes] = useState<'attacker' | 'defender' | null>(null);
   const [hitInd, setHitInd] = useState<{ type: HitType; side: 'left' | 'right'; k: number } | null>(null);
-  const [cSpellNotif, setCSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number; spellType?: 'normal' | 'copied' | 'absorbed' | 'fromLearned' | 'justLearned'; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number }>; k: number } | null>(null);
-  const [dSpellNotif, setDSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number; spellType?: 'normal' | 'copied' | 'absorbed' | 'fromLearned' | 'justLearned'; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number }>; k: number } | null>(null);
+  const [cSpellNotif, setCSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number; spellType?: 'normal' | 'copied' | 'absorbed' | 'fromLearned' | 'justLearned'; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number; overflowMult?: number }>; k: number } | null>(null);
+  const [dSpellNotif, setDSpellNotif] = useState<{ spells: Array<{ name: string; manaCost: number; spellType?: 'normal' | 'copied' | 'absorbed' | 'fromLearned' | 'justLearned'; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number; overflowMult?: number }>; k: number } | null>(null);
   const [animSpellTooltip, setAnimSpellTooltip] = useState<{
     name: string; manaCost?: number; trigger?: string; chance?: number;
     bonuses?: Record<string, number>; lastsTurns?: number;
@@ -330,12 +330,12 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     }
 
     // ── Spell notifications ───────────────────────────────────────────────────
-    type RawSpell = { spellName: string; manaCost: number; fired?: boolean; absorbed?: boolean; copied?: boolean; fromLearned?: boolean; justLearned?: boolean; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number };
+    type RawSpell = { spellName: string; manaCost: number; fired?: boolean; absorbed?: boolean; copied?: boolean; fromLearned?: boolean; justLearned?: boolean; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number; overflowMult?: number };
     const cSp = ((round as any).challengerSpells as RawSpell[] | undefined)?.filter(sp => sp.fired !== false || sp.absorbed || sp.justLearned);
     const dSp = ((round as any).defenderSpells as RawSpell[] | undefined)?.filter(sp => sp.fired !== false || sp.absorbed || sp.justLearned);
     const spType = (sp: RawSpell) => sp.absorbed ? 'absorbed' : sp.copied ? 'copied' : sp.fromLearned ? 'fromLearned' : sp.justLearned ? 'justLearned' : 'normal' as const;
-    if (cSp?.length) setCSpellNotif({ spells: cSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost, spellType: spType(sp), bonuses: sp.bonuses, lastsTurns: sp.lastsTurns, trigger: sp.trigger, chance: sp.chance })), k: Date.now() });
-    if (dSp?.length) setDSpellNotif({ spells: dSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost, spellType: spType(sp), bonuses: sp.bonuses, lastsTurns: sp.lastsTurns, trigger: sp.trigger, chance: sp.chance })), k: Date.now() + 1 });
+    if (cSp?.length) setCSpellNotif({ spells: cSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost, spellType: spType(sp), bonuses: sp.bonuses, lastsTurns: sp.lastsTurns, trigger: sp.trigger, chance: sp.chance, overflowMult: sp.overflowMult })), k: Date.now() });
+    if (dSp?.length) setDSpellNotif({ spells: dSp.map(sp => ({ name: sp.spellName, manaCost: sp.manaCost, spellType: spType(sp), bonuses: sp.bonuses, lastsTurns: sp.lastsTurns, trigger: sp.trigger, chance: sp.chance, overflowMult: sp.overflowMult })), k: Date.now() + 1 });
     if (cSp?.length || dSp?.length) {
       setManaShowRecharged(false);
       setManaDisplayIdx(idx);  // show post-spell (pre-recharge) mana when spell visually fires
@@ -1018,7 +1018,7 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
     dmg: typeof dmgL,
     manaTotal: number,
     manaCurrent: number,
-    spellNotif: { spells: Array<{ name: string; manaCost: number; spellType?: 'normal' | 'copied' | 'absorbed' | 'fromLearned' | 'justLearned'; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number }>; k: number } | null,
+    spellNotif: { spells: Array<{ name: string; manaCost: number; spellType?: 'normal' | 'copied' | 'absorbed' | 'fromLearned' | 'justLearned'; bonuses?: Record<string, number>; lastsTurns?: number; trigger?: string; chance?: number; overflowMult?: number }>; k: number } | null,
     dexMax: number,
     dexCur: number,
     _dexExpDelta: { net: number; k: number } | null,
@@ -1392,6 +1392,11 @@ export default function BattleAnimator({ battleLog, result, goldEarned, goldBonu
                     {sp.name}
                     {t === 'justLearned' && <span style={{ color: '#c084fc', fontSize: 9, marginLeft: 5, fontWeight: 900, letterSpacing: '0.12em' }}>LEARNED</span>}
                     {isAbsorbed && <span style={{ color: '#6b7280', fontSize: 9, marginLeft: 5, letterSpacing: '0.12em' }}>BLOCKED</span>}
+                    {!isAbsorbed && sp.overflowMult != null && sp.overflowMult > 1 && (
+                      <span style={{ fontSize: 10, fontWeight: 900, marginLeft: 6, color: '#fbbf24', background: 'rgba(251,191,36,0.18)', border: '1px solid rgba(251,191,36,0.55)', borderRadius: 3, padding: '1px 5px', textShadow: '0 0 8px #fbbf24', letterSpacing: '0.05em' }}>
+                        ×{sp.overflowMult.toFixed(1)}
+                      </span>
+                    )}
                   </span>
                   {!isAbsorbed && t !== 'justLearned' && <span style={{ ...s.spellNotifCost, color: notifColor, backgroundColor: `${notifColor}22`, borderColor: `${notifColor}55`, textShadow: `0 0 8px ${notifColor}` }}>{sp.manaCost}</span>}
                 </div>

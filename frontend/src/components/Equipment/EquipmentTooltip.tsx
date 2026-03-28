@@ -17,6 +17,8 @@ interface Props {
 const TRIGGER_LABELS: Record<string, string> = {
   ENTRANCE: 'ON ENTER',
   ATTACK: 'ON ATTACK',
+  ATTACK_IF_ROTTED: 'ATTACK + ROTTED',
+  ON_DEATH: 'ON DEATH',
   AFTER_CLASH: 'AFTER CLASH',
   AFTER_CLASH_CRIT: 'AFTER CRIT',
   OPPONENT_ENTRANCE: 'OPP. ENTER',
@@ -34,6 +36,100 @@ const STATS: Array<{ key: keyof HeroStats; label: string }> = [
 ];
 
 const TOOLTIP_WIDTH = 270;
+
+function SpellBlock({ spell, isTeamSpell = false }: { spell: SpellInfo; isTeamSpell?: boolean }) {
+  const isPassOn = !!spell.passOnType;
+  const sectionBorder = spell.affectsOpponent
+    ? 'rgba(248,113,113,0.3)'
+    : isTeamSpell ? 'rgba(20,184,166,0.35)' : 'rgba(59,130,246,0.2)';
+  const sectionBg = spell.affectsOpponent
+    ? 'rgba(239,68,68,0.06)'
+    : isTeamSpell ? 'rgba(20,184,166,0.08)' : 'rgba(59,130,246,0.06)';
+  const iconColor = spell.affectsOpponent ? '#f87171' : isTeamSpell ? '#2dd4bf' : '#60a5fa';
+  const iconGlow  = spell.affectsOpponent ? '#ef4444' : isTeamSpell ? '#0d9488' : '#3b82f6';
+  const icon      = spell.affectsOpponent ? '☠' : isTeamSpell ? '👥' : '✦';
+  const nameColor = spell.affectsOpponent ? '#fca5a5' : isTeamSpell ? '#5eead4' : '#93c5fd';
+  const manaColor = spell.affectsOpponent ? '#f87171' : isTeamSpell ? '#2dd4bf' : '#60a5fa';
+  const manaBg    = spell.affectsOpponent ? 'rgba(248,113,113,0.15)' : isTeamSpell ? 'rgba(20,184,166,0.15)' : 'rgba(59,130,246,0.15)';
+  const manaBorder = spell.affectsOpponent ? 'rgba(248,113,113,0.3)' : isTeamSpell ? 'rgba(20,184,166,0.3)' : 'rgba(59,130,246,0.3)';
+  const trigColor  = spell.affectsOpponent ? '#f87171' : isTeamSpell ? '#2dd4bf' : '#a78bfa';
+  const trigBg     = spell.affectsOpponent ? 'rgba(248,113,113,0.12)' : isTeamSpell ? 'rgba(20,184,166,0.12)' : 'rgba(167,139,250,0.12)';
+  const trigBorder = spell.affectsOpponent ? 'rgba(248,113,113,0.25)' : isTeamSpell ? 'rgba(20,184,166,0.25)' : 'rgba(167,139,250,0.25)';
+
+  return (
+    <div style={{ ...styles.spellSection, borderColor: sectionBorder, backgroundColor: sectionBg }}>
+      {/* Spell header row */}
+      <div style={styles.spellHeader}>
+        <span style={{ ...styles.spellIcon, color: iconColor, textShadow: `0 0 6px ${iconGlow}` }}>{icon}</span>
+        <span style={{ ...styles.spellName, color: nameColor }}>{spell.name}</span>
+        <span style={{ ...styles.spellMana, color: manaColor, backgroundColor: manaBg, borderColor: manaBorder }}>{spell.manaCost} MP</span>
+      </div>
+      {/* Affects opponent badge */}
+      {spell.affectsOpponent && (
+        <div style={{ marginBottom: 5 }}>
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: '#f87171', backgroundColor: 'rgba(239,68,68,0.12)', border: '1px solid rgba(248,113,113,0.35)', borderRadius: 3, padding: '2px 6px' }}>
+            ☠ Affects Opponent
+          </span>
+        </div>
+      )}
+      {/* Duration / usages */}
+      {((spell.lastsTurns && spell.lastsTurns > 0) || (spell.maxUsages && spell.maxUsages > 0)) && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 4, flexWrap: 'wrap' as const }}>
+          {spell.lastsTurns && spell.lastsTurns > 0 && (
+            <span style={{ fontSize: 9, color: '#818cf8', fontWeight: 700, backgroundColor: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.25)', borderRadius: 3, padding: '1px 5px' }}>
+              Lasts {spell.lastsTurns} turn{spell.lastsTurns > 1 ? 's' : ''}
+            </span>
+          )}
+          {spell.maxUsages && spell.maxUsages > 0 && (
+            <span style={{ fontSize: 9, color: '#fbbf24', fontWeight: 700, backgroundColor: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 3, padding: '1px 5px' }}>
+              Max {spell.maxUsages}×
+            </span>
+          )}
+        </div>
+      )}
+      {/* Trigger + chance */}
+      <div style={styles.spellMeta}>
+        <span style={{ ...styles.spellTriggerBadge, color: trigColor, backgroundColor: trigBg, borderColor: trigBorder }}>
+          {TRIGGER_LABELS[spell.trigger] ?? spell.trigger}
+        </span>
+        <span style={styles.spellChance}>{Math.round(spell.chance * 100)}% chance</span>
+      </div>
+      {/* Bonus stats */}
+      {Object.keys(spell.bonuses).length > 0 && (
+        <div style={styles.spellBonuses}>
+          {Object.entries(spell.bonuses).map(([key, val]) => {
+            if (!val || val === 0) return null;
+            const isNeg = (val as number) < 0;
+            const statLabel = STATS.find(s => s.key === key)?.label ?? key;
+            const displayVal = typeof val === 'number' && Math.abs(val) < 1
+              ? `${isNeg ? '' : '+'}${Math.round((val as number) * 100)}%`
+              : `${isNeg ? '' : '+'}${val}`;
+            return (
+              <span key={key} style={{ ...styles.spellBonus, color: isNeg ? '#f87171' : '#34d399', backgroundColor: isNeg ? 'rgba(248,113,113,0.08)' : 'rgba(52,211,153,0.08)' }}>
+                {displayVal} {statLabel}
+              </span>
+            );
+          })}
+        </div>
+      )}
+      {/* Nested team sub-spell */}
+      {spell.teamSpell && (
+        <div style={{ marginTop: 8 }}>
+          {/* Connector arrow */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+            <div style={{ width: 1, height: 10, background: 'rgba(20,184,166,0.4)', marginLeft: 6 }} />
+            <span style={{ fontSize: 9, color: '#2dd4bf', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
+              ⤷ triggers team spell
+            </span>
+          </div>
+          <div style={{ marginLeft: 8, borderLeft: '2px solid rgba(20,184,166,0.35)', paddingLeft: 8 }}>
+            <SpellBlock spell={spell.teamSpell} isTeamSpell={true} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice, copies, spells, children, block }: Props) {
   const [pos, setPos] = useState<{ x: number; y: number; above: boolean } | null>(null);
@@ -104,85 +200,23 @@ export default function EquipmentTooltip({ name, type, bonuses, tier, sellPrice,
           </div>
 
           {/* Spell section — one block per spell */}
-          {spells && spells.length > 0 && spells.map((spell, si) => {
-            const isPassOn = !!spell.passOnType;
-            const sectionBorder = spell.affectsOpponent
-              ? 'rgba(248,113,113,0.3)'
-              : isPassOn ? 'rgba(20,184,166,0.3)' : 'rgba(59,130,246,0.2)';
-            const sectionBg = spell.affectsOpponent
-              ? 'rgba(239,68,68,0.06)'
-              : isPassOn ? 'rgba(20,184,166,0.07)' : 'rgba(59,130,246,0.06)';
-            const iconColor = spell.affectsOpponent ? '#f87171' : isPassOn ? '#2dd4bf' : '#60a5fa';
-            const iconGlow  = spell.affectsOpponent ? '#ef4444' : isPassOn ? '#0d9488' : '#3b82f6';
-            const icon      = spell.affectsOpponent ? '☠' : isPassOn ? '⤴' : '✦';
-            const nameColor = spell.affectsOpponent ? '#fca5a5' : isPassOn ? '#5eead4' : '#93c5fd';
-            const manaColor = spell.affectsOpponent ? '#f87171' : isPassOn ? '#2dd4bf' : '#60a5fa';
-            const manaBg    = spell.affectsOpponent ? 'rgba(248,113,113,0.15)' : isPassOn ? 'rgba(20,184,166,0.15)' : 'rgba(59,130,246,0.15)';
-            const manaBorder = spell.affectsOpponent ? 'rgba(248,113,113,0.3)' : isPassOn ? 'rgba(20,184,166,0.3)' : 'rgba(59,130,246,0.3)';
-            const trigColor  = spell.affectsOpponent ? '#f87171' : isPassOn ? '#2dd4bf' : '#a78bfa';
-            const trigBg     = spell.affectsOpponent ? 'rgba(248,113,113,0.12)' : isPassOn ? 'rgba(20,184,166,0.12)' : 'rgba(167,139,250,0.12)';
-            const trigBorder = spell.affectsOpponent ? 'rgba(248,113,113,0.25)' : isPassOn ? 'rgba(20,184,166,0.25)' : 'rgba(167,139,250,0.25)';
-            return (
+          {spells && spells.length > 0 && spells.map((spell, si) => (
             <div key={si}>
-              <div style={{ ...styles.spellDivider, background: isPassOn ? 'linear-gradient(to right, transparent, rgba(20,184,166,0.4), transparent)' : styles.spellDivider.background }} />
-              <div style={{ ...styles.spellSection, borderColor: sectionBorder, backgroundColor: sectionBg }}>
-                {/* Pass-on label above spell header */}
-                {isPassOn && (
-                  <div style={{ fontSize: 9, color: '#2dd4bf', fontWeight: 700, letterSpacing: '0.06em', marginBottom: 5, textTransform: 'uppercase' as const }}>
-                    ⤴ TEAM SUB-SPELL · {spell.passOnType}
-                  </div>
-                )}
-                {/* Spell header row */}
-                <div style={styles.spellHeader}>
-                  <span style={{ ...styles.spellIcon, color: iconColor, textShadow: `0 0 6px ${iconGlow}` }}>
-                    {icon}
+              <div style={styles.spellDivider} />
+              {/* Independent-spell label when ability has more than one spell */}
+              {spells.length > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const,
+                    color: '#555577', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: 3, padding: '1px 5px' }}>
+                    SPELL {si + 1}
                   </span>
-                  <span style={{ ...styles.spellName, color: nameColor }}>{spell.name}</span>
-                  <span style={{ ...styles.spellMana, color: manaColor, backgroundColor: manaBg, borderColor: manaBorder }}>{spell.manaCost} MP</span>
+                  <span style={{ fontSize: 9, color: '#3a3a5a', fontStyle: 'italic' }}>independent roll</span>
                 </div>
-                {/* Duration / usage — above trigger row (passOnType badge now shown at top) */}
-                {((spell.lastsTurns && spell.lastsTurns > 0) || (spell.maxUsages && spell.maxUsages > 0)) && (
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 4, flexWrap: 'wrap' as const }}>
-                    {spell.lastsTurns && spell.lastsTurns > 0 && (
-                      <span style={{ fontSize: 9, color: '#818cf8', fontWeight: 700, backgroundColor: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.25)', borderRadius: 3, padding: '1px 5px' }}>
-                        Lasts {spell.lastsTurns} turn{spell.lastsTurns > 1 ? 's' : ''}
-                      </span>
-                    )}
-                    {spell.maxUsages && spell.maxUsages > 0 && (
-                      <span style={{ fontSize: 9, color: '#fbbf24', fontWeight: 700, backgroundColor: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 3, padding: '1px 5px' }}>
-                        Max {spell.maxUsages}×
-                      </span>
-                    )}
-                  </div>
-                )}
-                {/* Trigger + chance */}
-                <div style={styles.spellMeta}>
-                  <span style={{ ...styles.spellTriggerBadge, color: trigColor, backgroundColor: trigBg, borderColor: trigBorder }}>
-                    {TRIGGER_LABELS[spell.trigger] ?? spell.trigger}
-                  </span>
-                  <span style={styles.spellChance}>{Math.round(spell.chance * 100)}% chance</span>
-                </div>
-                {/* Spell bonus stats */}
-                {Object.keys(spell.bonuses).length > 0 && (
-                  <div style={styles.spellBonuses}>
-                    {Object.entries(spell.bonuses).map(([key, val]) => {
-                      if (!val || val === 0) return null;
-                      const isNeg = (val as number) < 0;
-                      const statLabel = STATS.find(s => s.key === key)?.label ?? key;
-                      const displayVal = typeof val === 'number' && Math.abs(val) < 1
-                        ? `${isNeg ? '' : '+'}${Math.round((val as number) * 100)}%`
-                        : `${isNeg ? '' : '+'}${val}`;
-                      return (
-                        <span key={key} style={{ ...styles.spellBonus, color: isNeg ? '#f87171' : '#34d399', backgroundColor: isNeg ? 'rgba(248,113,113,0.08)' : 'rgba(52,211,153,0.08)' }}>
-                          {displayVal} {statLabel}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              )}
+              <SpellBlock spell={spell} />
             </div>
-          ); })}
+          ))}
 
           <div style={styles.divider} />
 

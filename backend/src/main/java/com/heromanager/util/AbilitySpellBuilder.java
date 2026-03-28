@@ -20,25 +20,42 @@ public class AbilitySpellBuilder {
         this.abilitySpellRepository = abilitySpellRepository;
     }
 
-    /** Returns a list of spell maps for the given ability template, or null if none. */
+    /** Returns a list of spell maps for the given ability template, or null if none.
+     *  Team sub-spells (passOnType != null) are nested under their parent spell
+     *  as a "teamSpell" key rather than appearing as a flat sibling entry. */
     public List<Map<String, Object>> buildSpellList(AbilityTemplate t) {
-        List<AbilitySpell> spells = abilitySpellRepository.findByAbilityTemplate(t);
+        List<AbilitySpell> spells = abilitySpellRepository.findByAbilityTemplateOrderById(t);
         if (spells.isEmpty()) return null;
         List<Map<String, Object>> result = new ArrayList<>();
+        Map<String, Object> pendingParent = null;
         for (AbilitySpell asp : spells) {
-            Map<String, Object> spell = new LinkedHashMap<>();
-            spell.put("name",     asp.getSpellName());
-            spell.put("manaCost", asp.getSpellManaCost());
-            spell.put("trigger",  asp.getSpellTrigger());
-            spell.put("chance",   asp.getSpellChance());
-            if (asp.getMaxUsages()  > 0)   spell.put("maxUsages",      asp.getMaxUsages());
-            if (asp.getLastsTurns() > 0)   spell.put("lastsTurns",     asp.getLastsTurns());
-            if (asp.isAffectsOpponent())   spell.put("affectsOpponent", true);
-            if (asp.getPassOnType() != null) spell.put("passOnType",   asp.getPassOnType());
-            spell.put("bonuses", buildBonuses(asp));
-            result.add(spell);
+            Map<String, Object> spell = buildSpellMap(asp);
+            if (asp.getPassOnType() != null && pendingParent != null) {
+                // Nest this team sub-spell inside the preceding parent spell
+                pendingParent.put("teamSpell", spell);
+                result.add(pendingParent);
+                pendingParent = null;
+            } else {
+                if (pendingParent != null) result.add(pendingParent);
+                pendingParent = spell;
+            }
         }
+        if (pendingParent != null) result.add(pendingParent);
         return result;
+    }
+
+    private Map<String, Object> buildSpellMap(AbilitySpell asp) {
+        Map<String, Object> spell = new LinkedHashMap<>();
+        spell.put("name",     asp.getSpellName());
+        spell.put("manaCost", asp.getSpellManaCost());
+        spell.put("trigger",  asp.getSpellTrigger());
+        spell.put("chance",   asp.getSpellChance());
+        if (asp.getMaxUsages()  > 0)   spell.put("maxUsages",      asp.getMaxUsages());
+        if (asp.getLastsTurns() > 0)   spell.put("lastsTurns",     asp.getLastsTurns());
+        if (asp.isAffectsOpponent())   spell.put("affectsOpponent", true);
+        if (asp.getPassOnType() != null) spell.put("passOnType",   asp.getPassOnType());
+        spell.put("bonuses", buildBonuses(asp));
+        return spell;
     }
 
     private Map<String, Object> buildBonuses(AbilitySpell asp) {

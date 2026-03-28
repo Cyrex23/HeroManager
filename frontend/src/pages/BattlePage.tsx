@@ -230,6 +230,7 @@ export default function BattlePage() {
                       {sp.chance != null && <span style={{ color: '#a0a0b0', marginLeft: 4, fontSize: 10 }}>{sp.chance}%</span>}
                       {fired && !sp.absorbed && !sp.justLearned && <span style={styles.spellTagCost}> −{sp.manaCost} MP</span>}
                       {saved > 0.05 && <span style={{ color: '#4ade80', marginLeft: 4, fontSize: 10 }}>(saved {saved.toFixed(1)})</span>}
+                      {fired && sp.overflowMult != null && sp.overflowMult > 1 && <span style={{ marginLeft: 5, fontSize: 10, fontWeight: 800, color: '#fbbf24', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', borderRadius: 3, padding: '0px 4px' }}>×{sp.overflowMult.toFixed(1)}</span>}
                     </span>
                   );
                 })}
@@ -247,6 +248,7 @@ export default function BattlePage() {
                       {sp.chance != null && <span style={{ color: '#a0a0b0', marginLeft: 4, fontSize: 10 }}>{sp.chance}%</span>}
                       {fired && !sp.absorbed && !sp.justLearned && <span style={styles.spellTagCost}> −{sp.manaCost} MP</span>}
                       {saved > 0.05 && <span style={{ color: '#4ade80', marginLeft: 4, fontSize: 10 }}>(saved {saved.toFixed(1)})</span>}
+                      {fired && sp.overflowMult != null && sp.overflowMult > 1 && <span style={{ marginLeft: 5, fontSize: 10, fontWeight: 800, color: '#fbbf24', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', borderRadius: 3, padding: '0px 4px' }}>×{sp.overflowMult.toFixed(1)}</span>}
                     </span>
                   );
                 })}
@@ -452,6 +454,7 @@ export default function BattlePage() {
                             {sp.absorbed && <span style={{ color: '#6b7280', marginLeft: 4 }}>blocked</span>}
                             {sp.chance != null && <span style={{ color: '#a0a0b0' }}> {sp.chance}%</span>}
                             {fired && !sp.absorbed && !sp.justLearned && sp.manaCost != null && <span style={{ color: '#60a5fa' }}> −{sp.manaCost} MP</span>}
+                            {fired && sp.overflowMult != null && sp.overflowMult > 1 && <span style={{ marginLeft: 5, fontWeight: 800, color: '#fbbf24', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', borderRadius: 3, padding: '0px 4px' }}>×{sp.overflowMult.toFixed(1)}</span>}
                           </div>
                         );
                       })}
@@ -680,6 +683,7 @@ export default function BattlePage() {
                             {sp.absorbed && <span style={{ color: '#6b7280', marginLeft: 4 }}>blocked</span>}
                             {sp.chance != null && <span style={{ color: '#a0a0b0' }}> {sp.chance}%</span>}
                             {fired && !sp.absorbed && !sp.justLearned && sp.manaCost != null && <span style={{ color: '#60a5fa' }}> −{sp.manaCost} MP</span>}
+                            {fired && sp.overflowMult != null && sp.overflowMult > 1 && <span style={{ marginLeft: 5, fontWeight: 800, color: '#fbbf24', background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', borderRadius: 3, padding: '0px 4px' }}>×{sp.overflowMult.toFixed(1)}</span>}
                           </div>
                         );
                       })}

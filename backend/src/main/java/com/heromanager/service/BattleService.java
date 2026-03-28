@@ -278,6 +278,8 @@ public class BattleService {
             }
 
             // ── Challenger's own ability spells ───────────────────────────────
+            boolean dIsRotted = dHeroRot.getOrDefault(dHero.getId(), new RotState(0,1,0,0)).remainingTurns() > 0;
+            boolean cIsRotted = cHeroRot.getOrDefault(cHero.getId(), new RotState(0,1,0,0)).remainingTurns() > 0;
             for (EquippedAbility ea : equippedAbilityRepository.findByHeroIdAndSlotNumberIsNotNull(cHero.getId())) {
                 AbilityTemplate at = ea.getAbilityTemplate();
                 if (at == null) continue;
@@ -287,6 +289,7 @@ public class BattleService {
                         case "ENTRANCE"          -> cIsNew;
                         case "OPPONENT_ENTRANCE" -> cIsNew || dIsNew;
                         case "ATTACK"            -> true;
+                        case "ATTACK_IF_ROTTED"  -> dIsRotted;
                         default -> false;
                     };
                     if (!fires || cMana < asp.getSpellManaCost()) continue;
@@ -294,14 +297,19 @@ public class BattleService {
                     if (asp.getMaxUsages() > 0 && cWsUsages.getOrDefault(aspKey, 0) >= asp.getMaxUsages()) continue;
                     double rawChance = asp.getSpellChance() + cSpellActivation;
                     double effectiveChance = Math.min(1.0, rawChance);
-                    double overflowChance = Math.max(0.0, rawChance - 1.0);
                     boolean fired = random.nextDouble() < effectiveChance;
-                    boolean doubled = fired && overflowChance > 0 && random.nextDouble() < overflowChance;
+                    int cOverflowLevels = 0;
+                    if (fired && rawChance > 1.0) {
+                        double overflow = rawChance - 1.0;
+                        cOverflowLevels = (int) Math.floor(overflow);
+                        double fractional = overflow - cOverflowLevels;
+                        if (fractional > 0 && random.nextDouble() < fractional) cOverflowLevels++;
+                    }
+                    double cOverflowMult = 1.0 + 0.6 * cOverflowLevels;
                     Map<String, Object> ev = new LinkedHashMap<>();
                     ev.put("spellName", asp.getSpellName()); ev.put("heroName", cHero.getTemplate().getDisplayName());
                     ev.put("trigger", asp.getSpellTrigger()); ev.put("chance", Math.round(effectiveChance * 1000.0) / 10.0);
                     ev.put("fired", fired);
-                    if (doubled) ev.put("doubled", true);
                     if (asp.getPassOnType() != null) ev.put("passOn", asp.getPassOnType());
                     Map<String, Object> aspBonuses = getAbilitySpellBonusMap(asp);
                     if (!aspBonuses.isEmpty()) ev.put("bonuses", aspBonuses);
@@ -317,7 +325,7 @@ public class BattleService {
                         ev.put("absorbed", true); dMana = Math.min(dMana + cEffectiveCost, dManaTotal);
                     } else {
                         double masteryMult = (at.getTier() == 3 && cSpellMastery > 0) ? (1.0 + cSpellMastery) : 1.0;
-                        double finalMult = doubled ? 2.0 : masteryMult;
+                        double finalMult = cOverflowMult * masteryMult;
                         if (asp.isAffectsOpponent()) {
                             applyAbilitySpellBonuses(asp, dStats, dBufList, asp.getLastsTurns(), finalMult);
                         } else if (asp.getPassOnType() != null) {
@@ -327,7 +335,7 @@ public class BattleService {
                         } else {
                             applyAbilitySpellBonuses(asp, cStats, cBufList, asp.getLastsTurns(), finalMult);
                         }
-                        if (doubled) ev.put("doubledMult", 2.0);
+                        if (cOverflowLevels > 0) ev.put("overflowMult", Math.round(cOverflowMult * 100.0) / 100.0);
                         cFiredAbilitySnaps.add(new SpellSnapshot(asp.getSpellName(), cEffectiveCost,
                                 asp.getSpellBonusPa(), asp.getSpellBonusMp(), asp.getSpellBonusDex(),
                                 asp.getSpellBonusElem(), asp.getSpellBonusMana(), asp.getSpellBonusStam(),
@@ -417,6 +425,7 @@ public class BattleService {
                         case "ENTRANCE"          -> dIsNew;
                         case "OPPONENT_ENTRANCE" -> dIsNew || cIsNew;
                         case "ATTACK"            -> true;
+                        case "ATTACK_IF_ROTTED"  -> cIsRotted;
                         default -> false;
                     };
                     if (!fires || dMana < asp.getSpellManaCost()) continue;
@@ -424,14 +433,19 @@ public class BattleService {
                     if (asp.getMaxUsages() > 0 && dWsUsages.getOrDefault(aspKey, 0) >= asp.getMaxUsages()) continue;
                     double rawChance = asp.getSpellChance() + dSpellActivation;
                     double effectiveChance = Math.min(1.0, rawChance);
-                    double overflowChance = Math.max(0.0, rawChance - 1.0);
                     boolean fired = random.nextDouble() < effectiveChance;
-                    boolean doubled = fired && overflowChance > 0 && random.nextDouble() < overflowChance;
+                    int dOverflowLevels = 0;
+                    if (fired && rawChance > 1.0) {
+                        double overflow = rawChance - 1.0;
+                        dOverflowLevels = (int) Math.floor(overflow);
+                        double fractional = overflow - dOverflowLevels;
+                        if (fractional > 0 && random.nextDouble() < fractional) dOverflowLevels++;
+                    }
+                    double dOverflowMult = 1.0 + 0.6 * dOverflowLevels;
                     Map<String, Object> ev = new LinkedHashMap<>();
                     ev.put("spellName", asp.getSpellName()); ev.put("heroName", dHero.getTemplate().getDisplayName());
                     ev.put("trigger", asp.getSpellTrigger()); ev.put("chance", Math.round(effectiveChance * 1000.0) / 10.0);
                     ev.put("fired", fired);
-                    if (doubled) ev.put("doubled", true);
                     if (asp.getPassOnType() != null) ev.put("passOn", asp.getPassOnType());
                     Map<String, Object> aspBonuses = getAbilitySpellBonusMap(asp);
                     if (!aspBonuses.isEmpty()) ev.put("bonuses", aspBonuses);
@@ -447,7 +461,7 @@ public class BattleService {
                         ev.put("absorbed", true); cMana = Math.min(cMana + dEffectiveCost, cManaTotal);
                     } else {
                         double masteryMult = (at.getTier() == 3 && dSpellMastery > 0) ? (1.0 + dSpellMastery) : 1.0;
-                        double finalMult = doubled ? 2.0 : masteryMult;
+                        double finalMult = dOverflowMult * masteryMult;
                         if (asp.isAffectsOpponent()) {
                             applyAbilitySpellBonuses(asp, cStats, cBufList, asp.getLastsTurns(), finalMult);
                         } else if (asp.getPassOnType() != null) {
@@ -457,7 +471,7 @@ public class BattleService {
                         } else {
                             applyAbilitySpellBonuses(asp, dStats, dBufList, asp.getLastsTurns(), finalMult);
                         }
-                        if (doubled) ev.put("doubledMult", 2.0);
+                        if (dOverflowLevels > 0) ev.put("overflowMult", Math.round(dOverflowMult * 100.0) / 100.0);
                         dFiredAbilitySnaps.add(new SpellSnapshot(asp.getSpellName(), dEffectiveCost,
                                 asp.getSpellBonusPa(), asp.getSpellBonusMp(), asp.getSpellBonusDex(),
                                 asp.getSpellBonusElem(), asp.getSpellBonusMana(), asp.getSpellBonusStam(),
@@ -988,6 +1002,10 @@ public class BattleService {
                 dHero.setTotalMpDamage(dHero.getTotalMpDamage() + dBreak.mpContrib());
                 dHero.setTotalDexDamage(dHero.getTotalDexDamage() + dBreak.dexContrib());
                 dHero.setTotalElemDamage(dHero.getTotalElemDamage() + dElemBonus);
+                // ── ON_DEATH: defender eliminated ────────────────────────────
+                List<Map<String, Object>> dDeathEvts = fireOnDeathSpells(dHero, dSpellActivation, dSpellMastery, random,
+                        cStats, cBufList, dNextHeroBufs, dTeamBufs, cNextHeroBufs, cTeamBufs);
+                dSpells.addAll(dDeathEvts);
                 dIdx++;
             } else {
                 round.put("winner", "defender");
@@ -1022,6 +1040,10 @@ public class BattleService {
                 dHero.setTotalMpDamage(dHero.getTotalMpDamage() + dBreak.mpContrib());
                 dHero.setTotalDexDamage(dHero.getTotalDexDamage() + dBreak.dexContrib());
                 dHero.setTotalElemDamage(dHero.getTotalElemDamage() + dElemBonus);
+                // ── ON_DEATH: challenger eliminated ──────────────────────────
+                List<Map<String, Object>> cDeathEvts = fireOnDeathSpells(cHero, cSpellActivation, cSpellMastery, random,
+                        dStats, dBufList, cNextHeroBufs, cTeamBufs, dNextHeroBufs, dTeamBufs);
+                cSpells.addAll(cDeathEvts);
                 cIdx++;
             }
 
@@ -1559,5 +1581,50 @@ public class BattleService {
         m.put("rot",                asp.getSpellBonusRot());
         m.put("offPositioning",     asp.getSpellBonusOffPositioning());
         return m;
+    }
+
+    /**
+     * Fires all ON_DEATH ability spells for a hero that just lost a clash.
+     * affectsOpponent spells debuff the enemy; passOnType spells buff own team.
+     * Self-only spells (no passOnType, not affectsOpponent) are discarded — hero is dead.
+     */
+    private List<Map<String, Object>> fireOnDeathSpells(
+            Hero dyingHero, double spellActivation, double spellMastery, Random random,
+            Map<String, Double> enemyStats, List<ActiveBuff> enemyBufList,
+            List<ActiveBuff> ownNextBufs, List<ActiveBuff> ownTeamBufs,
+            List<ActiveBuff> enemyNextBufs, List<ActiveBuff> enemyTeamBufs) {
+        List<Map<String, Object>> events = new ArrayList<>();
+        for (EquippedAbility ea : equippedAbilityRepository.findByHeroIdAndSlotNumberIsNotNull(dyingHero.getId())) {
+            AbilityTemplate at = ea.getAbilityTemplate();
+            if (at == null) continue;
+            for (AbilitySpell asp : abilitySpellRepository.findByAbilityTemplateId(at.getId())) {
+                if (!"ON_DEATH".equals(asp.getSpellTrigger())) continue;
+                double rawChance = asp.getSpellChance() + spellActivation;
+                double effectiveChance = Math.min(1.0, rawChance);
+                boolean fired = random.nextDouble() < effectiveChance;
+                Map<String, Object> ev = new LinkedHashMap<>();
+                ev.put("spellName", asp.getSpellName());
+                ev.put("heroName", dyingHero.getTemplate().getDisplayName());
+                ev.put("trigger", "ON_DEATH");
+                ev.put("chance", Math.round(effectiveChance * 1000.0) / 10.0);
+                ev.put("fired", fired);
+                Map<String, Object> bonuses = getAbilitySpellBonusMap(asp);
+                if (!bonuses.isEmpty()) ev.put("bonuses", bonuses);
+                if (asp.isAffectsOpponent()) ev.put("affectsOpponent", true);
+                if (asp.getPassOnType() != null) ev.put("passOn", asp.getPassOnType());
+                if (!fired) { events.add(ev); continue; }
+                double effectiveCost = Math.max(0.0, asp.getSpellManaCost() * (1.0 - spellMastery));
+                ev.put("manaCost", Math.round(effectiveCost * 10.0) / 10.0);
+                if (asp.isAffectsOpponent()) {
+                    applyAbilitySpellBonuses(asp, enemyStats, enemyBufList, asp.getLastsTurns(), 1.0);
+                } else if (asp.getPassOnType() != null) {
+                    applyAbilityPassOnBonuses(asp, ownNextBufs, ownTeamBufs, 1.0);
+                    if ("BATTLEFIELD".equals(asp.getPassOnType())) applyAbilityPassOnBonuses(asp, enemyNextBufs, enemyTeamBufs, 1.0);
+                }
+                // Self-only (no passOnType) — hero is dead, bonus is discarded
+                events.add(ev);
+            }
+        }
+        return events;
     }
 }

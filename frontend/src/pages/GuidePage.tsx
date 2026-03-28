@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, Activity, AlertTriangle, Sword, Shuffle, Zap, Wind, Sparkles, Flame, Star, Coins, Shield, Droplets, Biohazard } from 'lucide-react';
+import { BookOpen, Activity, AlertTriangle, Sword, Shuffle, Zap, Wind, Sparkles, Flame, Star, Coins, Shield, Droplets, Biohazard, GitBranch, Users, Layers } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -1426,6 +1426,209 @@ export default function GuidePage() {
             { titleKey: 'guide_rot_dex_title',     descKey: 'guide_rot_dex_desc',     color: '#ef4444', rgb: '239,68,68' },
             { titleKey: 'guide_rot_counter_title', descKey: 'guide_rot_counter_desc', color: '#f87171', rgb: '248,113,113' },
           ].map(({ titleKey, descKey, color, rgb }) => (
+            <div key={titleKey} style={{ background: `rgba(${rgb},0.05)`, border: `1px solid rgba(${rgb},0.15)`, borderLeft: `3px solid ${color}`, borderRadius: 9, padding: '12px 14px' }}>
+              <div style={{ color, fontWeight: 700, fontSize: 12.5, marginBottom: 5, fontFamily: 'Inter, sans-serif' }}>{t(titleKey as Parameters<typeof t>[0])}</div>
+              <div style={{ color: '#4a4a72', fontSize: 12, lineHeight: 1.65, fontFamily: 'Inter, sans-serif' }}>{t(descKey as Parameters<typeof t>[0])}</div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      {/* ── § 15  Spell Conditions ── */}
+      <SectionCard icon={<GitBranch size={17} />} title={t('guide_spellcond_title')} color="#a78bfa">
+        <p style={{ color: '#4a4a72', fontSize: 13, lineHeight: 1.75, marginBottom: 20, fontFamily: 'Inter, sans-serif' }}>
+          {t('guide_spellcond_body')}
+        </p>
+
+        {/* Pre-clash */}
+        <div style={{ color: '#a78bfa', fontWeight: 800, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, fontFamily: 'Inter, sans-serif' }}>
+          {t('guide_spellcond_pre_header')}
+        </div>
+        <div style={{ color: '#4a4a72', fontSize: 11.5, marginBottom: 14, fontStyle: 'italic' }}>{t('guide_spellcond_pre_sub')}</div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+          {([
+            { nameKey: 'guide_spellcond_entrance_name',      whenKey: 'guide_spellcond_entrance_when',      descKey: 'guide_spellcond_entrance_desc',      color: '#60a5fa', rgb: '96,165,250' },
+            { nameKey: 'guide_spellcond_opp_entrance_name',  whenKey: 'guide_spellcond_opp_entrance_when',  descKey: 'guide_spellcond_opp_entrance_desc',  color: '#38bdf8', rgb: '56,189,248' },
+            { nameKey: 'guide_spellcond_attack_name',        whenKey: 'guide_spellcond_attack_when',        descKey: 'guide_spellcond_attack_desc',        color: '#f97316', rgb: '249,115,22' },
+            { nameKey: 'guide_spellcond_attack_rotted_name', whenKey: 'guide_spellcond_attack_rotted_when', descKey: 'guide_spellcond_attack_rotted_desc', color: '#dc2626', rgb: '220,38,38' },
+            { nameKey: 'guide_spellcond_before_turn_name',   whenKey: 'guide_spellcond_before_turn_when',   descKey: 'guide_spellcond_before_turn_desc',   color: '#fbbf24', rgb: '251,191,36' },
+            { nameKey: 'guide_spellcond_after_turn_name',    whenKey: 'guide_spellcond_after_turn_when',    descKey: 'guide_spellcond_after_turn_desc',    color: '#4ade80', rgb: '74,222,128' },
+          ] as const).map(({ nameKey, whenKey, descKey, color, rgb }) => (
+            <div key={nameKey} style={{ background: `rgba(${rgb},0.05)`, border: `1px solid rgba(${rgb},0.15)`, borderLeft: `3px solid ${color}`, borderRadius: 9, padding: '12px 14px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4, flexWrap: 'wrap' as const }}>
+                <span style={{ color, fontWeight: 800, fontSize: 11, letterSpacing: '0.1em', fontFamily: 'monospace' }}>{t(nameKey as Parameters<typeof t>[0])}</span>
+                <span style={{ color: '#5a5a80', fontSize: 11, fontStyle: 'italic' }}>{t(whenKey as Parameters<typeof t>[0])}</span>
+              </div>
+              <div style={{ color: '#4a4a72', fontSize: 12, lineHeight: 1.65, fontFamily: 'Inter, sans-serif' }}>{t(descKey as Parameters<typeof t>[0])}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Post-clash */}
+        <div style={{ color: '#a78bfa', fontWeight: 800, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, fontFamily: 'Inter, sans-serif' }}>
+          {t('guide_spellcond_post_header')}
+        </div>
+        <div style={{ color: '#4a4a72', fontSize: 11.5, marginBottom: 14, fontStyle: 'italic' }}>{t('guide_spellcond_post_sub')}</div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+          {([
+            { nameKey: 'guide_spellcond_after_clash_name', whenKey: 'guide_spellcond_after_clash_when', descKey: 'guide_spellcond_after_clash_desc', color: '#c084fc', rgb: '192,132,252' },
+            { nameKey: 'guide_spellcond_after_crit_name',  whenKey: 'guide_spellcond_after_crit_when',  descKey: 'guide_spellcond_after_crit_desc',  color: '#f87171', rgb: '248,113,113' },
+            { nameKey: 'guide_spellcond_after_magic_name', whenKey: 'guide_spellcond_after_magic_when', descKey: 'guide_spellcond_after_magic_desc', color: '#818cf8', rgb: '129,140,248' },
+            { nameKey: 'guide_spellcond_on_death_name',    whenKey: 'guide_spellcond_on_death_when',    descKey: 'guide_spellcond_on_death_desc',    color: '#e11d48', rgb: '225,29,72'  },
+          ] as const).map(({ nameKey, whenKey, descKey, color, rgb }) => (
+            <div key={nameKey} style={{ background: `rgba(${rgb},0.05)`, border: `1px solid rgba(${rgb},0.15)`, borderLeft: `3px solid ${color}`, borderRadius: 9, padding: '12px 14px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4, flexWrap: 'wrap' as const }}>
+                <span style={{ color, fontWeight: 800, fontSize: 11, letterSpacing: '0.1em', fontFamily: 'monospace' }}>{t(nameKey as Parameters<typeof t>[0])}</span>
+                <span style={{ color: '#5a5a80', fontSize: 11, fontStyle: 'italic' }}>{t(whenKey as Parameters<typeof t>[0])}</span>
+              </div>
+              <div style={{ color: '#4a4a72', fontSize: 12, lineHeight: 1.65, fontFamily: 'Inter, sans-serif' }}>{t(descKey as Parameters<typeof t>[0])}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Scope note */}
+        <div style={{ background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.18)', borderRadius: 9, padding: '12px 14px', marginBottom: 24 }}>
+          <div style={{ color: '#a78bfa', fontWeight: 700, fontSize: 11, marginBottom: 5, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>{t('guide_spellcond_note_header')}</div>
+          <div style={{ color: '#4a4a72', fontSize: 12, lineHeight: 1.65, fontFamily: 'Inter, sans-serif' }}>{t('guide_spellcond_note_body')}</div>
+        </div>
+
+        {/* Max usages */}
+        <div style={{ color: '#a78bfa', fontWeight: 800, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, fontFamily: 'Inter, sans-serif' }}>
+          {t('guide_spellcond_maxuses_header')}
+        </div>
+        <p style={{ color: '#4a4a72', fontSize: 13, lineHeight: 1.75, marginBottom: 14, fontFamily: 'Inter, sans-serif' }}>
+          {t('guide_spellcond_maxuses_body')}
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {([
+            { titleKey: 'guide_spellcond_maxuses_0_title', descKey: 'guide_spellcond_maxuses_0_desc', color: '#4ade80', rgb: '74,222,128' },
+            { titleKey: 'guide_spellcond_maxuses_1_title', descKey: 'guide_spellcond_maxuses_1_desc', color: '#fbbf24', rgb: '251,191,36' },
+            { titleKey: 'guide_spellcond_maxuses_n_title', descKey: 'guide_spellcond_maxuses_n_desc', color: '#f97316', rgb: '249,115,22' },
+          ] as const).map(({ titleKey, descKey, color, rgb }) => (
+            <div key={titleKey} style={{ background: `rgba(${rgb},0.05)`, border: `1px solid rgba(${rgb},0.15)`, borderLeft: `3px solid ${color}`, borderRadius: 9, padding: '12px 14px' }}>
+              <div style={{ color, fontWeight: 700, fontSize: 12.5, marginBottom: 5, fontFamily: 'Inter, sans-serif' }}>{t(titleKey as Parameters<typeof t>[0])}</div>
+              <div style={{ color: '#4a4a72', fontSize: 12, lineHeight: 1.65, fontFamily: 'Inter, sans-serif' }}>{t(descKey as Parameters<typeof t>[0])}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Duration */}
+        <div style={{ color: '#a78bfa', fontWeight: 800, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 24, marginBottom: 6, fontFamily: 'Inter, sans-serif' }}>
+          {t('guide_spellcond_duration_header')}
+        </div>
+        <p style={{ color: '#4a4a72', fontSize: 13, lineHeight: 1.75, marginBottom: 14, fontFamily: 'Inter, sans-serif' }}>
+          {t('guide_spellcond_duration_body')}
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {([
+            { titleKey: 'guide_spellcond_duration_instant_title', descKey: 'guide_spellcond_duration_instant_desc', color: '#60a5fa', rgb: '96,165,250' },
+            { titleKey: 'guide_spellcond_duration_lasting_title', descKey: 'guide_spellcond_duration_lasting_desc', color: '#a78bfa', rgb: '167,139,250' },
+            { titleKey: 'guide_spellcond_duration_stack_title',   descKey: 'guide_spellcond_duration_stack_desc',   color: '#fbbf24', rgb: '251,191,36' },
+            { titleKey: 'guide_spellcond_duration_hero_title',    descKey: 'guide_spellcond_duration_hero_desc',    color: '#4ade80', rgb: '74,222,128' },
+          ] as const).map(({ titleKey, descKey, color, rgb }) => (
+            <div key={titleKey} style={{ background: `rgba(${rgb},0.05)`, border: `1px solid rgba(${rgb},0.15)`, borderLeft: `3px solid ${color}`, borderRadius: 9, padding: '12px 14px' }}>
+              <div style={{ color, fontWeight: 700, fontSize: 12.5, marginBottom: 5, fontFamily: 'Inter, sans-serif' }}>{t(titleKey as Parameters<typeof t>[0])}</div>
+              <div style={{ color: '#4a4a72', fontSize: 12, lineHeight: 1.65, fontFamily: 'Inter, sans-serif' }}>{t(descKey as Parameters<typeof t>[0])}</div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      {/* ── § 16  Team Spells ── */}
+      <SectionCard icon={<Users size={17} />} title={t('guide_teamspell_title')} color="#2dd4bf">
+        <p style={{ color: '#4a4a72', fontSize: 13, lineHeight: 1.75, marginBottom: 20, fontFamily: 'Inter, sans-serif' }}>
+          {t('guide_teamspell_body')}
+        </p>
+
+        <SubLabel>{t('guide_teamspell_how_header')}</SubLabel>
+        <div style={{ background: 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.2)', borderRadius: 10, padding: '14px 16px', marginBottom: 20 }}>
+          <p style={{ color: '#4a4a72', fontSize: 13, lineHeight: 1.75, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+            {t('guide_teamspell_how_body')}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {([
+            { titleKey: 'guide_teamspell_once_title',    descKey: 'guide_teamspell_once_desc',    color: '#2dd4bf', rgb: '45,212,191' },
+            { titleKey: 'guide_teamspell_owner_title',   descKey: 'guide_teamspell_owner_desc',   color: '#34d399', rgb: '52,211,153' },
+            { titleKey: 'guide_teamspell_tooltip_title', descKey: 'guide_teamspell_tooltip_desc', color: '#5eead4', rgb: '94,234,212' },
+            { titleKey: 'guide_teamspell_log_title',     descKey: 'guide_teamspell_log_desc',     color: '#0d9488', rgb: '13,148,136' },
+          ] as const).map(({ titleKey, descKey, color, rgb }) => (
+            <div key={titleKey} style={{ background: `rgba(${rgb},0.05)`, border: `1px solid rgba(${rgb},0.15)`, borderLeft: `3px solid ${color}`, borderRadius: 9, padding: '12px 14px' }}>
+              <div style={{ color, fontWeight: 700, fontSize: 12.5, marginBottom: 5, fontFamily: 'Inter, sans-serif' }}>{t(titleKey as Parameters<typeof t>[0])}</div>
+              <div style={{ color: '#4a4a72', fontSize: 12, lineHeight: 1.65, fontFamily: 'Inter, sans-serif' }}>{t(descKey as Parameters<typeof t>[0])}</div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      {/* ── § 17  Multi-Spell Abilities ── */}
+      <SectionCard icon={<Layers size={17} />} title={t('guide_multispell_title')} color="#f59e0b">
+        <p style={{ color: '#4a4a72', fontSize: 13, lineHeight: 1.75, marginBottom: 20, fontFamily: 'Inter, sans-serif' }}>
+          {t('guide_multispell_body')}
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {([
+            { titleKey: 'guide_multispell_rolls_title',      descKey: 'guide_multispell_rolls_desc',      color: '#f59e0b', rgb: '245,158,11'  },
+            { titleKey: 'guide_multispell_conditions_title', descKey: 'guide_multispell_conditions_desc', color: '#fb923c', rgb: '251,146,60'  },
+            { titleKey: 'guide_multispell_stacking_title',   descKey: 'guide_multispell_stacking_desc',   color: '#fbbf24', rgb: '251,191,36'  },
+            { titleKey: 'guide_multispell_tooltip_title',    descKey: 'guide_multispell_tooltip_desc',    color: '#d97706', rgb: '217,119,6'   },
+          ] as const).map(({ titleKey, descKey, color, rgb }) => (
+            <div key={titleKey} style={{ background: `rgba(${rgb},0.05)`, border: `1px solid rgba(${rgb},0.15)`, borderLeft: `3px solid ${color}`, borderRadius: 9, padding: '12px 14px' }}>
+              <div style={{ color, fontWeight: 700, fontSize: 12.5, marginBottom: 5, fontFamily: 'Inter, sans-serif' }}>{t(titleKey as Parameters<typeof t>[0])}</div>
+              <div style={{ color: '#4a4a72', fontSize: 12, lineHeight: 1.65, fontFamily: 'Inter, sans-serif' }}>{t(descKey as Parameters<typeof t>[0])}</div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      {/* ── § 18  Spell Overcharge ── */}
+      <SectionCard icon={<Zap size={17} />} title={t('guide_overcharge_title')} color="#fbbf24">
+        <p style={{ color: '#4a4a72', fontSize: 13, lineHeight: 1.75, marginBottom: 20, fontFamily: 'Inter, sans-serif' }}>
+          {t('guide_overcharge_body')}
+        </p>
+
+        {/* How it works */}
+        <SubLabel>{t('guide_overcharge_how_header')}</SubLabel>
+        <div style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 10, padding: '14px 16px', marginBottom: 20 }}>
+          <p style={{ color: '#4a4a72', fontSize: 13, lineHeight: 1.75, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+            {t('guide_overcharge_how_body')}
+          </p>
+        </div>
+
+        {/* Power levels */}
+        <SubLabel>{t('guide_overcharge_levels_header')}</SubLabel>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          {([
+            { key: 'guide_overcharge_level_1', mult: '×1.0', color: '#9ca3af', rgb: '156,163,175' },
+            { key: 'guide_overcharge_level_2', mult: '×1.6', color: '#fbbf24', rgb: '251,191,36'  },
+            { key: 'guide_overcharge_level_3', mult: '×2.2', color: '#f97316', rgb: '249,115,22'  },
+            { key: 'guide_overcharge_level_4', mult: '×2.8+', color: '#ef4444', rgb: '239,68,68'  },
+          ] as const).map(({ key, mult, color, rgb }) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12, background: `rgba(${rgb},0.05)`, border: `1px solid rgba(${rgb},0.18)`, borderLeft: `3px solid ${color}`, borderRadius: 9, padding: '10px 14px' }}>
+              <span style={{ fontWeight: 900, fontSize: 13, color, fontFamily: 'monospace', minWidth: 42, textShadow: color !== '#9ca3af' ? `0 0 8px ${color}88` : undefined }}>{mult}</span>
+              <span style={{ color: '#4a4a72', fontSize: 12, lineHeight: 1.6, fontFamily: 'Inter, sans-serif' }}>{t(key as Parameters<typeof t>[0])}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Example */}
+        <SubLabel>{t('guide_overcharge_example_header')}</SubLabel>
+        <div style={{ background: 'rgba(251,191,36,0.05)', border: '1px solid rgba(251,191,36,0.18)', borderRadius: 10, padding: '14px 16px', marginBottom: 20 }}>
+          <p style={{ color: '#4a4a72', fontSize: 13, lineHeight: 1.75, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+            {t('guide_overcharge_example_body')}
+          </p>
+        </div>
+
+        {/* Bottom cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {([
+            { titleKey: 'guide_overcharge_display_header',    descKey: 'guide_overcharge_display_body',    color: '#fbbf24', rgb: '251,191,36' },
+            { titleKey: 'guide_overcharge_activation_header', descKey: 'guide_overcharge_activation_body', color: '#fb923c', rgb: '251,146,60' },
+          ] as const).map(({ titleKey, descKey, color, rgb }) => (
             <div key={titleKey} style={{ background: `rgba(${rgb},0.05)`, border: `1px solid rgba(${rgb},0.15)`, borderLeft: `3px solid ${color}`, borderRadius: 9, padding: '12px 14px' }}>
               <div style={{ color, fontWeight: 700, fontSize: 12.5, marginBottom: 5, fontFamily: 'Inter, sans-serif' }}>{t(titleKey as Parameters<typeof t>[0])}</div>
               <div style={{ color: '#4a4a72', fontSize: 12, lineHeight: 1.65, fontFamily: 'Inter, sans-serif' }}>{t(descKey as Parameters<typeof t>[0])}</div>
