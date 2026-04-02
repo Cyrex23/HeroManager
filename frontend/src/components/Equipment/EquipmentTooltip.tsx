@@ -38,7 +38,6 @@ const STATS: Array<{ key: keyof HeroStats; label: string }> = [
 const TOOLTIP_WIDTH = 270;
 
 function SpellBlock({ spell, isTeamSpell = false }: { spell: SpellInfo; isTeamSpell?: boolean }) {
-  const isPassOn = !!spell.passOnType;
   const sectionBorder = spell.affectsOpponent
     ? 'rgba(248,113,113,0.3)'
     : isTeamSpell ? 'rgba(20,184,166,0.35)' : 'rgba(59,130,246,0.2)';
