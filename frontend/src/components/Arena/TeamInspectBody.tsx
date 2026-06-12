@@ -259,7 +259,6 @@ export default function TeamInspectBody({ team }: Props) {
                   <div style={styles.summonBonusList}>
                     {s.teamBonus.split(', ').map((bonus, i) => (
                       <div key={i} style={styles.summonBonusRow}>
-                        <span style={styles.summonBonusIcon}>✦</span>
                         <span style={styles.summonBonusText}>{bonus}</span>
                       </div>
                     ))}
